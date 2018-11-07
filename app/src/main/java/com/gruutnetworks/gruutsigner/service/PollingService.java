@@ -1,8 +1,9 @@
-package com.gruutnetworks.gruutsigner.ui.main;
+package com.gruutnetworks.gruutsigner.service;
 
-import android.app.job.JobScheduler;
-import android.arch.lifecycle.ViewModel;
+import android.app.job.JobParameters;
+import android.app.job.JobService;
 import android.os.AsyncTask;
+import android.os.Handler;
 import android.text.TextUtils;
 import android.util.Log;
 import com.gruutnetworks.gruutsigner.GreeterGrpc;
@@ -15,13 +16,42 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.concurrent.TimeUnit;
 
-public class MainViewModel extends ViewModel {
+public class PollingService extends JobService {
 
-    private static final String TAG = "MainViewModel";
+    private static final String TAG = "PollingService";
 
-    public void onClickButton() {
-
+    public PollingService() {
     }
+
+    private Handler handler = new Handler();
+    private Runnable handlerTask = new Runnable() {
+        @Override
+        public void run() {
+            new GrpcTask().execute("10.10.10.106", "Hello?", "50051");
+            handler.postDelayed(this, 1000 * 5);
+        }
+    };
+
+    @Override
+    public boolean onStartJob(JobParameters params) {
+
+        Log.d(TAG, "onStartJob()");
+        handlerTask.run();
+
+        //handler.postDelayed(() -> jobFinished(params, true), 1000 * 60 * 15);
+
+        return false;
+    }
+
+    @Override
+    public boolean onStopJob(JobParameters params) {
+        Log.d(TAG, "onStopJob()");
+        handler.removeCallbacks(handlerTask);
+
+        // Retry 여부 return
+        return true;
+    }
+
 
     private static class GrpcTask extends AsyncTask<String, Void, String> {
         private ManagedChannel channel;
@@ -43,7 +73,6 @@ public class MainViewModel extends ViewModel {
                 HelloRequest request = HelloRequest.newBuilder().setName(message).build();
                 HelloReply reply = stub.sayHello(request);
 
-                Log.d(TAG, "Request: " + message);
                 start = System.currentTimeMillis();
                 return reply.getMessage();
             } catch (Exception e) {
