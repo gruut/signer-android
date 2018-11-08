@@ -36,6 +36,4 @@ public class MainFragment extends Fragment {
         viewModel = ViewModelProviders.of(this).get(MainViewModel.class);
         binding.setModel(viewModel);
     }
-
-
 }
