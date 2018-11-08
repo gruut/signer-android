@@ -75,7 +75,7 @@ public class PollingSyncJob extends Job {
                 HelloReply reply = stub.sayHello(request);
 
                 start = System.currentTimeMillis();
-                return reply.getMessage();
+                return reply.getMessage().toString();
             } catch (Exception e) {
                 StringWriter sw = new StringWriter();
                 PrintWriter pw = new PrintWriter(sw);
