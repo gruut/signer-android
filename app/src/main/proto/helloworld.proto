@@ -34,4 +34,5 @@ message HelloRequest {
 // The response message containing the greetings
 message HelloReply {
     bytes message = 1;
+    int32 size = 2;
 }

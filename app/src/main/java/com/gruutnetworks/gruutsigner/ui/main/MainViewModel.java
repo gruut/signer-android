@@ -21,7 +21,7 @@ public class MainViewModel extends ViewModel {
             byte[] compressed = compress(testArr);
             Log.d(TAG, "compressed: " + Arrays.toString(compressed));
 
-            byte[] decompressed = decompress(compressed);
+            byte[] decompressed = decompress(compressed, testArr.length);
             Log.d(TAG, "decompressed: " + new String(decompressed));
         } catch (Exception e) {
             Log.e(TAG, e.toString());

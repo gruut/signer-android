@@ -9,6 +9,7 @@ import com.evernote.android.job.Job;
 import com.gruutnetworks.gruutsigner.GreeterGrpc;
 import com.gruutnetworks.gruutsigner.HelloReply;
 import com.gruutnetworks.gruutsigner.HelloRequest;
+import com.gruutnetworks.gruutsigner.util.CompressionUtil;
 import com.gruutnetworks.gruutsigner.util.NetworkUtil;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -41,7 +42,7 @@ public class PollingSyncJob extends Job {
             public void run() {
                 while (!finishFlag) {
                     if (NetworkUtil.isConnected(getContext())) {
-                        new GrpcTask().execute("10.10.10.106", "Hello?", "50051");
+                        new GrpcTask().execute("10.10.10.117", "Hello?", "50051");
                     } else {
                         Log.e(TAG, "Unable to use the network.");
                     }
@@ -55,8 +56,10 @@ public class PollingSyncJob extends Job {
     }
 
     private static class GrpcTask extends AsyncTask<String, Void, String> {
-        private ManagedChannel channel;
 
+        private static final long DEADLINE_MS = 100;
+
+        private ManagedChannel channel;
         private long start;
 
         private GrpcTask() {
@@ -72,10 +75,14 @@ public class PollingSyncJob extends Job {
                 channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext().build();
                 GreeterGrpc.GreeterBlockingStub stub = GreeterGrpc.newBlockingStub(channel);
                 HelloRequest request = HelloRequest.newBuilder().setName(message).build();
-                HelloReply reply = stub.sayHello(request);
 
                 start = System.currentTimeMillis();
-                return reply.getMessage().toString();
+                HelloReply reply = stub
+                        .withDeadlineAfter(DEADLINE_MS, TimeUnit.MILLISECONDS)
+                        .sayHello(request);
+
+                byte[] result = CompressionUtil.decompress(reply.getMessage().toByteArray(), reply.getSize());
+                return new String(result);
             } catch (Exception e) {
                 StringWriter sw = new StringWriter();
                 PrintWriter pw = new PrintWriter(sw);
