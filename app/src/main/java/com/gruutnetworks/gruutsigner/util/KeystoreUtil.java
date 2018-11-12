@@ -24,10 +24,13 @@ import android.util.Base64;
 import android.util.Log;
 
 import javax.security.auth.x500.X500Principal;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.security.*;
 import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
 import java.security.spec.AlgorithmParameterSpec;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
@@ -42,7 +45,7 @@ public class KeystoreUtil {
     // You can store multiple key pairs in the Key Store.  The string used to refer to the Key you
     // want to store, or later pull, is referred to as an "alias" in this case, because calling it
     // a key, when you use it to retrieve a key, would just be irritating.
-    private String mAlias = "defaultKeyStore";
+    private String mAlias = SecurityConstants.Alias.SELF_CERT.name();
     private static KeystoreUtil keystoreUtil;
 
     public static KeystoreUtil getInstance() {
@@ -57,7 +60,7 @@ public class KeystoreUtil {
      * Creates a public and private key and stores it using the Android Key Store, so that only
      * this application will be able to access the keys.
      */
-    public void createKeys(Context context) throws NoSuchProviderException,
+    public PublicKey createKeys(Context context) throws NoSuchProviderException,
             NoSuchAlgorithmException, InvalidAlgorithmParameterException {
         // BEGIN_INCLUDE(create_valid_dates)
         // Create a start and end time, for the validity range of the key pair that's about to be
@@ -114,11 +117,56 @@ public class KeystoreUtil {
 
         KeyPair kp = kpGenerator.generateKeyPair();
         // END_INCLUDE(create_spec)
-        Log.d(TAG, "Public Key is: " + kp.getPublic().toString());
+
+        return kp.getPublic();
     }
 
-    public PublicKey getPublicKey() throws KeyStoreException, CertificateException, NoSuchAlgorithmException,
-            IOException, UnrecoverableEntryException {
+    /**
+     * @return Check if the key pair exists in the alias
+     */
+    public boolean isKeyPairExist() throws KeyStoreException, CertificateException, NoSuchAlgorithmException, IOException {
+        KeyStore ks = KeyStore.getInstance(SecurityConstants.KEYSTORE_PROVIDER_ANDROID_KEYSTORE);
+        ks.load(null);
+        return ks.isKeyEntry(mAlias);
+    }
+
+    /**
+     * String to X509Certificate Converter
+     *
+     * @param certificateString base64 formatted string
+     * @return X509Certificate object
+     */
+    private static X509Certificate convertToX509Cert(String certificateString) throws CertificateException, NoSuchProviderException {
+        X509Certificate certificate = null;
+        CertificateFactory cf;
+        if (certificateString != null && !certificateString.trim().isEmpty()) {
+            certificateString = certificateString.replace("-----BEGIN CERTIFICATE-----", "")
+                    .replace("-----END CERTIFICATE-----", ""); // NEED FOR PEM FORMAT CERT STRING
+            byte[] certificateData = Base64.decode(certificateString, Base64.NO_WRAP);
+            cf = CertificateFactory.getInstance("X509", "BC");
+            certificate = (X509Certificate) cf.generateCertificate(new ByteArrayInputStream(certificateData));
+        }
+        return certificate;
+    }
+
+    public void updateEntry(String pem) throws CertificateException, NoSuchProviderException, KeyStoreException, IOException, NoSuchAlgorithmException {
+        X509Certificate certificate = convertToX509Cert(pem);
+        KeyStore ks = KeyStore.getInstance(SecurityConstants.KEYSTORE_PROVIDER_ANDROID_KEYSTORE);
+
+        // Weird artifact of Java API.  If you don't have an InputStream to load, you still need
+        // to call "load", or it'll crash.
+        ks.load(null);
+
+        ks.setCertificateEntry(mAlias, certificate);
+
+        Log.d("MainViewModel", "alias: " + mAlias);
+        Log.d("MainViewModel", "cert: " + Base64.encodeToString(certificate.getEncoded(), Base64.NO_WRAP));
+    }
+
+    /**
+     * @return Get Public key with head and footer tags.
+     */
+    public String getPublicKey() throws KeyStoreException, CertificateException, NoSuchAlgorithmException, IOException {
         // BEGIN_INCLUDE(sign_load_keystore)
         KeyStore ks = KeyStore.getInstance(SecurityConstants.KEYSTORE_PROVIDER_ANDROID_KEYSTORE);
 
@@ -127,7 +175,13 @@ public class KeystoreUtil {
         ks.load(null);
 
         // Load the public from the Android Key Store
-        return ks.getCertificate(mAlias).getPublicKey();
+        ks.getCertificate(mAlias).getPublicKey();
+
+        String pubKeyWithTag = "-----BEGIN PUBLIC KEY-----\n";
+        pubKeyWithTag += Base64.encodeToString(ks.getCertificate(mAlias).getPublicKey().getEncoded(), Base64.NO_WRAP);
+        pubKeyWithTag += "\n-----END PUBLIC KEY-----\n";
+
+        return pubKeyWithTag;
     }
 
     /**
@@ -188,10 +242,9 @@ public class KeystoreUtil {
         // Sign the data, store the result as a Base64 encoded String.
         s.update(data);
         byte[] signature = s.sign();
-        String result = Base64.encodeToString(signature, Base64.DEFAULT);
         // END_INCLUDE(sign_data)
 
-        return result;
+        return Base64.encodeToString(signature, Base64.DEFAULT);
     }
 
     /**
@@ -261,8 +314,8 @@ public class KeystoreUtil {
         // END_INCLUDE(verify_data)
     }
 
-    public void setAlias(String alias) {
-        mAlias = alias;
+    public void setAlias(SecurityConstants.Alias alias) {
+        mAlias = alias.name();
     }
 
     public interface SecurityConstants {
@@ -277,5 +330,10 @@ public class KeystoreUtil {
 
         String SIGNATURE_SHA256withRSA = "SHA256withRSA";
         String SIGNATURE_SHA512withRSA = "SHA512withRSA";
+
+        enum Alias {
+            SELF_CERT,
+            GRUUT_AUTH
+        }
     }
 }

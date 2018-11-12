@@ -2,7 +2,6 @@ package com.gruutnetworks.gruutsigner.ui.main;
 
 import android.app.Application;
 import android.arch.lifecycle.AndroidViewModel;
-import android.arch.lifecycle.MutableLiveData;
 import android.databinding.ObservableField;
 import android.support.annotation.NonNull;
 import android.util.Log;
@@ -14,7 +13,9 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-import java.security.PublicKey;
+import java.io.IOException;
+import java.security.*;
+import java.security.cert.CertificateException;
 
 public class MainViewModel extends AndroidViewModel {
 
@@ -34,7 +35,7 @@ public class MainViewModel extends AndroidViewModel {
     private void join() {
         Log.d(TAG, "start joining");
         KeystoreUtil keystoreUtil = KeystoreUtil.getInstance();
-        PublicKey pubKey = null;
+        String pubKey = null;
         try {
             keystoreUtil.createKeys(getApplication().getApplicationContext());
             pubKey = keystoreUtil.getPublicKey();
@@ -42,7 +43,11 @@ public class MainViewModel extends AndroidViewModel {
             Log.e(TAG, e.toString());
         }
 
-        JoiningSourceData sourceData = new JoiningSourceData(pid.get(), pubKey.toString());
+        JoiningSourceData sourceData = new JoiningSourceData(pid.get(), pubKey);
+
+        Log.d(TAG, "###### REQUEST START ######");
+        Log.d(TAG, "publicKey: " + pubKey);
+        Log.d(TAG, "###### REQUEST END ######");
 
         joiningCall = GaApi.getInstance().requestJoining(sourceData);
         joiningCall.enqueue(new Callback<JoiningResponse>() {
@@ -53,8 +58,44 @@ public class MainViewModel extends AndroidViewModel {
                         JoiningResponse responseBody = response.body();
 
                         if (responseBody != null) {
+
+                            Log.d(TAG, "###### RESPONSE START ######");
                             Log.d(TAG, "nId: " + responseBody.getNid());
                             Log.d(TAG, "pem: " + responseBody.getPem());
+                            Log.d(TAG, "###### RESPONSE END ######");
+
+                            try {
+
+                                Log.d(TAG, "###### VERIFY START ######");
+                                keystoreUtil.setAlias(KeystoreUtil.SecurityConstants.Alias.GRUUT_AUTH);
+                                keystoreUtil.updateEntry(responseBody.getPem());
+                                Log.d(TAG, "publicKey: " + keystoreUtil.getPublicKey());
+                                Log.d(TAG, "###### VERIFY END ######");
+
+                                Log.d(TAG, "###### CHECK START ######");
+                                keystoreUtil.setAlias(KeystoreUtil.SecurityConstants.Alias.SELF_CERT);
+                                String test = "Test String is here! 동해물과백두산이 마르고닳도록 하느님이보우하사 우리나라만세";
+                                String signed = keystoreUtil.signData(test);
+                                Log.d(TAG, "is it verified? : " + keystoreUtil.verifyData(test, signed));
+                                Log.d(TAG, "###### CHECK START ######");
+
+                            } catch (KeyStoreException e) {
+                                e.printStackTrace();
+                            } catch (CertificateException e) {
+                                e.printStackTrace();
+                            } catch (NoSuchAlgorithmException e) {
+                                e.printStackTrace();
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            } catch (UnrecoverableEntryException e) {
+                                e.printStackTrace();
+                            } catch (NoSuchProviderException e) {
+                                e.printStackTrace();
+                            } catch (InvalidKeyException e) {
+                                e.printStackTrace();
+                            } catch (SignatureException e) {
+                                e.printStackTrace();
+                            }
                         }
                         break;
                     default:
