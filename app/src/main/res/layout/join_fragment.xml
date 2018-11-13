@@ -1,97 +1,99 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layout xmlns:android="http://schemas.android.com/apk/res/android"
-        xmlns:app="http://schemas.android.com/apk/res-auto"
-        xmlns:tools="http://schemas.android.com/tools"
-        tools:context=".ui.join.JoinFragment">
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context=".ui.join.JoinFragment">
 
     <data>
-        <import type="android.view.View"/>
+
+        <import type="android.view.View" />
+
         <variable
-                name="model"
-                type="com.gruutnetworks.gruutsigner.ui.join.JoinViewModel"/>
+            name="model"
+            type="com.gruutnetworks.gruutsigner.ui.join.JoinViewModel" />
     </data>
 
     <FrameLayout
-            android:layout_width="match_parent"
-            android:layout_height="match_parent">
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
 
         <FrameLayout
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:background="@color/background_transparent"
-                android:elevation="1dp"
-                android:visibility="@{safeUnbox(model.loading) ? View.VISIBLE : View.GONE}">
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@color/background_transparent"
+            android:elevation="1dp"
+            android:visibility="@{safeUnbox(model.loading) ? View.VISIBLE : View.GONE}">
 
             <ProgressBar
-                    android:id="@+id/loading_view"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center"/>
+                android:id="@+id/loading_view"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center" />
 
         </FrameLayout>
 
         <android.support.constraint.ConstraintLayout
-                android:id="@+id/joinConstraintLayout"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent">
+            android:id="@+id/joinConstraintLayout"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
 
             <EditText
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:inputType="phone"
-                    android:ems="10"
-                    android:id="@+id/edit_phone"
-                    android:layout_marginTop="16dp"
-                    android:layout_marginStart="40dp"
-                    android:layout_marginEnd="40dp"
-                    android:text="@={model.phoneNum}"
-                    android:maxLength="13"
-                    app:layout_constraintVertical_bias="0.0"
-                    android:singleLine="true"
-                    android:textAlignment="center"
-                    android:textSize="30sp"
-                    app:layout_constraintVertical_chainStyle="packed"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/guideline"
-                    app:layout_constraintHorizontal_bias="0.5"
-                    app:layout_constraintBottom_toTopOf="@+id/btn_join"
-                    android:hint="Mobile Number"/>
+                android:id="@+id/edit_phone"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="40dp"
+                android:layout_marginTop="16dp"
+                android:layout_marginEnd="40dp"
+                android:ems="10"
+                android:hint="Mobile Number"
+                android:inputType="phone"
+                android:maxLength="13"
+                android:singleLine="true"
+                android:text="@={model.phoneNum}"
+                android:textAlignment="center"
+                android:textSize="30sp"
+                app:layout_constraintBottom_toTopOf="@+id/btn_join"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintHorizontal_bias="0.5"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/guideline"
+                app:layout_constraintVertical_bias="0.0"
+                app:layout_constraintVertical_chainStyle="packed" />
 
             <Button
-                    android:text="Join"
-                    style="@style/AppTheme.RoundedCornerMaterialButton"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:id="@+id/btn_join"
-                    android:padding="16dp"
-                    android:textSize="20sp"
-                    android:layout_marginTop="8dp"
-                    android:onClick="@{() -> model.onClickButton()}"
-                    app:layout_constraintTop_toBottomOf="@+id/edit_phone"
-                    app:layout_constraintStart_toStartOf="@+id/edit_phone"
-                    app:layout_constraintEnd_toEndOf="@+id/edit_phone"
-                    app:layout_constraintBottom_toBottomOf="parent"
-                    app:layout_constraintHorizontal_bias="0.5"/>
+                android:id="@+id/btn_join"
+                style="@style/AppTheme.RoundedCornerMaterialButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:onClick="@{() -> model.onClickButton()}"
+                android:padding="16dp"
+                android:text="Join"
+                android:textSize="20sp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="@+id/edit_phone"
+                app:layout_constraintHorizontal_bias="0.5"
+                app:layout_constraintStart_toStartOf="@+id/edit_phone"
+                app:layout_constraintTop_toBottomOf="@+id/edit_phone" />
 
             <ImageView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    app:srcCompat="@drawable/ic_logo"
-                    android:id="@+id/img_logo"
-                    android:layout_marginStart="24dp"
-                    android:layout_marginBottom="16dp"
-                    android:layout_marginEnd="24dp"
-                    app:layout_constraintBottom_toTopOf="@+id/guideline"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintEnd_toEndOf="parent"/>
+                android:id="@+id/img_logo"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="24dp"
+                android:layout_marginEnd="24dp"
+                android:layout_marginBottom="16dp"
+                app:layout_constraintBottom_toTopOf="@+id/guideline"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:srcCompat="@drawable/ic_logo" />
 
             <android.support.constraint.Guideline
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:id="@+id/guideline"
-                    android:orientation="horizontal"
-                    app:layout_constraintGuide_percent="0.5"/>
+                android:id="@+id/guideline"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                app:layout_constraintGuide_percent="0.5" />
         </android.support.constraint.ConstraintLayout>
 
     </FrameLayout>
