@@ -7,6 +7,7 @@ public class JoiningSourceData {
     @SerializedName("phone")
     private String phone;
 
+    @SerializedName("publicKey")
     private String publicKey;
 
     public JoiningSourceData(String phone, String publicKey) {

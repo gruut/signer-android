@@ -57,7 +57,8 @@ protobuf {
     }
     plugins {
         javalite { artifact = "com.google.protobuf:protoc-gen-javalite:3.0.0" }
-        grpc { artifact = 'io.grpc:protoc-gen-grpc-java:1.16.1' // CURRENT_GRPC_VERSION
+        grpc {
+            artifact = 'io.grpc:protoc-gen-grpc-java:1.16.1' // CURRENT_GRPC_VERSION
         }
     }
     generateProtoTasks {
@@ -65,7 +66,8 @@ protobuf {
             task.plugins {
                 javalite {}
                 grpc { // Options added to --grpc_out
-                    option 'lite' }
+                    option 'lite'
+                }
             }
         }
     }
@@ -108,4 +110,5 @@ dependencies {
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'com.android.support.test:runner:1.0.2'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
+    implementation 'com.android.support:design:27.1.1'
 }

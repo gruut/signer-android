@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        xmlns:tools="http://schemas.android.com/tools"
+        tools:context=".ui.main.JoinFragment">
+
+    <data>
+        <import type="android.view.View"/>
+        <variable
+                name="model"
+                type="com.gruutnetworks.gruutsigner.ui.main.JoinViewModel"/>
+    </data>
+
+    <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+        <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@color/background_transparent"
+                android:visibility="@{safeUnbox(model.loading) ? View.VISIBLE : View.GONE}">
+
+            <ProgressBar
+                    android:id="@+id/loading_view"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"/>
+
+        </FrameLayout>
+
+        <android.support.constraint.ConstraintLayout
+                android:id="@+id/joinConstraintLayout"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:visibility="@{safeUnbox(model.loading) ? View.GONE : View.VISIBLE}">
+
+            <EditText
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:inputType="phone"
+                    android:ems="10"
+                    android:id="@+id/edit_phone"
+                    android:layout_marginTop="16dp"
+                    android:layout_marginStart="40dp"
+                    android:layout_marginEnd="40dp"
+                    android:text="@={model.phoneNum}"
+                    android:maxLength="13"
+                    app:layout_constraintVertical_bias="0.0"
+                    android:singleLine="true"
+                    android:textAlignment="center"
+                    android:textSize="30sp"
+                    app:layout_constraintVertical_chainStyle="packed"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/guideline"
+                    app:layout_constraintHorizontal_bias="0.5"
+                    app:layout_constraintBottom_toTopOf="@+id/btn_join"/>
+
+            <Button
+                    android:text="Join"
+                    style="@style/AppTheme.RoundedCornerMaterialButton"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:id="@+id/btn_join"
+                    android:padding="16dp"
+                    android:textSize="20sp"
+                    android:layout_marginTop="8dp"
+                    android:onClick="@{() -> model.onClickButton()}"
+                    app:layout_constraintTop_toBottomOf="@+id/edit_phone"
+                    app:layout_constraintStart_toStartOf="@+id/edit_phone"
+                    app:layout_constraintEnd_toEndOf="@+id/edit_phone"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintHorizontal_bias="0.5"/>
+
+            <ImageView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    app:srcCompat="@drawable/ic_logo"
+                    android:id="@+id/img_logo"
+                    android:layout_marginStart="24dp"
+                    android:layout_marginBottom="16dp"
+                    android:layout_marginEnd="24dp"
+                    app:layout_constraintBottom_toTopOf="@+id/guideline"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"/>
+
+            <android.support.constraint.Guideline
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:id="@+id/guideline"
+                    android:orientation="horizontal"
+                    app:layout_constraintGuide_percent="0.5"/>
+        </android.support.constraint.ConstraintLayout>
+
+    </FrameLayout>
+
+</layout>

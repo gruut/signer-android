@@ -1,7 +1,8 @@
-package com.gruutnetworks.gruutsigner;
+package com.gruutnetworks.gruutsigner.ui.main;
 
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import com.gruutnetworks.gruutsigner.R;
 import com.gruutnetworks.gruutsigner.ui.main.MainFragment;
 
 public class MainActivity extends AppCompatActivity {
@@ -13,7 +14,7 @@ public class MainActivity extends AppCompatActivity {
 
         if (savedInstanceState == null) {
             getSupportFragmentManager().beginTransaction()
-                    .replace(R.id.container, MainFragment.newInstance())
+                    .replace(R.id.container, JoinFragment.newInstance())
                     .commitNow();
         }
     }
