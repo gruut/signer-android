@@ -108,9 +108,7 @@ public class JoinViewModel extends AndroidViewModel implements LifecycleObserver
 
     private boolean storeCertificate(String cert) {
         try {
-            keystoreUtil.setAlias(KeystoreUtil.SecurityConstants.Alias.GRUUT_AUTH);
-            keystoreUtil.updateEntry(cert);
-
+            keystoreUtil.updateEntry(cert, KeystoreUtil.SecurityConstants.Alias.GRUUT_AUTH);
             return true;
         } catch (Exception e) {
             Log.e(TAG, e.getMessage());

@@ -149,7 +149,7 @@ public class KeystoreUtil {
         return certificate;
     }
 
-    public void updateEntry(String pem) throws CertificateException, NoSuchProviderException, KeyStoreException, IOException, NoSuchAlgorithmException {
+    public void updateEntry(String pem, SecurityConstants.Alias alias) throws CertificateException, NoSuchProviderException, KeyStoreException, IOException, NoSuchAlgorithmException {
         X509Certificate certificate = convertToX509Cert(pem);
         KeyStore ks = KeyStore.getInstance(SecurityConstants.KEYSTORE_PROVIDER_ANDROID_KEYSTORE);
 
@@ -157,10 +157,7 @@ public class KeystoreUtil {
         // to call "load", or it'll crash.
         ks.load(null);
 
-        ks.setCertificateEntry(mAlias, certificate);
-
-        Log.d("MainViewModel", "alias: " + mAlias);
-        Log.d("MainViewModel", "cert: " + Base64.encodeToString(certificate.getEncoded(), Base64.NO_WRAP));
+        ks.setCertificateEntry(alias.name(), certificate);
     }
 
     /**
