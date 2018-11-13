@@ -1,9 +1,10 @@
 <resources>
     <string name="app_name">GruutSigner</string>
-    <string name="join_success">Join Finished!</string>
+    <string name="join_success">Successfully joined</string>
     <string name="join_error_internal">ERROR: Internal Server Error</string>
     <string name="join_error_unknown">ERROR: Unknown error</string>
     <string name="join_error_network">ERROR: Network Error</string>
     <string name="join_error_pid">ERROR: Mobile number is not valid</string>
     <string name="join_error_pubkey">ERROR: Public key is not valid</string>
+    <string name="join_error_cert">ERROR: Failed to save certificate</string>
 </resources>

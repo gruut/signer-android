@@ -26,13 +26,14 @@ public class JoinViewModel extends AndroidViewModel implements LifecycleObserver
     private Call<JoiningResponse> joiningCall;
 
     public ObservableField<String> phoneNum = new ObservableField<>();
+    private KeystoreUtil keystoreUtil;
 
     public JoinViewModel(@NonNull Application application) {
         super(application);
+        keystoreUtil = KeystoreUtil.getInstance();
     }
 
     public void onClickButton() {
-        Log.d(TAG, "Start joining");
         loading.setValue(true);
 
         String pubKey = getPublicKey();
@@ -58,7 +59,11 @@ public class JoinViewModel extends AndroidViewModel implements LifecycleObserver
                 if (response.body() != null) {
                     switch (response.body().getCode()) {
                         case 200:
-                            snackbarMessage.setValue(R.string.join_success);
+                            if (storeCertificate(response.body().getPem())) {
+                                snackbarMessage.setValue(R.string.join_success);
+                            } else {
+                                snackbarMessage.setValue(R.string.join_error_cert);
+                            }
                             break;
                         case 500:
                             snackbarMessage.setValue(R.string.join_error_internal);
@@ -90,7 +95,6 @@ public class JoinViewModel extends AndroidViewModel implements LifecycleObserver
      * @return generated public key with tag
      */
     private String getPublicKey() {
-        KeystoreUtil keystoreUtil = KeystoreUtil.getInstance();
         try {
             if (!keystoreUtil.isKeyPairExist()) {
                 keystoreUtil.createKeys(getApplication().getApplicationContext());
@@ -102,7 +106,19 @@ public class JoinViewModel extends AndroidViewModel implements LifecycleObserver
         return null;
     }
 
-    public SnackbarMessage getSnackbarMessage() {
+    private boolean storeCertificate(String cert) {
+        try {
+            keystoreUtil.setAlias(KeystoreUtil.SecurityConstants.Alias.GRUUT_AUTH);
+            keystoreUtil.updateEntry(cert);
+
+            return true;
+        } catch (Exception e) {
+            Log.e(TAG, e.getMessage());
+        }
+        return false;
+    }
+
+    SnackbarMessage getSnackbarMessage() {
         return snackbarMessage;
     }
 
