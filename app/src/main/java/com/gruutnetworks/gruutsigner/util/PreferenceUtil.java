@@ -14,8 +14,7 @@ public class PreferenceUtil {
      * Enum representing your setting names or key for your setting.
      */
     public enum Key {
-        NID_INT,
-        PEM_STR
+        SID_INT
     }
 
     private PreferenceUtil(Context context) {

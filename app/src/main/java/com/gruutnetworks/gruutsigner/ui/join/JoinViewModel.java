@@ -12,6 +12,7 @@ import com.gruutnetworks.gruutsigner.model.JoiningResponse;
 import com.gruutnetworks.gruutsigner.model.JoiningSourceData;
 import com.gruutnetworks.gruutsigner.restApi.GaApi;
 import com.gruutnetworks.gruutsigner.util.KeystoreUtil;
+import com.gruutnetworks.gruutsigner.util.PreferenceUtil;
 import com.gruutnetworks.gruutsigner.util.SingleLiveEvent;
 import com.gruutnetworks.gruutsigner.util.SnackbarMessage;
 import retrofit2.Call;
@@ -29,10 +30,12 @@ public class JoinViewModel extends AndroidViewModel implements LifecycleObserver
 
     public ObservableField<String> phoneNum = new ObservableField<>();
     private KeystoreUtil keystoreUtil;
+    private PreferenceUtil preferenceUtil;
 
     public JoinViewModel(@NonNull Application application) {
         super(application);
         this.keystoreUtil = KeystoreUtil.getInstance();
+        this.preferenceUtil = PreferenceUtil.getInstance(application.getApplicationContext());
     }
 
     public void onClickButton() {
@@ -62,6 +65,7 @@ public class JoinViewModel extends AndroidViewModel implements LifecycleObserver
                     switch (response.body().getCode()) {
                         case 200:
                             if (storeCertificate(response.body().getPem())) {
+                                preferenceUtil.put(PreferenceUtil.Key.SID_INT, response.body().getNid());
                                 navigateToDashboard.call();
                             } else {
                                 snackbarMessage.setValue(R.string.join_error_cert);
