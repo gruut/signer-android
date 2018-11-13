@@ -1,7 +1,9 @@
 package com.gruutnetworks.gruutsigner.ui.join;
 
 import android.app.Activity;
+import android.arch.lifecycle.Observer;
 import android.arch.lifecycle.ViewModelProviders;
+import android.content.Intent;
 import android.databinding.DataBindingUtil;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -15,6 +17,7 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import com.gruutnetworks.gruutsigner.R;
 import com.gruutnetworks.gruutsigner.databinding.JoinFragmentBinding;
+import com.gruutnetworks.gruutsigner.ui.dashboard.DashboardActivity;
 import com.gruutnetworks.gruutsigner.util.SnackbarMessage;
 import com.gruutnetworks.gruutsigner.util.SnackbarUtil;
 
@@ -52,8 +55,12 @@ public class JoinFragment extends Fragment {
         getLifecycle().addObserver(viewModel);
 
         viewModel.getSnackbarMessage().observe(this,
-                (SnackbarMessage.SnackbarObserver) snackbarMessageResourceId
-                        -> SnackbarUtil.showSnackbar(getView(), getString(snackbarMessageResourceId)));
+                (SnackbarMessage.SnackbarObserver) snackbarMessageResourceId -> SnackbarUtil.showSnackbar(JoinFragment.this.getView(), getString(snackbarMessageResourceId)));
+
+        viewModel.getNavigateToDashboard().observe(this, o -> {
+            hideKeyboard();
+            startActivity(new Intent(getActivity(), DashboardActivity.class));
+        });
     }
 
     private void hideKeyboard() {

@@ -19,6 +19,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:background="@color/background_transparent"
+                android:elevation="1dp"
                 android:visibility="@{safeUnbox(model.loading) ? View.VISIBLE : View.GONE}">
 
             <ProgressBar
@@ -32,8 +33,7 @@
         <android.support.constraint.ConstraintLayout
                 android:id="@+id/joinConstraintLayout"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:visibility="@{safeUnbox(model.loading) ? View.GONE : View.VISIBLE}">
+                android:layout_height="match_parent">
 
             <EditText
                     android:layout_width="0dp"
@@ -55,7 +55,8 @@
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintTop_toBottomOf="@+id/guideline"
                     app:layout_constraintHorizontal_bias="0.5"
-                    app:layout_constraintBottom_toTopOf="@+id/btn_join"/>
+                    app:layout_constraintBottom_toTopOf="@+id/btn_join"
+                    android:hint="Mobile Number"/>
 
             <Button
                     android:text="Join"

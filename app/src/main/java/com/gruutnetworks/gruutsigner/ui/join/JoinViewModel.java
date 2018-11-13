@@ -12,6 +12,7 @@ import com.gruutnetworks.gruutsigner.model.JoiningResponse;
 import com.gruutnetworks.gruutsigner.model.JoiningSourceData;
 import com.gruutnetworks.gruutsigner.restApi.GaApi;
 import com.gruutnetworks.gruutsigner.util.KeystoreUtil;
+import com.gruutnetworks.gruutsigner.util.SingleLiveEvent;
 import com.gruutnetworks.gruutsigner.util.SnackbarMessage;
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -23,6 +24,7 @@ public class JoinViewModel extends AndroidViewModel implements LifecycleObserver
 
     private final MutableLiveData<Boolean> loading = new MutableLiveData<>();
     private final SnackbarMessage snackbarMessage = new SnackbarMessage();
+    private final SingleLiveEvent navigateToDashboard = new SingleLiveEvent();
     private Call<JoiningResponse> joiningCall;
 
     public ObservableField<String> phoneNum = new ObservableField<>();
@@ -60,7 +62,7 @@ public class JoinViewModel extends AndroidViewModel implements LifecycleObserver
                     switch (response.body().getCode()) {
                         case 200:
                             if (storeCertificate(response.body().getPem())) {
-                                snackbarMessage.setValue(R.string.join_success);
+                                navigateToDashboard.call();
                             } else {
                                 snackbarMessage.setValue(R.string.join_error_cert);
                             }
@@ -118,6 +120,10 @@ public class JoinViewModel extends AndroidViewModel implements LifecycleObserver
 
     SnackbarMessage getSnackbarMessage() {
         return snackbarMessage;
+    }
+
+    SingleLiveEvent getNavigateToDashboard() {
+        return navigateToDashboard;
     }
 
     public MutableLiveData<Boolean> getLoading() {
