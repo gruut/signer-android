@@ -1,4 +1,4 @@
-package com.gruutnetworks.gruutsigner.ui.main;
+package com.gruutnetworks.gruutsigner.ui.join;
 
 import android.app.Application;
 import android.arch.lifecycle.AndroidViewModel;
@@ -30,7 +30,7 @@ public class JoinViewModel extends AndroidViewModel implements LifecycleObserver
 
     public JoinViewModel(@NonNull Application application) {
         super(application);
-        keystoreUtil = KeystoreUtil.getInstance();
+        this.keystoreUtil = KeystoreUtil.getInstance();
     }
 
     public void onClickButton() {

@@ -1,4 +1,4 @@
-package com.gruutnetworks.gruutsigner.ui.main;
+package com.gruutnetworks.gruutsigner.ui.join;
 
 import android.app.Activity;
 import android.arch.lifecycle.ViewModelProviders;
@@ -63,5 +63,4 @@ public class JoinFragment extends Fragment {
             imm.hideSoftInputFromInputMethod(getView().getWindowToken(), 0);
         }
     }
-
 }
