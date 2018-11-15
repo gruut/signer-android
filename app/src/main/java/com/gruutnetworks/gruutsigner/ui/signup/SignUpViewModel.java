@@ -1,4 +1,4 @@
-package com.gruutnetworks.gruutsigner.ui.join;
+package com.gruutnetworks.gruutsigner.ui.signup;
 
 import android.app.Application;
 import android.arch.lifecycle.AndroidViewModel;
@@ -19,9 +19,9 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class JoinViewModel extends AndroidViewModel implements LifecycleObserver {
+public class SignUpViewModel extends AndroidViewModel implements LifecycleObserver {
 
-    private static final String TAG = "JoinViewModel";
+    private static final String TAG = "SignUpViewModel";
 
     private final MutableLiveData<Boolean> loading = new MutableLiveData<>();
     private final SnackbarMessage snackbarMessage = new SnackbarMessage();
@@ -32,7 +32,7 @@ public class JoinViewModel extends AndroidViewModel implements LifecycleObserver
     private KeystoreUtil keystoreUtil;
     private PreferenceUtil preferenceUtil;
 
-    public JoinViewModel(@NonNull Application application) {
+    public SignUpViewModel(@NonNull Application application) {
         super(application);
         this.keystoreUtil = KeystoreUtil.getInstance();
         this.preferenceUtil = PreferenceUtil.getInstance(application.getApplicationContext());
@@ -45,13 +45,13 @@ public class JoinViewModel extends AndroidViewModel implements LifecycleObserver
         String pid = phoneNum.get();
 
         if (pubKey == null || pubKey.isEmpty()) {
-            snackbarMessage.setValue(R.string.join_error_pubkey);
+            snackbarMessage.setValue(R.string.sign_up_error_pubkey);
             loading.setValue(false);
             return;
         }
 
         if (pid == null || pid.isEmpty()) {
-            snackbarMessage.setValue(R.string.join_error_pid);
+            snackbarMessage.setValue(R.string.sign_up_error_pid);
             loading.setValue(false);
             return;
         }
@@ -68,14 +68,14 @@ public class JoinViewModel extends AndroidViewModel implements LifecycleObserver
                                 preferenceUtil.put(PreferenceUtil.Key.SID_INT, response.body().getNid());
                                 navigateToDashboard.call();
                             } else {
-                                snackbarMessage.setValue(R.string.join_error_cert);
+                                snackbarMessage.setValue(R.string.sign_up_error_cert);
                             }
                             break;
                         case 500:
-                            snackbarMessage.setValue(R.string.join_error_internal);
+                            snackbarMessage.setValue(R.string.sign_up_error_internal);
                             break;
                         default:
-                            snackbarMessage.setValue(R.string.join_error_unknown);
+                            snackbarMessage.setValue(R.string.sign_up_error_unknown);
                             break;
                     }
                 }
@@ -86,7 +86,7 @@ public class JoinViewModel extends AndroidViewModel implements LifecycleObserver
             @Override
             public void onFailure(Call<JoiningResponse> call, Throwable t) {
                 Log.e(TAG, "API Failed... " + t.getMessage());
-                snackbarMessage.setValue(R.string.join_error_network);
+                snackbarMessage.setValue(R.string.sign_up_error_network);
 
                 loading.setValue(false);
                 joiningCall = null;

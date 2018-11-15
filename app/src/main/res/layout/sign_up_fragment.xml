@@ -2,7 +2,7 @@
 <layout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    tools:context=".ui.join.JoinFragment">
+    tools:context=".ui.signup.SignUpFragment">
 
     <data>
 
@@ -10,7 +10,7 @@
 
         <variable
             name="model"
-            type="com.gruutnetworks.gruutsigner.ui.join.JoinViewModel" />
+            type="com.gruutnetworks.gruutsigner.ui.signup.SignUpViewModel" />
     </data>
 
     <FrameLayout
@@ -45,7 +45,7 @@
                 android:layout_marginTop="16dp"
                 android:layout_marginEnd="40dp"
                 android:ems="10"
-                android:hint="Mobile Number"
+                android:hint="@string/sign_up_mobile_number"
                 android:inputType="phone"
                 android:maxLength="13"
                 android:singleLine="true"
@@ -68,7 +68,7 @@
                 android:layout_marginTop="8dp"
                 android:onClick="@{() -> model.onClickButton()}"
                 android:padding="16dp"
-                android:text="Join"
+                android:text="@string/sign_up"
                 android:textSize="20sp"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="@+id/edit_phone"

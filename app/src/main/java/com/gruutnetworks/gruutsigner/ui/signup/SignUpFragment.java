@@ -1,7 +1,6 @@
-package com.gruutnetworks.gruutsigner.ui.join;
+package com.gruutnetworks.gruutsigner.ui.signup;
 
 import android.app.Activity;
-import android.arch.lifecycle.Observer;
 import android.arch.lifecycle.ViewModelProviders;
 import android.content.Intent;
 import android.databinding.DataBindingUtil;
@@ -16,26 +15,26 @@ import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import com.gruutnetworks.gruutsigner.R;
-import com.gruutnetworks.gruutsigner.databinding.JoinFragmentBinding;
+import com.gruutnetworks.gruutsigner.databinding.SignUpFragmentBinding;
 import com.gruutnetworks.gruutsigner.ui.dashboard.DashboardActivity;
 import com.gruutnetworks.gruutsigner.util.SnackbarMessage;
 import com.gruutnetworks.gruutsigner.util.SnackbarUtil;
 
-public class JoinFragment extends Fragment {
+public class SignUpFragment extends Fragment {
 
-    private JoinViewModel viewModel;
-    private JoinFragmentBinding binding;
+    private SignUpViewModel viewModel;
+    private SignUpFragmentBinding binding;
 
     private EditText editPhone;
 
-    public static JoinFragment newInstance() {
-        return new JoinFragment();
+    public static SignUpFragment newInstance() {
+        return new SignUpFragment();
     }
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
-        binding = DataBindingUtil.inflate(inflater, R.layout.join_fragment, container, false);
+        binding = DataBindingUtil.inflate(inflater, R.layout.sign_up_fragment, container, false);
 
         editPhone = binding.editPhone;
         editPhone.addTextChangedListener(new PhoneNumberFormattingTextWatcher());
@@ -48,14 +47,14 @@ public class JoinFragment extends Fragment {
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-        viewModel = ViewModelProviders.of(this).get(JoinViewModel.class);
+        viewModel = ViewModelProviders.of(this).get(SignUpViewModel.class);
         binding.setLifecycleOwner(this);
         binding.setModel(viewModel);
 
         getLifecycle().addObserver(viewModel);
 
         viewModel.getSnackbarMessage().observe(this,
-                (SnackbarMessage.SnackbarObserver) snackbarMessageResourceId -> SnackbarUtil.showSnackbar(JoinFragment.this.getView(), getString(snackbarMessageResourceId)));
+                (SnackbarMessage.SnackbarObserver) snackbarMessageResourceId -> SnackbarUtil.showSnackbar(SignUpFragment.this.getView(), getString(snackbarMessageResourceId)));
 
         viewModel.getNavigateToDashboard().observe(this, o -> {
             hideKeyboard();
