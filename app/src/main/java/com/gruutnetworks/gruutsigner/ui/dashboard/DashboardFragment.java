@@ -1,18 +1,23 @@
 package com.gruutnetworks.gruutsigner.ui.dashboard;
 
 import android.arch.lifecycle.ViewModelProviders;
+import android.databinding.DataBindingUtil;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.text.method.ScrollingMovementMethod;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
 import com.gruutnetworks.gruutsigner.R;
+import com.gruutnetworks.gruutsigner.databinding.DashboardFragmentBinding;
 
 public class DashboardFragment extends Fragment {
 
-    private DashboardViewModel mViewModel;
+    private DashboardViewModel viewModel;
+    private DashboardFragmentBinding binding;
 
     public static DashboardFragment newInstance() {
         return new DashboardFragment();
@@ -22,14 +27,22 @@ public class DashboardFragment extends Fragment {
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
-        return inflater.inflate(R.layout.dashboard_fragment, container, false);
+        binding = DataBindingUtil.inflate(inflater, R.layout.dashboard_fragment, container, false);
+
+        return binding.getRoot();
     }
 
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-        mViewModel = ViewModelProviders.of(this).get(DashboardViewModel.class);
-        // TODO: Use the ViewModel
+        viewModel = ViewModelProviders.of(this).get(DashboardViewModel.class);
+        binding.setLifecycleOwner(this);
+        binding.setModel(viewModel);
+
+        TextView tvLogMerger1 = binding.tvLogMerger1;
+        tvLogMerger1.setMovementMethod(new ScrollingMovementMethod());
+
+        viewModel.getTestData().observe(this, tvLogMerger1::append);
     }
 
 }
