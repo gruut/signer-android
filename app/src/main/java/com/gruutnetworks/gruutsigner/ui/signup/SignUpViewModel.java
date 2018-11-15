@@ -8,8 +8,8 @@ import android.databinding.ObservableField;
 import android.support.annotation.NonNull;
 import android.util.Log;
 import com.gruutnetworks.gruutsigner.R;
-import com.gruutnetworks.gruutsigner.model.JoiningResponse;
-import com.gruutnetworks.gruutsigner.model.JoiningSourceData;
+import com.gruutnetworks.gruutsigner.model.SignUpResponse;
+import com.gruutnetworks.gruutsigner.model.SignUpSourceData;
 import com.gruutnetworks.gruutsigner.restApi.GaApi;
 import com.gruutnetworks.gruutsigner.util.KeystoreUtil;
 import com.gruutnetworks.gruutsigner.util.PreferenceUtil;
@@ -26,7 +26,7 @@ public class SignUpViewModel extends AndroidViewModel implements LifecycleObserv
     private final MutableLiveData<Boolean> loading = new MutableLiveData<>();
     private final SnackbarMessage snackbarMessage = new SnackbarMessage();
     private final SingleLiveEvent navigateToDashboard = new SingleLiveEvent();
-    private Call<JoiningResponse> joiningCall;
+    private Call<SignUpResponse> signUpCall;
 
     public ObservableField<String> phoneNum = new ObservableField<>();
     private KeystoreUtil keystoreUtil;
@@ -56,11 +56,11 @@ public class SignUpViewModel extends AndroidViewModel implements LifecycleObserv
             return;
         }
 
-        JoiningSourceData sourceData = new JoiningSourceData(pid, pubKey);
-        joiningCall = GaApi.getInstance().requestJoining(sourceData);
-        joiningCall.enqueue(new Callback<JoiningResponse>() {
+        SignUpSourceData sourceData = new SignUpSourceData(pid, pubKey);
+        signUpCall = GaApi.getInstance().signUp(sourceData);
+        signUpCall.enqueue(new Callback<SignUpResponse>() {
             @Override
-            public void onResponse(Call<JoiningResponse> call, Response<JoiningResponse> response) {
+            public void onResponse(Call<SignUpResponse> call, Response<SignUpResponse> response) {
                 if (response.body() != null) {
                     switch (response.body().getCode()) {
                         case 200:
@@ -80,16 +80,16 @@ public class SignUpViewModel extends AndroidViewModel implements LifecycleObserv
                     }
                 }
                 loading.setValue(false);
-                joiningCall = null;
+                signUpCall = null;
             }
 
             @Override
-            public void onFailure(Call<JoiningResponse> call, Throwable t) {
+            public void onFailure(Call<SignUpResponse> call, Throwable t) {
                 Log.e(TAG, "API Failed... " + t.getMessage());
                 snackbarMessage.setValue(R.string.sign_up_error_network);
 
                 loading.setValue(false);
-                joiningCall = null;
+                signUpCall = null;
             }
         });
     }
@@ -136,9 +136,9 @@ public class SignUpViewModel extends AndroidViewModel implements LifecycleObserv
 
     @Override
     protected void onCleared() {
-        if (joiningCall != null) {
-            joiningCall.cancel();
-            joiningCall = null;
+        if (signUpCall != null) {
+            signUpCall.cancel();
+            signUpCall = null;
         }
     }
 }

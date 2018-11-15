@@ -33,7 +33,7 @@
         </FrameLayout>
 
         <android.support.constraint.ConstraintLayout
-            android:id="@+id/joinConstraintLayout"
+            android:id="@+id/signUpConstraintLayout"
             android:layout_width="match_parent"
             android:layout_height="match_parent">
 
@@ -52,7 +52,7 @@
                 android:text="@={model.phoneNum}"
                 android:textAlignment="center"
                 android:textSize="30sp"
-                app:layout_constraintBottom_toTopOf="@+id/btn_join"
+                app:layout_constraintBottom_toTopOf="@+id/btn_sign_up"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintHorizontal_bias="0.5"
                 app:layout_constraintStart_toStartOf="parent"
@@ -61,7 +61,7 @@
                 app:layout_constraintVertical_chainStyle="packed" />
 
             <Button
-                android:id="@+id/btn_join"
+                android:id="@+id/btn_sign_up"
                 style="@style/AppTheme.RoundedCornerMaterialButton"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"

@@ -2,7 +2,7 @@ package com.gruutnetworks.gruutsigner.model;
 
 import com.google.gson.annotations.SerializedName;
 
-public class JoiningSourceData {
+public class SignUpSourceData {
 
     @SerializedName("phone")
     private String phone;
@@ -10,7 +10,7 @@ public class JoiningSourceData {
     @SerializedName("publicKey")
     private String publicKey;
 
-    public JoiningSourceData(String phone, String publicKey) {
+    public SignUpSourceData(String phone, String publicKey) {
         this.phone = phone;
         this.publicKey = publicKey;
     }

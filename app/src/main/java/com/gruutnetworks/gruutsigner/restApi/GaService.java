@@ -1,7 +1,7 @@
 package com.gruutnetworks.gruutsigner.restApi;
 
-import com.gruutnetworks.gruutsigner.model.JoiningResponse;
-import com.gruutnetworks.gruutsigner.model.JoiningSourceData;
+import com.gruutnetworks.gruutsigner.model.SignUpResponse;
+import com.gruutnetworks.gruutsigner.model.SignUpSourceData;
 import retrofit2.Call;
 import retrofit2.http.Body;
 import retrofit2.http.Headers;
@@ -15,5 +15,5 @@ public interface GaService {
      */
     @Headers("Content-type: application/json")
     @POST("users")
-    Call<JoiningResponse> requestJoining(@Body JoiningSourceData json);
+    Call<SignUpResponse> signUp(@Body SignUpSourceData json);
 }

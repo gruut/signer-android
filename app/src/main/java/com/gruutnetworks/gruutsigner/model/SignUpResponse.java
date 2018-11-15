@@ -2,7 +2,7 @@ package com.gruutnetworks.gruutsigner.model;
 
 import com.google.gson.annotations.SerializedName;
 
-public class JoiningResponse {
+public class SignUpResponse {
 
     @SerializedName("code")
     private int code;
