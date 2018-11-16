@@ -66,15 +66,31 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:onClick="@{() -> model.onClickButton()}"
+                android:onClick="@{() -> model.onSignUpClickButton()}"
                 android:padding="16dp"
                 android:text="@string/sign_up"
                 android:textSize="20sp"
-                app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="@+id/edit_phone"
                 app:layout_constraintHorizontal_bias="0.5"
                 app:layout_constraintStart_toStartOf="@+id/edit_phone"
                 app:layout_constraintTop_toBottomOf="@+id/edit_phone" />
+
+            <Button
+                android:id="@+id/button"
+                style="@style/AppTheme.RoundedCornerMaterialButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="8dp"
+                android:padding="16dp"
+                android:text="Join"
+                android:textSize="20sp"
+                android:onClick="@{() -> model.joiningTest()}"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="@+id/btn_sign_up"
+                app:layout_constraintStart_toStartOf="@+id/btn_sign_up"
+                app:layout_constraintTop_toBottomOf="@+id/btn_sign_up"
+                app:layout_constraintVertical_bias="0.0" />
 
             <ImageView
                 android:id="@+id/img_logo"

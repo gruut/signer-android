@@ -10,8 +10,8 @@ public class AuthUtil {
     /**
      * get UNIX timestamp of current time
      */
-    public static int getTimestamp() {
-        return (int) (Calendar.getInstance().getTimeInMillis() / 1000);
+    public static String getTimestamp() {
+        return String.valueOf((Calendar.getInstance().getTimeInMillis() / 1000));
     }
 
     /**

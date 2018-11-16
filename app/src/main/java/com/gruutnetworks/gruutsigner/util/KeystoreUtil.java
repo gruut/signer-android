@@ -22,7 +22,14 @@ import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyProperties;
 import android.util.Base64;
 import android.util.Log;
+import org.spongycastle.jce.ECNamedCurveTable;
+import org.spongycastle.jce.spec.ECParameterSpec;
+import org.spongycastle.jce.spec.ECPrivateKeySpec;
+import org.spongycastle.jce.spec.ECPublicKeySpec;
+import org.spongycastle.math.ec.ECCurve;
+import org.spongycastle.util.encoders.Hex;
 
+import javax.crypto.KeyAgreement;
 import javax.security.auth.x500.X500Principal;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -31,9 +38,15 @@ import java.security.*;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
+import java.security.interfaces.ECPublicKey;
 import java.security.spec.AlgorithmParameterSpec;
+import java.security.spec.ECGenParameterSpec;
+import java.security.spec.ECPoint;
+import java.security.spec.InvalidKeySpecException;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
+
+import static com.gruutnetworks.gruutsigner.util.KeystoreUtil.SecurityConstants.*;
 
 /**
  * https://github.com/googlesamples/android-BasicAndroidKeyStore
@@ -74,8 +87,7 @@ public class KeystoreUtil {
         // Initialize a KeyPair generator using the the intended algorithm (in this example, RSA
         // and the KeyStore.  This example uses the AndroidKeyStore.
         KeyPairGenerator kpGenerator = KeyPairGenerator
-                .getInstance(SecurityConstants.TYPE_RSA,
-                        SecurityConstants.KEYSTORE_PROVIDER_ANDROID_KEYSTORE);
+                .getInstance(SecurityConstants.TYPE_RSA, KEYSTORE_PROVIDER_ANDROID_KEYSTORE);
         // END_INCLUDE(create_keypair)
 
         // BEGIN_INCLUDE(create_spec)
@@ -98,7 +110,6 @@ public class KeystoreUtil {
                     .setStartDate(start.getTime())
                     .setEndDate(end.getTime())
                     .build();
-
 
         } else {
             // On Android M or above, use the KeyGenparameterSpec.Builder and specify permitted
@@ -125,7 +136,7 @@ public class KeystoreUtil {
      * @return Check if the key pair exists in the alias
      */
     public boolean isKeyPairExist() throws KeyStoreException, CertificateException, NoSuchAlgorithmException, IOException {
-        KeyStore ks = KeyStore.getInstance(SecurityConstants.KEYSTORE_PROVIDER_ANDROID_KEYSTORE);
+        KeyStore ks = KeyStore.getInstance(KEYSTORE_PROVIDER_ANDROID_KEYSTORE);
         ks.load(null);
         return ks.isKeyEntry(mAlias);
     }
@@ -151,7 +162,7 @@ public class KeystoreUtil {
 
     public void updateEntry(String pem, SecurityConstants.Alias alias) throws CertificateException, NoSuchProviderException, KeyStoreException, IOException, NoSuchAlgorithmException {
         X509Certificate certificate = convertToX509Cert(pem);
-        KeyStore ks = KeyStore.getInstance(SecurityConstants.KEYSTORE_PROVIDER_ANDROID_KEYSTORE);
+        KeyStore ks = KeyStore.getInstance(KEYSTORE_PROVIDER_ANDROID_KEYSTORE);
 
         // Weird artifact of Java API.  If you don't have an InputStream to load, you still need
         // to call "load", or it'll crash.
@@ -165,7 +176,7 @@ public class KeystoreUtil {
      */
     public String getPublicKey() throws KeyStoreException, CertificateException, NoSuchAlgorithmException, IOException {
         // BEGIN_INCLUDE(sign_load_keystore)
-        KeyStore ks = KeyStore.getInstance(SecurityConstants.KEYSTORE_PROVIDER_ANDROID_KEYSTORE);
+        KeyStore ks = KeyStore.getInstance(KEYSTORE_PROVIDER_ANDROID_KEYSTORE);
 
         // Weird artifact of Java API.  If you don't have an InputStream to load, you still need
         // to call "load", or it'll crash.
@@ -193,7 +204,7 @@ public class KeystoreUtil {
         byte[] data = inputStr.getBytes();
 
         // BEGIN_INCLUDE(sign_load_keystore)
-        KeyStore ks = KeyStore.getInstance(SecurityConstants.KEYSTORE_PROVIDER_ANDROID_KEYSTORE);
+        KeyStore ks = KeyStore.getInstance(KEYSTORE_PROVIDER_ANDROID_KEYSTORE);
 
         // Weird artifact of Java API.  If you don't have an InputStream to load, you still need
         // to call "load", or it'll crash.
@@ -278,7 +289,7 @@ public class KeystoreUtil {
         }
         // END_INCLUDE(decode_signature)
 
-        KeyStore ks = KeyStore.getInstance("AndroidKeyStore");
+        KeyStore ks = KeyStore.getInstance(KEYSTORE_PROVIDER_ANDROID_KEYSTORE);
 
         // Weird artifact of Java API.  If you don't have an InputStream to load, you still need
         // to call "load", or it'll crash.
@@ -315,6 +326,71 @@ public class KeystoreUtil {
         mAlias = alias.name();
     }
 
+    public String pubkeyToString(PublicKey pubKey) {
+        ECPublicKey key = (ECPublicKey) pubKey;
+        ECPoint pubPoint = key.getW();
+
+        return pubPoint.getAffineX().toString(1) + pubPoint.getAffineY().toString(1);
+    }
+
+    /**
+     * NOTE: This public key string is came from Cryptopp. So we need some post processing.
+     * remove "h" at last
+     * insert "0" at first
+     * @param string
+     * @return\
+     */
+    public PublicKey stringToPubkey(String string) throws NoSuchProviderException, NoSuchAlgorithmException, InvalidKeySpecException {
+        Security.insertProviderAt(new org.spongycastle.jce.provider.BouncyCastleProvider(), 1);
+
+        if (string.charAt(0) != '0') {
+            char[] chars = new char[string.length()];
+            chars[0] = '0';
+            string.getChars(0, string.length() - 1, chars, 1);
+            string = new String(chars);
+        }
+
+        ECParameterSpec ecParameterSpec = ECNamedCurveTable.getParameterSpec(CURVE_SECP256R1);
+        ECCurve curve = ecParameterSpec.getCurve();
+
+        org.spongycastle.math.ec.ECPoint point = curve.decodePoint(Hex.decode(string));
+        ECPublicKeySpec publicKeySpec = new ECPublicKeySpec(point, ecParameterSpec);
+        KeyFactory kf = KeyFactory.getInstance(TYPE_ECDH, "SC");
+
+        return kf.generatePublic(publicKeySpec);
+    }
+
+    /**
+     * Just for test
+     */
+    public PrivateKey stringToPrvKey(String string) throws NoSuchProviderException, NoSuchAlgorithmException, InvalidKeySpecException {
+        Security.insertProviderAt(new org.spongycastle.jce.provider.BouncyCastleProvider(), 1);
+        ECParameterSpec ecParameterSpec = ECNamedCurveTable.getParameterSpec(CURVE_SECP256R1);
+
+        byte[] prv = Hex.decode(string.getBytes());
+        ECPrivateKeySpec privateKeySpec = new ECPrivateKeySpec(new BigInteger(1, prv), ecParameterSpec);
+        KeyFactory kf = KeyFactory.getInstance(TYPE_ECDH, "SC");
+        return kf.generatePrivate(privateKeySpec);
+    }
+
+    public KeyPair ecdhKeyGen() throws NoSuchProviderException, NoSuchAlgorithmException, InvalidAlgorithmParameterException {
+        Security.insertProviderAt(new org.spongycastle.jce.provider.BouncyCastleProvider(), 1);
+
+        KeyPairGenerator kpgen = KeyPairGenerator.getInstance(TYPE_ECDH, "SC");
+        kpgen.initialize(new ECGenParameterSpec(CURVE_SECP256R1), new SecureRandom());
+
+        return kpgen.generateKeyPair();
+    }
+
+    public byte[] doEcdh(PrivateKey myPrvKey, PublicKey otherPubKey) throws NoSuchProviderException, NoSuchAlgorithmException, InvalidKeyException {
+        Security.insertProviderAt(new org.spongycastle.jce.provider.BouncyCastleProvider(), 1);
+
+        KeyAgreement ka = KeyAgreement.getInstance(TYPE_ECDH, "SC");
+        ka.init(myPrvKey);
+        ka.doPhase(otherPubKey, true);
+        return ka.generateSecret();
+    }
+
     public interface SecurityConstants {
         String KEYSTORE_PROVIDER_ANDROID_KEYSTORE = "AndroidKeyStore";
 
@@ -322,11 +398,13 @@ public class KeystoreUtil {
         String BLOCKING_MODE = "NONE";
 
         String TYPE_RSA = "RSA";
-        String TYPE_DSA = "DSA";
-        String TYPE_BKS = "BKS";
+        String TYPE_ECDH = "ECDH";
+        String TYPE_HMAC = "HmacSHA256";
 
         String SIGNATURE_SHA256withRSA = "SHA256withRSA";
         String SIGNATURE_SHA512withRSA = "SHA512withRSA";
+
+        String CURVE_SECP256R1 = "secp256r1";
 
         enum Alias {
             SELF_CERT,
