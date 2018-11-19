@@ -9,11 +9,13 @@ import com.google.gson.annotations.SerializedName;
  */
 public class MessageJoin {
     @SerializedName("sender")
-    String sender;
+    private String sender;
     @SerializedName("time")
-    String time;
-    @SerializedName("sN")
-    String signerNonce;
+    private String time;
+    @SerializedName("ver")
+    private String ver;
+    @SerializedName("cID")
+    private String localChainId;
 
     public String getSender() {
         return sender;
@@ -31,11 +33,19 @@ public class MessageJoin {
         this.time = time;
     }
 
-    public String getSignerNonce() {
-        return signerNonce;
+    public String getVer() {
+        return ver;
     }
 
-    public void setSignerNonce(String signerNonce) {
-        this.signerNonce = signerNonce;
+    public void setVer(String ver) {
+        this.ver = ver;
+    }
+
+    public String getLocalChainId() {
+        return localChainId;
+    }
+
+    public void setLocalChainId(String localChainId) {
+        this.localChainId = localChainId;
     }
 }

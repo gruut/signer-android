@@ -3,23 +3,21 @@ package com.gruutnetworks.gruutsigner.model;
 import com.google.gson.annotations.SerializedName;
 
 /**
- * Title: Response1 to Challenge
- * Description: Merger's response to identity verification request from Signer
- * Message Type: 0x56
+ * Title: Response2 to Challenge
+ * Description: Signer's response to Response1 from Merger
+ * Message Type: 0x57
  */
-public class MessageResponse1 {
+public class MessageResponse2 {
     @SerializedName("sender")
     private String sender;
     @SerializedName("time")
     private String time;
     @SerializedName("cert")
     private String cert;
-    @SerializedName("sN")
-    private String signerNonce;
     @SerializedName("dhpk")
     private String dhPubKey;
     @SerializedName("sig")
-    private String sig; // signature with signer's nonce, merger's nonce, dh1, time
+    private String sig; // signature with Signer's nonce, Merger's nonce, dh2, time
 
     public String getSender() {
         return sender;
@@ -43,14 +41,6 @@ public class MessageResponse1 {
 
     public void setCert(String cert) {
         this.cert = cert;
-    }
-
-    public String getSignerNonce() {
-        return signerNonce;
-    }
-
-    public void setSignerNonce(String signerNonce) {
-        this.signerNonce = signerNonce;
     }
 
     public String getDhPubKey() {

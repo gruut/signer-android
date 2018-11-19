@@ -1,39 +1,41 @@
 package com.gruutnetworks.gruutsigner.gruut;
 
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
+import java.util.Arrays;
 
-import static com.gruutnetworks.gruutsigner.gruut.MessageHeader.MSG_HEADER_LEN;
+import static com.gruutnetworks.gruutsigner.gruut.MessageHeader.*;
 
 public class Message {
 
-    private MessageHeader header; // 26 bytes
+    private MessageHeader header; // 32 bytes
     private byte[] compressedJsonMsg; // Compressed JSON message
     private byte[] signature;
 
+    /**
+     * Byte array to formatted message
+     * Warning! array's offset index and header's setter order are VERY strict.
+     * Do not reorder it.
+     * @param bytes received byte array
+     */
     public Message(byte[] bytes) {
-        ByteBuffer buffer = ByteBuffer.wrap(bytes);
-        buffer.order(ByteOrder.BIG_ENDIAN);
+        int offset = 0;
 
         MessageHeader header = new MessageHeader.Builder()
-                .setGruutConstant(buffer.get())
-                .setMainVersion((byte) (buffer.get(1) >> 4))
-                .setSubVersion((byte) (buffer.get() & 0x0f))
-                .setMsgType(buffer.get())
-                .setMacType(buffer.get())
-                .setTotalLen(buffer.getInt())
-                .setLocalChainId(buffer.getLong())
-                .setSender(buffer.getLong())
-                .setReserved(buffer.getShort())
+                .setGruutConstant(bytes[offset++])
+                .setMainVersion((byte) (bytes[offset] >> 4))
+                .setSubVersion((byte) (bytes[offset++] & 0x0f))
+                .setMsgType(bytes[offset++])
+                .setMacType(bytes[offset++])
+                .setCompressionType(bytes[offset++])
+                .setNotUsed(bytes[offset++])
+                .setTotalLen(Arrays.copyOfRange(bytes, offset, offset += HEADER_TOTAL_LEN_SIZE))
+                .setLocalChainId(Arrays.copyOfRange(bytes, offset, offset += HEADER_LOCAL_CHAIN_ID_SIZE))
+                .setSender(Arrays.copyOfRange(bytes, offset, offset += HEADER_SENDER_SIZE))
+                .setReserved(Arrays.copyOfRange(bytes, offset, offset += HEADER_RESERVED_SIZE))
                 .build();
 
-        byte[] jsonMsg = new byte[header.getTotalLen() - MSG_HEADER_LEN];
-        buffer.get(jsonMsg);
-
-        byte[] signature = new byte[buffer.remaining()];
-        buffer.get(signature);
-
-        buffer.clear();
+        byte[] jsonMsg = Arrays.copyOfRange(bytes, offset, offset += (header.getTotalLen() - MSG_HEADER_LEN));
+        byte[] signature = Arrays.copyOfRange(bytes, offset, bytes.length);
 
         this.header = header;
         this.compressedJsonMsg = jsonMsg;

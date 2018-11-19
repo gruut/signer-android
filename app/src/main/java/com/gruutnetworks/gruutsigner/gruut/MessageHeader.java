@@ -4,6 +4,10 @@ import java.nio.ByteBuffer;
 
 public class MessageHeader {
     public static final int MSG_HEADER_LEN = 32;
+    public static final int HEADER_TOTAL_LEN_SIZE = 4;
+    public static final int HEADER_LOCAL_CHAIN_ID_SIZE = 8;
+    public static final int HEADER_SENDER_SIZE = 8;
+    public static final int HEADER_RESERVED_SIZE = 6;
 
     private final byte gruutConstant;   // 8 bits
     private final byte mainVersion;     // 4 bits
@@ -12,10 +16,10 @@ public class MessageHeader {
     private final byte macType;         // 8 bits
     private final byte compressionType; // 8 bits
     private final byte notUsed;         // 8 bits
-    private final int totalLen;         // 32 bits
-    private final long localChainId;    // 64 bits
-    private final long sender;          // 64 bits
-    private final long reserved;        // 48 bits
+    private final byte[] totalLen;      // 32 bits
+    private final byte[] localChainId;  // 64 bits
+    private final byte[] sender;        // 64 bits
+    private final byte[] reserved;      // 48 bits
 
     private MessageHeader(Builder builder) {
         this.gruutConstant = builder.gruutConstant;
@@ -40,53 +44,18 @@ public class MessageHeader {
         byte version = (byte) (mainVersion << 4);
         version += subVersion;
         buffer.put(version);
-
         buffer.put(msgType);
         buffer.put(macType);
-        buffer.putInt(totalLen);
-        buffer.putLong(localChainId);
-        buffer.putLong(sender);
-        buffer.putLong(reserved);
+        buffer.put(compressionType);
+        buffer.put(notUsed);
+        buffer.put(totalLen);
+        buffer.put(localChainId);
+        buffer.put(sender);
+        buffer.put(reserved);
 
         byte[] bytes = buffer.array();
         buffer.clear();
         return bytes;
-    }
-
-    public byte getGruutConstant() {
-        return gruutConstant;
-    }
-
-    public byte getMainVersion() {
-        return mainVersion;
-    }
-
-    public byte getSubVersion() {
-        return subVersion;
-    }
-
-    public byte getMsgType() {
-        return msgType;
-    }
-
-    public byte getMacType() {
-        return macType;
-    }
-
-    public int getTotalLen() {
-        return totalLen;
-    }
-
-    public long getLocalChainId() {
-        return localChainId;
-    }
-
-    public long getSender() {
-        return sender;
-    }
-
-    public long getReserved() {
-        return reserved;
     }
 
     @Override
@@ -97,26 +66,31 @@ public class MessageHeader {
         str += "subVersion: " + subVersion + ", ";
         str += "msgType: " + msgType + ", ";
         str += "macType: " + macType + ", ";
-        str += "totalLen: " + totalLen + ", ";
-        str += "localChainId: " + localChainId + ", ";
-        str += "sender: " + sender + ", ";
-        str += "reserved: " + reserved + "}";
+        str += "compressionType: " + compressionType + ", ";
+        str += "notUsed: " + notUsed + ", ";
+        str += "totalLen: " + new String(totalLen) + ", ";
+        str += "localChainId: " + new String(localChainId) + ", ";
+        str += "sender: " + new String(sender) + ", ";
+        str += "reserved: " + new String(reserved) + "}";
         return str;
+    }
+
+    public int getTotalLen() {
+        return ByteBuffer.wrap(totalLen).getInt();
     }
 
     public static class Builder {
         private byte gruutConstant = 'G';
-        private long reserved = 0;
-
         private byte mainVersion;
         private byte subVersion;
         private byte msgType;
         private byte macType;
         private byte compressionType;
         private byte notUsed = 0;
-        private int totalLen;
-        private long localChainId;
-        private long sender;
+        private byte[] totalLen = new byte[HEADER_TOTAL_LEN_SIZE];
+        private byte[] localChainId = new byte[HEADER_LOCAL_CHAIN_ID_SIZE];
+        private byte[] sender = new byte[HEADER_SENDER_SIZE];
+        private byte[] reserved = new byte[HEADER_RESERVED_SIZE];
 
         public MessageHeader build() {
             return new MessageHeader(this);
@@ -152,23 +126,32 @@ public class MessageHeader {
             return this;
         }
 
-        public Builder setTotalLen(int totalLen) {
-            this.totalLen = totalLen;
+        public Builder setNotUsed(byte notUsed) {
+            this.notUsed = notUsed;
             return this;
         }
 
-        public Builder setLocalChainId(long localChainId) {
-            this.localChainId = localChainId;
+        public Builder setTotalLen(byte[] totalLen) {
+            System.arraycopy(totalLen, 0, this.totalLen,
+                    this.totalLen.length - totalLen.length, totalLen.length);
             return this;
         }
 
-        public Builder setSender(long sender) {
-            this.sender = sender;
+        public Builder setLocalChainId(byte[] localChainId) {
+            System.arraycopy(localChainId, 0, this.localChainId,
+                    this.localChainId.length - localChainId.length, localChainId.length);
             return this;
         }
 
-        public Builder setReserved(long reserved) {
-            this.reserved = reserved;
+        public Builder setSender(byte[] sender) {
+            System.arraycopy(sender, 0, this.sender,
+                    this.sender.length - sender.length, sender.length);
+            return this;
+        }
+
+        public Builder setReserved(byte[] reserved) {
+            System.arraycopy(reserved, 0, this.reserved,
+                    this.reserved.length - reserved.length, reserved.length);
             return this;
         }
     }
