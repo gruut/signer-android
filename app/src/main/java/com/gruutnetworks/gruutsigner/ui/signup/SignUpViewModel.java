@@ -7,13 +7,18 @@ import android.arch.lifecycle.MutableLiveData;
 import android.databinding.ObservableField;
 import android.support.annotation.NonNull;
 import android.util.Log;
+import com.gruutnetworks.gruutsigner.ConversationServiceGrpc;
 import com.gruutnetworks.gruutsigner.R;
+import com.gruutnetworks.gruutsigner.StreamingOutputCallResponse;
 import com.gruutnetworks.gruutsigner.model.MessageJoin;
 import com.gruutnetworks.gruutsigner.model.MessageResponse1;
 import com.gruutnetworks.gruutsigner.model.SignUpResponse;
 import com.gruutnetworks.gruutsigner.model.SignUpSourceData;
 import com.gruutnetworks.gruutsigner.restApi.GaApi;
 import com.gruutnetworks.gruutsigner.util.*;
+import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
+import io.grpc.stub.StreamObserver;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -98,7 +103,7 @@ public class SignUpViewModel extends AndroidViewModel implements LifecycleObserv
         });
     }
 
-    public void onJoinClickButton() {
+    public void joiningTest() {
         loading.setValue(true);
 
         MessageJoin msgJoin = new MessageJoin();

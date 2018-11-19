@@ -16,8 +16,6 @@
 package com.gruutnetworks.gruutsigner.util;
 
 import android.content.Context;
-import android.os.Build;
-import android.security.KeyPairGeneratorSpec;
 import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyProperties;
 import android.util.Base64;
@@ -95,34 +93,16 @@ public class KeystoreUtil {
         // to the KeyPairGenerator.
         AlgorithmParameterSpec spec;
 
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
-            // Below Android M, use the KeyPairGeneratorSpec.Builder.
-
-            spec = new KeyPairGeneratorSpec.Builder(context)
-                    // You'll use the alias later to retrieve the key.  It's a key for the key!
-                    .setAlias(mAlias)
-                    // The subject used for the self-signed certificate of the generated pair
-                    .setSubject(new X500Principal("CN=" + mAlias))
-                    // The serial number used for the self-signed certificate of the
-                    // generated pair.
-                    .setSerialNumber(BigInteger.valueOf(1337))
-                    // Date range of validity for the generated pair.
-                    .setStartDate(start.getTime())
-                    .setEndDate(end.getTime())
-                    .build();
-
-        } else {
-            // On Android M or above, use the KeyGenparameterSpec.Builder and specify permitted
-            // properties  and restrictions of the key.
-            spec = new KeyGenParameterSpec.Builder(mAlias, KeyProperties.PURPOSE_SIGN)
-                    .setCertificateSubject(new X500Principal("CN=" + mAlias))
-                    .setDigests(KeyProperties.DIGEST_SHA256)
-                    .setSignaturePaddings(KeyProperties.SIGNATURE_PADDING_RSA_PKCS1)
-                    .setCertificateSerialNumber(BigInteger.valueOf(1337))
-                    .setCertificateNotBefore(start.getTime())
-                    .setCertificateNotAfter(end.getTime())
-                    .build();
-        }
+        // On Android M or above, use the KeyGenparameterSpec.Builder and specify permitted
+        // properties  and restrictions of the key.
+        spec = new KeyGenParameterSpec.Builder(mAlias, KeyProperties.PURPOSE_SIGN)
+                .setCertificateSubject(new X500Principal("CN=" + mAlias))
+                .setDigests(KeyProperties.DIGEST_SHA256)
+                .setSignaturePaddings(KeyProperties.SIGNATURE_PADDING_RSA_PKCS1)
+                .setCertificateSerialNumber(BigInteger.valueOf(1337))
+                .setCertificateNotBefore(start.getTime())
+                .setCertificateNotAfter(end.getTime())
+                .build();
 
         kpGenerator.initialize(spec);
 
@@ -337,8 +317,9 @@ public class KeystoreUtil {
      * NOTE: This public key string is came from Cryptopp. So we need some post processing.
      * remove "h" at last
      * insert "0" at first
+     *
      * @param string
-     * @return\
+     * @return
      */
     public PublicKey stringToPubkey(String string) throws NoSuchProviderException, NoSuchAlgorithmException, InvalidKeySpecException {
         Security.insertProviderAt(new org.spongycastle.jce.provider.BouncyCastleProvider(), 1);
@@ -388,7 +369,13 @@ public class KeystoreUtil {
         KeyAgreement ka = KeyAgreement.getInstance(TYPE_ECDH, "SC");
         ka.init(myPrvKey);
         ka.doPhase(otherPubKey, true);
-        return ka.generateSecret();
+        return encodeSha256(ka.generateSecret());
+    }
+
+    private byte[] encodeSha256(byte[] sharedSecretKey) throws NoSuchAlgorithmException {
+        MessageDigest md = MessageDigest.getInstance(TYPE_SHA256);
+        md.update(sharedSecretKey);
+        return Hex.encode(md.digest());
     }
 
     public interface SecurityConstants {
@@ -399,6 +386,7 @@ public class KeystoreUtil {
 
         String TYPE_RSA = "RSA";
         String TYPE_ECDH = "ECDH";
+        String TYPE_SHA256 = "SHA-256";
         String TYPE_HMAC = "HmacSHA256";
 
         String SIGNATURE_SHA256withRSA = "SHA256withRSA";
