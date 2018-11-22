@@ -9,13 +9,53 @@ import com.google.gson.annotations.SerializedName;
  */
 public class MessageRequestSignature {
     @SerializedName("time")
-    String time;
+    private String time;
     @SerializedName("mID")
-    String mID;
+    private String mID;
     @SerializedName("cID")
-    String chainId;
+    private String chainId;
     @SerializedName("hgt")
-    String blockHeight;
+    private String blockHeight;
     @SerializedName("txrt")
-    String transaction;
+    private String transaction;
+
+    public String getTime() {
+        return time;
+    }
+
+    public void setTime(String time) {
+        this.time = time;
+    }
+
+    public String getmID() {
+        return mID;
+    }
+
+    public void setmID(String mID) {
+        this.mID = mID;
+    }
+
+    public String getChainId() {
+        return chainId;
+    }
+
+    public void setChainId(String chainId) {
+        this.chainId = chainId;
+    }
+
+    public String getBlockHeight() {
+        return blockHeight;
+    }
+
+    public void setBlockHeight(String blockHeight) {
+        this.blockHeight = blockHeight;
+    }
+
+    public String getTransaction() {
+        return transaction;
+    }
+
+    public void setTransaction(String transaction) {
+        this.transaction = transaction;
+    }
 }

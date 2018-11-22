@@ -4,7 +4,7 @@ option java_multiple_files = true;
 option java_package = "com.gruutnetworks.gruutsigner";
 option java_outer_classname = "GruutNetwork";
 
-package gruutnetwork;
+package grpc_signer;
 
 service GruutNetworkService {
     rpc join(GrpcMsgJoin) returns (GrpcMsgChallenge) {}

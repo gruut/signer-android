@@ -8,6 +8,7 @@ import android.util.Log;
 import com.google.gson.Gson;
 import com.google.protobuf.ByteString;
 import com.gruutnetworks.gruutsigner.*;
+import com.gruutnetworks.gruutsigner.Identity;
 import com.gruutnetworks.gruutsigner.gruut.Merger;
 import com.gruutnetworks.gruutsigner.gruut.MergerList;
 import com.gruutnetworks.gruutsigner.gruut.Message;
@@ -17,6 +18,7 @@ import com.gruutnetworks.gruutsigner.util.*;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.StatusRuntimeException;
+import io.grpc.stub.StreamObserver;
 
 import java.io.IOException;
 import java.security.*;
@@ -47,6 +49,8 @@ public class DashboardViewModel extends AndroidViewModel {
 
     private KeyPair keyPair;
 
+    private Gson gson = new Gson();
+
     public DashboardViewModel(@NonNull Application application) {
         super(application);
         this.keystoreUtil = KeystoreUtil.getInstance();
@@ -64,10 +68,84 @@ public class DashboardViewModel extends AndroidViewModel {
         GrpcMsgChallenge grpcMsgChallenge = requestJoin(channel1);
         GrpcMsgResponse2 grpcMsgResponse2 = sendPublicKey(channel1, grpcMsgChallenge);
         GrpcMsgAccept grpcMsgAccept = sendSuccess(channel1, grpcMsgResponse2);
+
+        Message msg = new Message(grpcMsgAccept.getMessage().toByteArray());
+        MessageAccept messageAccept = gson.fromJson(new String(msg.getCompressedJsonMsg()), MessageAccept.class);
+        if (messageAccept.isVal()) {
+            standBy(channel1);
+        }
     }
 
     private ManagedChannel setChannel(Merger merger) {
         return ManagedChannelBuilder.forAddress(merger.getUri(), merger.getPort()).usePlaintext().build();
+    }
+
+    private void standBy(ManagedChannel channel) {
+        GruutNetworkServiceGrpc.GruutNetworkServiceStub stub = GruutNetworkServiceGrpc.newStub(channel);
+        StreamObserver<Identity> standBy = stub.openChannel(new StreamObserver<GrpcMsgReqSsig>() {
+            @Override
+            public void onNext(GrpcMsgReqSsig value) {
+                // Signature request from Merger
+                sendSignature(channel, value);
+            }
+
+            @Override
+            public void onError(Throwable t) {
+
+            }
+
+            @Override
+            public void onCompleted() {
+
+            }
+        });
+
+        standBy.onNext(Identity.newBuilder().setSender(ByteString.copyFrom(sender.getBytes())).build());
+        Log.d(TAG, "Request to open the channel");
+    }
+
+    private void sendSignature(ManagedChannel channel, GrpcMsgReqSsig grpcMsgReqSsig) {
+        Message msg = new Message(grpcMsgReqSsig.getMessage().toByteArray());
+        String signature;
+        try {
+            // TODO 임시블록 검증하는 부분이 필요함.
+            signature = keystoreUtil.signData(new String(msg.getCompressedJsonMsg()));
+            testData.postValue("Signature ");
+        } catch (Exception e) {
+            testData.postValue("Error... signing...\n" + e.getMessage());
+            Log.e(TAG, "Error... signing...\n" + e.getMessage());
+            return;
+        }
+
+        MessageSignature messageSignature = new MessageSignature();
+        messageSignature.setSid(sender);
+        messageSignature.setTime(AuthUtil.getTimestamp());
+        messageSignature.setSignature(signature);
+
+        MessageHeader header = new MessageHeader.Builder()
+                .setMsgType(TypeMsg.MSG_SSIG.getType())
+                .setMacType(TypeMac.HMAC_SHA256.getType())
+                .setTotalLen(MSG_HEADER_LEN + messageSignature.getJson().length)
+                .setLocalChainId(localChainId.getBytes())
+                .setSender(sender.getBytes())
+                .build();
+
+        Message message = new Message(header, messageSignature.getJson(), null);
+        byte[] macSig = keystoreUtil.getMacSig(preferenceUtil.getString(PreferenceUtil.Key.HMAC_STR),
+                message.convertToByteArrWithoutSig());
+
+        message.setSignature(macSig);
+
+        GruutNetworkServiceGrpc.GruutNetworkServiceBlockingStub stub = GruutNetworkServiceGrpc.newBlockingStub(channel);
+        GrpcMsgSsig grpcMsgSsig = GrpcMsgSsig.newBuilder()
+                .setMessage(ByteString.copyFrom(message.convertToByteArr()))
+                .build();
+
+        try {
+            NoReply noReply = stub.withDeadlineAfter(3, TimeUnit.SECONDS).sigSend(grpcMsgSsig);
+        } catch (StatusRuntimeException e) {
+            Log.e(TAG, "Timeout... sendSignature");
+        }
     }
 
     private GrpcMsgChallenge requestJoin(ManagedChannel channel) {
@@ -92,15 +170,15 @@ public class DashboardViewModel extends AndroidViewModel {
                 .build();
 
         try {
-            return stub.withDeadlineAfter(3, TimeUnit.SECONDS).join(grpcMsgJoin);
+            return stub.withDeadlineAfter(15, TimeUnit.SECONDS).join(grpcMsgJoin);
         } catch (StatusRuntimeException e) {
             Log.e(TAG, "Timeout... requestJoin");
+            e.printStackTrace();
             return null;
         }
     }
 
     private GrpcMsgResponse2 sendPublicKey(ManagedChannel channel, GrpcMsgChallenge challenge) {
-        Gson gson = new Gson();
         //Message msg = new Message(challenge.getMessage().toByteArray());
         //MessageChallenge messageChallenge = gson.fromJson(new String(msg.getCompressedJsonMsg()), MessageChallenge.class);
 
@@ -171,7 +249,6 @@ public class DashboardViewModel extends AndroidViewModel {
     }
 
     private GrpcMsgAccept sendSuccess(ManagedChannel channel, GrpcMsgResponse2 response2) {
-        Gson gson = new Gson();
         //Message msg = new Message(response2.getMessage().toByteArray());
         //MessageResponse2 messageResponse2 = gson.fromJson(new String(msg.getCompressedJsonMsg()), MessageResponse2.class);
 
@@ -245,4 +322,14 @@ public class DashboardViewModel extends AndroidViewModel {
         return testData;
     }
 
+    @Override
+    protected void onCleared() {
+        if (!channel1.isShutdown()) {
+            channel1.shutdown();
+        }
+
+        if (!channel2.isShutdown()) {
+            channel2.shutdown();
+        }
+    }
 }
