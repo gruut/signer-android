@@ -19,3 +19,13 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+-dontwarn retrofit2.**
+-dontwarn io.grpc.**
+-dontwarn okhttp3.**
+-dontwarn org.spongycastle.**
+-dontwarn org.junit.rules.DisableOnDebug
+-dontwarn org.junit.internal.runners.statements.FailOnTimeout
+-dontwarn com.google.errorprone.annotations.**
+-dontwarn com.google.common.util.concurrent.**
+-dontwarn android.test.**
