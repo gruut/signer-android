@@ -60,7 +60,6 @@ import java.security.cert.X509Certificate;
 import java.security.interfaces.ECPublicKey;
 import java.security.spec.AlgorithmParameterSpec;
 import java.security.spec.ECGenParameterSpec;
-import java.security.spec.ECPoint;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
@@ -316,7 +315,6 @@ public class KeystoreUtil {
 
         // BEGIN_INCLUDE(verify_data)
         // Verify the data.
-        Log.d("DashboardViewModel", "with cert pub: " + certificate.getPublicKey());
         s.initVerify(certificate.getPublicKey());
         s.update(data);
         return s.verify(signature);
@@ -384,7 +382,6 @@ public class KeystoreUtil {
 
         // BEGIN_INCLUDE(verify_data)
         // Verify the data.
-        Log.d("DashboardViewModel", "without cert pub: " + new String(ks.getCertificate(mAlias).getPublicKey().getEncoded()));
         s.initVerify(ks.getCertificate(mAlias).getPublicKey());
         s.update(data);
         return s.verify(signature);
@@ -395,34 +392,23 @@ public class KeystoreUtil {
         mAlias = alias.name();
     }
 
-    public String pubkeyToString(PublicKey pubKey) {
+    public byte[] pubKeyToPointXhex(PublicKey pubKey) {
         ECPublicKey key = (ECPublicKey) pubKey;
-        ECPoint pubPoint = key.getW();
-
-        return pubPoint.getAffineX().toString(1) + pubPoint.getAffineY().toString(1);
+        return Hex.encode(key.getW().getAffineX().toByteArray());
     }
 
-    /**
-     * NOTE: This public key string is came from Cryptopp. So we need some post processing.
-     * remove "h" at last
-     * insert "0" at first
-     *
-     * @param string
-     * @return
-     */
-    public PublicKey stringToPubkey(String string) throws NoSuchProviderException, NoSuchAlgorithmException, InvalidKeySpecException {
-        Security.addProvider(new org.spongycastle.jce.provider.BouncyCastleProvider());
-        if (string.charAt(0) != '0') {
-            char[] chars = new char[string.length()];
-            chars[0] = '0';
-            string.getChars(0, string.length() - 1, chars, 1);
-            string = new String(chars);
-        }
+    public byte[] pubKeyToPointYhex(PublicKey pubKey) {
+        ECPublicKey key = (ECPublicKey) pubKey;
+        return Hex.encode(key.getW().getAffineY().toByteArray());
+    }
 
+    public PublicKey ecPointToPubkey(String x, String y) throws NoSuchProviderException, NoSuchAlgorithmException, InvalidKeySpecException {
         ECParameterSpec ecParameterSpec = ECNamedCurveTable.getParameterSpec(CURVE_SECP256R1);
         ECCurve curve = ecParameterSpec.getCurve();
 
-        org.spongycastle.math.ec.ECPoint point = curve.decodePoint(Hex.decode(string));
+        String str = "04" + x + y; // 04 for encoding type
+        org.spongycastle.math.ec.ECPoint point = curve.decodePoint(Hex.decode(str));
+
         ECPublicKeySpec publicKeySpec = new ECPublicKeySpec(point, ecParameterSpec);
         KeyFactory kf = KeyFactory.getInstance(TYPE_ECDH, "SC");
 

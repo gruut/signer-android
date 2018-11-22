@@ -9,6 +9,7 @@ import com.google.gson.Gson;
 import com.google.protobuf.ByteString;
 import com.gruutnetworks.gruutsigner.*;
 import com.gruutnetworks.gruutsigner.gruut.Merger;
+import com.gruutnetworks.gruutsigner.gruut.MergerList;
 import com.gruutnetworks.gruutsigner.gruut.Message;
 import com.gruutnetworks.gruutsigner.gruut.MessageHeader;
 import com.gruutnetworks.gruutsigner.model.*;
@@ -57,10 +58,12 @@ public class DashboardViewModel extends AndroidViewModel {
             return;
         }
 
-//        channel1 = setChannel(MergerList.MERGER_LIST.get(0));
+        channel1 = setChannel(MergerList.MERGER_LIST.get(0));
+
         // TODO 중간에 null이 나오면 다시 처음부터 시작...
-//        GrpcMsgChallenge grpcMsgChallenge = requestJoin(channel1);
-        sendSuccess(channel1, null);
+        GrpcMsgChallenge grpcMsgChallenge = requestJoin(channel1);
+        GrpcMsgResponse2 grpcMsgResponse2 = sendPublicKey(channel1, grpcMsgChallenge);
+        GrpcMsgAccept grpcMsgAccept = sendSuccess(channel1, grpcMsgResponse2);
     }
 
     private ManagedChannel setChannel(Merger merger) {
@@ -119,12 +122,11 @@ public class DashboardViewModel extends AndroidViewModel {
                 keyPair = keystoreUtil.ecdhKeyGen();
             }
 
-            String pubKey = keystoreUtil.pubkeyToString(keyPair.getPublic());
-            Log.d(TAG, "[Pubkey]" + pubKey);
-
+            String x = new String(keystoreUtil.pubKeyToPointXhex(keyPair.getPublic()));
+            String y = new String(keystoreUtil.pubKeyToPointYhex(keyPair.getPublic()));
 
             String time = AuthUtil.getTimestamp();
-            String signature = keystoreUtil.signData(mergerNonce + signerNonce + pubKey + time);
+            String signature = keystoreUtil.signData(mergerNonce + signerNonce + x + y + time);
             String cert = keystoreUtil.getCert(KeystoreUtil.SecurityConstants.Alias.GRUUT_AUTH);
 
             if (cert.isEmpty()) {
@@ -135,11 +137,11 @@ public class DashboardViewModel extends AndroidViewModel {
             MessageResponse1 response1 = new MessageResponse1();
             response1.setSignerNonce(signerNonce);
             response1.setSig(signature);
-            response1.setDhPubKey(pubKey);
+            response1.setDhPubKeyX(x);
+            response1.setDhPubKeyY(y);
             response1.setSender(sender);
             response1.setTime(time);
             response1.setCert(cert);
-
 
             MessageHeader header = new MessageHeader.Builder()
                     .setMsgType(TypeMsg.MSG_RESPONSE_1.getType())
@@ -180,29 +182,30 @@ public class DashboardViewModel extends AndroidViewModel {
             if (keyPair == null) {
                 keyPair = keystoreUtil.ecdhKeyGen();
             }
-            String dh2 = new String(keyPair.getPublic().getEncoded());
             String time = AuthUtil.getTimestamp();
+
+            String x = new String(keystoreUtil.pubKeyToPointXhex(keyPair.getPublic()));
+            String y = new String(keystoreUtil.pubKeyToPointYhex(keyPair.getPublic()));
+
             MessageResponse2 messageResponse2 = new MessageResponse2();
             messageResponse2.setCert(keystoreUtil.getCert(KeystoreUtil.SecurityConstants.Alias.GRUUT_AUTH));
-            messageResponse2.setDhPubKey(dh2);
-            messageResponse2.setSig(keystoreUtil.signData(mergerNonce + signerNonce + dh2 + time)); // Nm Ns DH2 t
+            messageResponse2.setDhPubKeyX(x);
+            messageResponse2.setDhPubKeyY(y);
+            messageResponse2.setSig(keystoreUtil.signData(mergerNonce + signerNonce + x + y + time)); // Nm Ns DH2 t
             messageResponse2.setTime(time);
             messageResponse2.setSender("Merger");
 
-            String test = mergerNonce + signerNonce + dh2 + time;
-            String sig = keystoreUtil.signData(test);
-            Log.d(TAG, "without cert: " + keystoreUtil.verifyData(test, sig));
-            Log.d(TAG, "with cert: " +keystoreUtil.verifyData(test, sig, keystoreUtil.getCert(KeystoreUtil.SecurityConstants.Alias.GRUUT_AUTH)));
-
             // signature 검증
-            String input = mergerNonce + signerNonce + messageResponse2.getDhPubKey() + messageResponse2.getTime();
+            String input = mergerNonce + signerNonce + messageResponse2.getDhPubKeyX() +
+                    messageResponse2.getDhPubKeyY() + messageResponse2.getTime();
+
             if (!keystoreUtil.verifyData(input, messageResponse2.getSig(), messageResponse2.getCert())) {
                 Log.e(TAG, "Signature is invalid.");
                 return null;
             }
 
             // HMAC KEY 계산
-            PublicKey mergerPubKey = keystoreUtil.stringToPubkey(messageResponse2.getDhPubKey());
+            PublicKey mergerPubKey = keystoreUtil.ecPointToPubkey(x, y);
             byte[] hmac = keystoreUtil.doEcdh(keyPair.getPrivate(), mergerPubKey);
             preferenceUtil.put(PreferenceUtil.Key.HMAC_STR, new String(hmac));
 

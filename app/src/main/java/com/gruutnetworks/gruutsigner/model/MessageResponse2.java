@@ -14,8 +14,10 @@ public class MessageResponse2 {
     private String time;
     @SerializedName("cert")
     private String cert;
-    @SerializedName("dhpk")
-    private String dhPubKey;
+    @SerializedName("dhx")
+    private String dhPubKeyX;
+    @SerializedName("dhy")
+    private String dhPubKeyY;
     @SerializedName("sig")
     private String sig; // signature with Signer's nonce, Merger's nonce, dh2, time
 
@@ -43,12 +45,20 @@ public class MessageResponse2 {
         this.cert = cert;
     }
 
-    public String getDhPubKey() {
-        return dhPubKey;
+    public String getDhPubKeyX() {
+        return dhPubKeyX;
     }
 
-    public void setDhPubKey(String dhPubKey) {
-        this.dhPubKey = dhPubKey;
+    public void setDhPubKeyX(String dhPubKeyX) {
+        this.dhPubKeyX = dhPubKeyX;
+    }
+
+    public String getDhPubKeyY() {
+        return dhPubKeyY;
+    }
+
+    public void setDhPubKeyY(String dhPubKeyY) {
+        this.dhPubKeyY = dhPubKeyY;
     }
 
     public String getSig() {
