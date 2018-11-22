@@ -21,12 +21,28 @@ import android.security.keystore.KeyProperties;
 import android.util.Base64;
 import android.util.Log;
 import org.jetbrains.annotations.TestOnly;
+import org.spongycastle.asn1.DERBitString;
+import org.spongycastle.asn1.DERSet;
+import org.spongycastle.asn1.pkcs.Attribute;
+import org.spongycastle.asn1.pkcs.CertificationRequest;
+import org.spongycastle.asn1.pkcs.CertificationRequestInfo;
+import org.spongycastle.asn1.pkcs.PKCSObjectIdentifiers;
+import org.spongycastle.asn1.x500.X500Name;
+import org.spongycastle.asn1.x500.X500NameBuilder;
+import org.spongycastle.asn1.x500.style.BCStyle;
+import org.spongycastle.asn1.x509.AlgorithmIdentifier;
+import org.spongycastle.asn1.x509.SubjectPublicKeyInfo;
+import org.spongycastle.crypto.params.AsymmetricKeyParameter;
+import org.spongycastle.crypto.util.PublicKeyFactory;
+import org.spongycastle.crypto.util.SubjectPublicKeyInfoFactory;
 import org.spongycastle.jce.ECNamedCurveTable;
 import org.spongycastle.jce.spec.ECParameterSpec;
 import org.spongycastle.jce.spec.ECPrivateKeySpec;
 import org.spongycastle.jce.spec.ECPublicKeySpec;
 import org.spongycastle.math.ec.ECCurve;
 import org.spongycastle.util.encoders.Hex;
+import org.spongycastle.util.io.pem.PemObject;
+import org.spongycastle.util.io.pem.PemWriter;
 
 import javax.crypto.KeyAgreement;
 import javax.crypto.Mac;
@@ -34,6 +50,7 @@ import javax.crypto.spec.SecretKeySpec;
 import javax.security.auth.x500.X500Principal;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.security.*;
@@ -135,7 +152,7 @@ public class KeystoreUtil {
             certificateString = certificateString.replace("-----BEGIN CERTIFICATE-----", "")
                     .replace("-----END CERTIFICATE-----", ""); // NEED FOR PEM FORMAT CERT STRING
             byte[] certificateData = Base64.decode(certificateString, Base64.NO_WRAP);
-            cf = CertificateFactory.getInstance("X509", "SC");
+            cf = CertificateFactory.getInstance("X509", "BC");
             certificate = (X509Certificate) cf.generateCertificate(new ByteArrayInputStream(certificateData));
         }
         return certificate;
@@ -168,24 +185,39 @@ public class KeystoreUtil {
     }
 
     /**
-     * @return Get Public key with head and footer tags.
+     * Generate CSR with stored key
+     *
+     * @return CSR pem string
      */
-    public String getPublicKey() throws KeyStoreException, CertificateException, NoSuchAlgorithmException, IOException {
-        // BEGIN_INCLUDE(sign_load_keystore)
+    public String generateCsr() throws KeyStoreException, CertificateException, NoSuchAlgorithmException, IOException {
         KeyStore ks = KeyStore.getInstance(KEYSTORE_PROVIDER_ANDROID_KEYSTORE);
-
-        // Weird artifact of Java API.  If you don't have an InputStream to load, you still need
-        // to call "load", or it'll crash.
         ks.load(null);
+        byte[] pubKey = ks.getCertificate(mAlias).getPublicKey().getEncoded();
 
-        // Load the public from the Android Key Store
-        ks.getCertificate(mAlias).getPublicKey();
+        X500NameBuilder nameBuilder = new X500NameBuilder(X500Name.getDefaultStyle());
+        nameBuilder.addRDN(BCStyle.CN, "Signer");
 
-        String pubKeyWithTag = "-----BEGIN PUBLIC KEY-----\n";
-        pubKeyWithTag += Base64.encodeToString(ks.getCertificate(mAlias).getPublicKey().getEncoded(), Base64.NO_WRAP);
-        pubKeyWithTag += "\n-----END PUBLIC KEY-----\n";
+        AsymmetricKeyParameter pubKeyParam = PublicKeyFactory.createKey(pubKey);
+        SubjectPublicKeyInfo publicKeyInfo = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(pubKeyParam);
+        CertificationRequestInfo requestInfo =
+                new CertificationRequestInfo(nameBuilder.build(), publicKeyInfo, null);
 
-        return pubKeyWithTag;
+        AlgorithmIdentifier signatureAi = new AlgorithmIdentifier(PKCSObjectIdentifiers.sha256WithRSAEncryption);
+
+        Attribute attribute = new Attribute(PKCSObjectIdentifiers.pkcs_9_at_extensionRequest, new DERSet());
+
+        CertificationRequest certificationRequest
+                = new CertificationRequest(requestInfo, signatureAi, new DERBitString(attribute));
+
+        String type = "CERTIFICATE REQUEST";
+        PemObject pemObject = new PemObject(type, certificationRequest.getEncoded());
+        StringWriter str = new StringWriter();
+        PemWriter pemWriter = new PemWriter(str);
+        pemWriter.writeObject(pemObject);
+        pemWriter.close();
+        str.close();
+
+        return str.toString();
     }
 
     /**

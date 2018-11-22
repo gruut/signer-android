@@ -41,7 +41,7 @@ public class SignUpViewModel extends AndroidViewModel implements LifecycleObserv
     public void onSignUpClickButton() {
         loading.setValue(true);
 
-        String pubKey = getPublicKey();
+        String pubKey = generateCsr();
         String pid = phoneNum.get();
 
         if (pubKey == null || pubKey.isEmpty()) {
@@ -64,6 +64,11 @@ public class SignUpViewModel extends AndroidViewModel implements LifecycleObserv
                 if (response.body() != null) {
                     switch (response.body().getCode()) {
                         case 200:
+                            if (response.body().getPem().isEmpty()) {
+                                snackbarMessage.setValue(R.string.sign_up_error_cert);
+                                break;
+                            }
+
                             if (storeCertificate(response.body().getPem())) {
                                 preferenceUtil.put(PreferenceUtil.Key.SID_INT, response.body().getNid());
                                 navigateToDashboard.call();
@@ -99,17 +104,17 @@ public class SignUpViewModel extends AndroidViewModel implements LifecycleObserv
     }
 
     /**
-     * Get public key if key pair exists
+     * Get CSR if key pair exists
      * and generate key pair if none exists.
      *
-     * @return generated public key with tag
+     * @return generated CSR with tag
      */
-    private String getPublicKey() {
+    private String generateCsr() {
         try {
             if (!keystoreUtil.isKeyPairExist()) {
                 keystoreUtil.createKeys(getApplication().getApplicationContext());
             }
-            return keystoreUtil.getPublicKey();
+            return keystoreUtil.generateCsr();
         } catch (Exception e) {
             Log.e(TAG, e.getMessage());
         }

@@ -7,11 +7,11 @@ public class SignUpSourceData {
     @SerializedName("phone")
     private String phone;
 
-    @SerializedName("publicKey")
-    private String publicKey;
+    @SerializedName("csr")
+    private String csr;
 
-    public SignUpSourceData(String phone, String publicKey) {
+    public SignUpSourceData(String phone, String csr) {
         this.phone = phone;
-        this.publicKey = publicKey;
+        this.csr = csr;
     }
 }
