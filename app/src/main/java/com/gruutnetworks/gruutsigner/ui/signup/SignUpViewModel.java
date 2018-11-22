@@ -8,20 +8,16 @@ import android.databinding.ObservableField;
 import android.support.annotation.NonNull;
 import android.util.Log;
 import com.gruutnetworks.gruutsigner.R;
-import com.gruutnetworks.gruutsigner.model.MessageJoin;
-import com.gruutnetworks.gruutsigner.model.MessageResponse1;
 import com.gruutnetworks.gruutsigner.model.SignUpResponse;
 import com.gruutnetworks.gruutsigner.model.SignUpSourceData;
 import com.gruutnetworks.gruutsigner.restApi.GaApi;
-import com.gruutnetworks.gruutsigner.util.*;
+import com.gruutnetworks.gruutsigner.util.KeystoreUtil;
+import com.gruutnetworks.gruutsigner.util.PreferenceUtil;
+import com.gruutnetworks.gruutsigner.util.SingleLiveEvent;
+import com.gruutnetworks.gruutsigner.util.SnackbarMessage;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
-
-import java.security.InvalidAlgorithmParameterException;
-import java.security.KeyPair;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 
 public class SignUpViewModel extends AndroidViewModel implements LifecycleObserver {
 
@@ -99,44 +95,7 @@ public class SignUpViewModel extends AndroidViewModel implements LifecycleObserv
     }
 
     public void joiningTest() {
-        loading.setValue(true);
-
-        MessageJoin msgJoin = new MessageJoin();
-        msgJoin.setTime(AuthUtil.getTimestamp());
-        msgJoin.setSender(preferenceUtil.getString(PreferenceUtil.Key.SID_INT));
-        // TODO send join msg
-
-        // TODO get MSG_CHALLENGE
-
-        try {
-            KeyPair ecdhKeyPair = keystoreUtil.ecdhKeyGen();
-            String pubKey = keystoreUtil.pubkeyToString(ecdhKeyPair.getPublic());
-            MessageResponse1 response1 = new MessageResponse1();
-            response1.setSig("signature");  // TODO sign with MSG_CHALLENGE data
-            response1.setSignerNonce(AuthUtil.getNonce());
-            response1.setDhPubKey(pubKey);
-            response1.setTime(AuthUtil.getTimestamp());
-            response1.setSender(preferenceUtil.getString(PreferenceUtil.Key.SID_INT));
-        } catch (NoSuchProviderException e) {
-            e.printStackTrace();
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        } catch (InvalidAlgorithmParameterException e) {
-            e.printStackTrace();
-        }
-        // TODO send response 1
-
-        // get MSG_RESPONSE_2
-        // validate sig2
-
-        // get HMAC KEY
-
-        // send MSG_SUCCESS
-        // get MSG_ACCEPT
-
-        // Add Merger on list
-
-
+        navigateToDashboard.call();
     }
 
     /**

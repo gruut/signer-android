@@ -42,7 +42,7 @@ public class DashboardFragment extends Fragment {
         TextView tvLogMerger1 = binding.tvLogMerger1;
         tvLogMerger1.setMovementMethod(new ScrollingMovementMethod());
 
-        viewModel.getTestData().observe(this, tvLogMerger1::append);
+        viewModel.getTestData().observe(this, text -> tvLogMerger1.append("\n" + text));
     }
 
 }

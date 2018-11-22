@@ -1,7 +1,7 @@
 package com.gruutnetworks.gruutsigner.model;
 
 public enum TypeMac {
-    RAS         ((byte) 0x00),
+    RSA         ((byte) 0x00),
     ECDSA       ((byte) 0x01),
     EdDSA       ((byte) 0x02),
     Schnorr     ((byte) 0x03),

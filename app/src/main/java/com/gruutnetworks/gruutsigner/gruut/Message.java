@@ -15,6 +15,7 @@ public class Message {
      * Byte array to formatted message
      * Warning! array's offset index and header's setter order are VERY strict.
      * Do not reorder it.
+     *
      * @param bytes received byte array
      */
     public Message(byte[] bytes) {
@@ -48,21 +49,32 @@ public class Message {
         this.signature = signature;
     }
 
-    public byte[] covertToByteArr() {
+    public byte[] convertToByteArr() {
         int totalLength = header.getTotalLen();
 
-        if (signature != null) {
-            totalLength += signature.length;
+        if (signature == null) {
+            return convertToByteArrWithoutSig();
         }
+
+        totalLength += signature.length;
+        ByteBuffer buffer = ByteBuffer.allocate(totalLength);
+        buffer.clear();
+        buffer.put(header.convertToByteArr());
+        buffer.put(compressedJsonMsg);
+        buffer.put(signature);
+
+        byte[] bytes = buffer.array();
+        buffer.clear();
+        return bytes;
+    }
+
+    public byte[] convertToByteArrWithoutSig() {
+        int totalLength = header.getTotalLen();
 
         ByteBuffer buffer = ByteBuffer.allocate(totalLength);
         buffer.clear();
         buffer.put(header.convertToByteArr());
         buffer.put(compressedJsonMsg);
-
-        if (signature != null) {
-            buffer.put(signature);
-        }
 
         byte[] bytes = buffer.array();
         buffer.clear();
@@ -95,6 +107,11 @@ public class Message {
 
     @Override
     public String toString() {
-        return header.toString() + "\njson: " + new String(compressedJsonMsg) + "\nsignature: " + new String(signature);
+        String str = header.toString();
+        str += "\njson: " + new String(compressedJsonMsg);
+        if (signature != null) {
+            str += "\nsignature: " + new String(signature);
+        }
+        return str;
     }
 }

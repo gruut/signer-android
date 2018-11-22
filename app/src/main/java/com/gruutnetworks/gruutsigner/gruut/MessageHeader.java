@@ -1,5 +1,11 @@
 package com.gruutnetworks.gruutsigner.gruut;
 
+import com.gruutnetworks.gruutsigner.model.TypeComp;
+import com.gruutnetworks.gruutsigner.model.TypeMac;
+import com.gruutnetworks.gruutsigner.model.TypeMsg;
+import org.spongycastle.util.encoders.Hex;
+
+import java.math.BigInteger;
 import java.nio.ByteBuffer;
 
 public class MessageHeader {
@@ -40,7 +46,6 @@ public class MessageHeader {
         buffer.clear();
 
         buffer.put(gruutConstant);
-
         byte version = (byte) (mainVersion << 4);
         version += subVersion;
         buffer.put(version);
@@ -61,17 +66,17 @@ public class MessageHeader {
     @Override
     public String toString() {
         String str = "{";
-        str += "gruutConstant: " + gruutConstant + ", ";
+        str += "gruutConstant: " + String.format("0x%02X", gruutConstant) + ", ";
         str += "mainVersion: " + mainVersion + ", ";
         str += "subVersion: " + subVersion + ", ";
-        str += "msgType: " + msgType + ", ";
-        str += "macType: " + macType + ", ";
-        str += "compressionType: " + compressionType + ", ";
-        str += "notUsed: " + notUsed + ", ";
-        str += "totalLen: " + new String(totalLen) + ", ";
-        str += "localChainId: " + new String(localChainId) + ", ";
-        str += "sender: " + new String(sender) + ", ";
-        str += "reserved: " + new String(reserved) + "}";
+        str += "msgType: " + String.format("0x%02X", msgType) + ", ";
+        str += "macType: " + String.format("0x%02X", macType) + ", ";
+        str += "compressionType: " + String.format("0x%02X", compressionType) + ", ";
+        str += "notUsed: " + String.format("0x%02X", notUsed) + ", ";
+        str += "totalLen: " + new BigInteger(1, totalLen) + ", ";
+        str += "localChainId: " + new String(Hex.encode(localChainId)) + ", ";
+        str += "sender: " + new String(Hex.encode(sender)) + ", ";
+        str += "reserved: " + new String(Hex.encode(reserved)) + "}";
         return str;
     }
 
@@ -79,13 +84,17 @@ public class MessageHeader {
         return ByteBuffer.wrap(totalLen).getInt();
     }
 
+    public TypeMsg getMsgType() {
+        return TypeMsg.convert(msgType);
+    }
+
     public static class Builder {
         private byte gruutConstant = 'G';
-        private byte mainVersion;
-        private byte subVersion;
+        private byte mainVersion = 0x00;
+        private byte subVersion = 0x00;
         private byte msgType;
-        private byte macType;
-        private byte compressionType;
+        private byte macType = TypeMac.NONE.getType();
+        private byte compressionType = TypeComp.NONE.getType();
         private byte notUsed = 0;
         private byte[] totalLen = new byte[HEADER_TOTAL_LEN_SIZE];
         private byte[] localChainId = new byte[HEADER_LOCAL_CHAIN_ID_SIZE];
@@ -134,6 +143,11 @@ public class MessageHeader {
         public Builder setTotalLen(byte[] totalLen) {
             System.arraycopy(totalLen, 0, this.totalLen,
                     this.totalLen.length - totalLen.length, totalLen.length);
+            return this;
+        }
+
+        public Builder setTotalLen(int totalLen) {
+            this.totalLen = ByteBuffer.allocate(HEADER_TOTAL_LEN_SIZE).putInt(totalLen).array();
             return this;
         }
 

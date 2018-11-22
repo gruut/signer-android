@@ -1,5 +1,6 @@
 package com.gruutnetworks.gruutsigner.model;
 
+import com.google.gson.Gson;
 import com.google.gson.annotations.SerializedName;
 
 /**
@@ -47,5 +48,10 @@ public class MessageJoin {
 
     public void setLocalChainId(String localChainId) {
         this.localChainId = localChainId;
+    }
+
+    public byte[] getJson() {
+        Gson gson = new Gson();
+        return gson.toJson(this).getBytes();
     }
 }

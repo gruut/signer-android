@@ -1,5 +1,6 @@
 package com.gruutnetworks.gruutsigner.model;
 
+import com.google.gson.Gson;
 import com.google.gson.annotations.SerializedName;
 
 /**
@@ -67,5 +68,10 @@ public class MessageResponse1 {
 
     public void setSig(String sig) {
         this.sig = sig;
+    }
+
+    public byte[] getJson() {
+        Gson gson = new Gson();
+        return gson.toJson(this).getBytes();
     }
 }

@@ -1,6 +1,6 @@
 package com.gruutnetworks.gruutsigner.model;
 
-public enum  TypeMsg {
+public enum TypeMsg {
     MSG_REQ_SIGNUP((byte) 0x50),
     MSG_ISSUE_NID((byte) 0x51),
     MSG_REQ_CERT((byte) 0x52),
@@ -25,5 +25,14 @@ public enum  TypeMsg {
 
     public byte getType() {
         return typeVal;
+    }
+
+    public static TypeMsg convert(byte value) {
+        for (TypeMsg t : TypeMsg.values()) {
+            if (t.getType() == value) {
+                return t;
+            }
+        }
+        return MSG_ERROR;
     }
 }
