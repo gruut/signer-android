@@ -39,10 +39,15 @@ public class DashboardFragment extends Fragment {
         binding.setLifecycleOwner(this);
         binding.setModel(viewModel);
 
+        getLifecycle().addObserver(viewModel);
+
         TextView tvLogMerger1 = binding.tvLogMerger1;
         tvLogMerger1.setMovementMethod(new ScrollingMovementMethod());
 
         viewModel.getTestData().observe(this, text -> tvLogMerger1.append("\n" + text));
+        viewModel.getIsChannel1Set().observe(this, aBoolean -> {
+            if (aBoolean) viewModel.startJoining();
+        });
     }
 
 }
