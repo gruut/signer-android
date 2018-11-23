@@ -8,6 +8,7 @@ import android.databinding.ObservableField;
 import android.support.annotation.NonNull;
 import android.util.Log;
 import com.gruutnetworks.gruutsigner.R;
+import com.gruutnetworks.gruutsigner.exceptions.AuthUtilException;
 import com.gruutnetworks.gruutsigner.model.SignUpResponse;
 import com.gruutnetworks.gruutsigner.model.SignUpSourceData;
 import com.gruutnetworks.gruutsigner.restApi.GaApi;
@@ -19,11 +20,17 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
+import java.io.IOException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateException;
+
 public class SignUpViewModel extends AndroidViewModel implements LifecycleObserver {
 
     private static final String TAG = "SignUpViewModel";
 
     private final MutableLiveData<Boolean> loading = new MutableLiveData<>();
+    private final MutableLiveData<Boolean> canJoin = new MutableLiveData<>();
     private final SnackbarMessage snackbarMessage = new SnackbarMessage();
     private final SingleLiveEvent navigateToDashboard = new SingleLiveEvent();
     private Call<SignUpResponse> signUpCall;
@@ -36,6 +43,15 @@ public class SignUpViewModel extends AndroidViewModel implements LifecycleObserv
         super(application);
         this.keystoreUtil = KeystoreUtil.getInstance();
         this.preferenceUtil = PreferenceUtil.getInstance(application.getApplicationContext());
+
+
+        // Get Certificate issued by GA
+        try {
+            String cert = keystoreUtil.getCert(KeystoreUtil.SecurityConstants.Alias.GRUUT_AUTH);
+            canJoin.setValue(cert != null);
+        } catch (KeyStoreException | CertificateException | IOException | NoSuchAlgorithmException e) {
+            throw new AuthUtilException(AuthUtilException.AuthErr.GET_CERT_ERROR);
+        }
     }
 
     public void onSignUpClickButton() {
@@ -70,6 +86,7 @@ public class SignUpViewModel extends AndroidViewModel implements LifecycleObserv
                             }
 
                             if (storeCertificate(response.body().getPem())) {
+                                canJoin.postValue(true);
                                 preferenceUtil.put(PreferenceUtil.Key.SID_INT, response.body().getNid());
                                 navigateToDashboard.call();
                             } else {
@@ -141,6 +158,10 @@ public class SignUpViewModel extends AndroidViewModel implements LifecycleObserv
 
     public MutableLiveData<Boolean> getLoading() {
         return loading;
+    }
+
+    public MutableLiveData<Boolean> getCanJoin() {
+        return canJoin;
     }
 
     @Override
