@@ -1,21 +1,5 @@
-/*
- * Copyright 2013 The Android Open Source Project
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package com.gruutnetworks.gruutsigner.util;
 
-import android.content.Context;
 import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyProperties;
 import android.util.Base64;
@@ -66,9 +50,6 @@ import java.util.GregorianCalendar;
 
 import static com.gruutnetworks.gruutsigner.util.KeystoreUtil.SecurityConstants.*;
 
-/**
- * https://github.com/googlesamples/android-BasicAndroidKeyStore
- */
 public class KeystoreUtil {
 
     private static final String TAG = "KeystoreUtil";
@@ -84,33 +65,27 @@ public class KeystoreUtil {
             return keystoreUtil;
         }
         keystoreUtil = new KeystoreUtil();
+
+        // Add Provider
+        Security.addProvider(new org.spongycastle.jce.provider.BouncyCastleProvider());
         return keystoreUtil;
     }
 
     /**
-     * Creates a public and private key and stores it using the Android Key Store, so that only
-     * this application will be able to access the keys.
+     * Generates a public and private key and stores it using the Android Key Store
+     *
+     * @return generated Key pair's public key
      */
-    public PublicKey createKeys(Context context) throws NoSuchProviderException,
-            NoSuchAlgorithmException, InvalidAlgorithmParameterException {
-        // BEGIN_INCLUDE(create_valid_dates)
-        // Create a start and end time, for the validity range of the key pair that's about to be
-        // generated.
+    public PublicKey generateRsaKeys()
+            throws NoSuchProviderException, NoSuchAlgorithmException, InvalidAlgorithmParameterException {
+        // Create a start and end time, for the validity range of the key pair that's about to be generated.
         Calendar start = new GregorianCalendar();
         Calendar end = new GregorianCalendar();
         end.add(Calendar.YEAR, 30);
-        //END_INCLUDE(create_valid_dates)
 
-        // BEGIN_INCLUDE(create_keypair)
-        // Initialize a KeyPair generator using the the intended algorithm (in this example, RSA
-        // and the KeyStore.  This example uses the AndroidKeyStore.
         KeyPairGenerator kpGenerator = KeyPairGenerator
                 .getInstance(KeyProperties.KEY_ALGORITHM_RSA, KEYSTORE_PROVIDER_ANDROID_KEYSTORE);
-        // END_INCLUDE(create_keypair)
 
-        // BEGIN_INCLUDE(create_spec)
-        // The KeyPairGeneratorSpec object is how parameters for your key pair are passed
-        // to the KeyPairGenerator.
         AlgorithmParameterSpec spec = new KeyGenParameterSpec
                 .Builder(mAlias, KeyProperties.PURPOSE_SIGN | KeyProperties.PURPOSE_VERIFY)
                 .setCertificateSubject(new X500Principal("CN=" + mAlias))
@@ -124,15 +99,14 @@ public class KeystoreUtil {
         kpGenerator.initialize(spec);
 
         KeyPair kp = kpGenerator.generateKeyPair();
-        // END_INCLUDE(create_spec)
-
         return kp.getPublic();
     }
 
     /**
      * @return Check if the key pair exists in the alias
      */
-    public boolean isKeyPairExist() throws KeyStoreException, CertificateException, NoSuchAlgorithmException, IOException {
+    public boolean isKeyPairExist()
+            throws KeyStoreException, CertificateException, NoSuchAlgorithmException, IOException {
         KeyStore ks = KeyStore.getInstance(KEYSTORE_PROVIDER_ANDROID_KEYSTORE);
         ks.load(null);
         return ks.isKeyEntry(mAlias);
@@ -140,11 +114,13 @@ public class KeystoreUtil {
 
     /**
      * String to X509Certificate Converter
+     * TODO: PemObject로 parsing 하도록 추후 변경
      *
-     * @param certificateString base64 formatted string
+     * @param certificateString base64 formatted string without tag
      * @return X509Certificate object
      */
-    private static X509Certificate convertToX509Cert(String certificateString) throws CertificateException, NoSuchProviderException {
+    private X509Certificate stringToCertificate(String certificateString)
+            throws CertificateException, NoSuchProviderException {
         X509Certificate certificate = null;
         CertificateFactory cf;
         if (certificateString != null && !certificateString.trim().isEmpty()) {
@@ -157,44 +133,55 @@ public class KeystoreUtil {
         return certificate;
     }
 
-    public void updateEntry(String pem, SecurityConstants.Alias alias) throws CertificateException, NoSuchProviderException, KeyStoreException, IOException, NoSuchAlgorithmException {
-        X509Certificate certificate = convertToX509Cert(pem);
+    /**
+     * Pem 형식으로 받은 인증서를 Android Keystore에 alias로 저장.
+     *
+     * @param pem   certificate
+     * @param alias 인증서를 저장 할 alias
+     */
+    public void storeCert(String pem, SecurityConstants.Alias alias)
+            throws CertificateException, NoSuchProviderException, KeyStoreException, IOException, NoSuchAlgorithmException {
+        X509Certificate certificate = stringToCertificate(pem);
         KeyStore ks = KeyStore.getInstance(KEYSTORE_PROVIDER_ANDROID_KEYSTORE);
-
-        // Weird artifact of Java API.  If you don't have an InputStream to load, you still need
-        // to call "load", or it'll crash.
         ks.load(null);
 
         ks.setCertificateEntry(alias.name(), certificate);
     }
 
-    public String getCert(SecurityConstants.Alias alias) throws KeyStoreException, CertificateException, NoSuchAlgorithmException, IOException {
+    /**
+     * Android Keystore에서 해당 alias에 있는 인증서 가져오기
+     *
+     * @param alias 조회할 alias
+     * @return certificate Base64 format
+     */
+    public String getCert(SecurityConstants.Alias alias)
+            throws KeyStoreException, CertificateException, NoSuchAlgorithmException, IOException {
         KeyStore ks = KeyStore.getInstance(KEYSTORE_PROVIDER_ANDROID_KEYSTORE);
-
-        // Weird artifact of Java API.  If you don't have an InputStream to load, you still need
-        // to call "load", or it'll crash.
         ks.load(null);
 
         X509Certificate certificate = (X509Certificate) ks.getCertificate(alias.name());
 
         if (certificate == null) {
+            // 저장 된 certificate 없을 경우 null 반환
             return null;
         }
         return new String(Base64.encode(certificate.getEncoded(), Base64.NO_WRAP));
     }
 
     /**
-     * Generate CSR with stored key
+     * Generates CSR with stored key
      *
      * @return CSR pem string
      */
-    public String generateCsr() throws KeyStoreException, CertificateException, NoSuchAlgorithmException, IOException {
+    public String generateCsr()
+            throws KeyStoreException, CertificateException, NoSuchAlgorithmException, IOException {
         KeyStore ks = KeyStore.getInstance(KEYSTORE_PROVIDER_ANDROID_KEYSTORE);
         ks.load(null);
+
         byte[] pubKey = ks.getCertificate(mAlias).getPublicKey().getEncoded();
 
         X500NameBuilder nameBuilder = new X500NameBuilder(X500Name.getDefaultStyle());
-        nameBuilder.addRDN(BCStyle.CN, "Signer");
+        nameBuilder.addRDN(BCStyle.CN, "GRUUT_AUTH");
 
         AsymmetricKeyParameter pubKeyParam = PublicKeyFactory.createKey(pubKey);
         SubjectPublicKeyInfo publicKeyInfo = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(pubKeyParam);
@@ -202,12 +189,12 @@ public class KeystoreUtil {
                 new CertificationRequestInfo(nameBuilder.build(), publicKeyInfo, null);
 
         AlgorithmIdentifier signatureAi = new AlgorithmIdentifier(PKCSObjectIdentifiers.sha256WithRSAEncryption);
-
         Attribute attribute = new Attribute(PKCSObjectIdentifiers.pkcs_9_at_extensionRequest, new DERSet());
 
         CertificationRequest certificationRequest
                 = new CertificationRequest(requestInfo, signatureAi, new DERBitString(attribute));
 
+        // CSR pem 형식으로 생성
         String type = "CERTIFICATE REQUEST";
         PemObject pemObject = new PemObject(type, certificationRequest.getEncoded());
         StringWriter str = new StringWriter();
@@ -220,33 +207,23 @@ public class KeystoreUtil {
     }
 
     /**
-     * Signs the data using the key pair stored in the Android Key Store.  This signature can be
-     * used with the data later to verify it was signed by this application.
+     * Signs the data using the key pair stored in the Android Key Store.
+     * This signature can be used with the data later to verify it was signed by this application.
      *
      * @return A string encoding of the data signature generated
      */
-    public String signData(String inputStr) throws KeyStoreException,
-            UnrecoverableEntryException, NoSuchAlgorithmException, InvalidKeyException,
-            SignatureException, IOException, CertificateException {
+    public String signData(String inputStr)
+            throws KeyStoreException, UnrecoverableEntryException, NoSuchAlgorithmException,
+            InvalidKeyException, SignatureException, IOException, CertificateException {
         byte[] data = inputStr.getBytes();
 
-        // BEGIN_INCLUDE(sign_load_keystore)
         KeyStore ks = KeyStore.getInstance(KEYSTORE_PROVIDER_ANDROID_KEYSTORE);
-
-        // Weird artifact of Java API.  If you don't have an InputStream to load, you still need
-        // to call "load", or it'll crash.
         ks.load(null);
 
         // Load the key pair from the Android Key Store
         KeyStore.Entry entry = ks.getEntry(mAlias, null);
 
-        /* If the entry is null, keys were never stored under this alias.
-         * Debug steps in this situation would be:
-         * -Check the list of aliases by iterating over Keystore.aliases(), be sure the alias
-         *   exists.
-         * -If that's empty, verify they were both stored and pulled from the same keystore
-         *   "AndroidKeyStore"
-         */
+        // If the entry is null, keys were never stored under this alias.
         if (entry == null) {
             Log.w(TAG, "No key found under alias: " + mAlias);
             Log.w(TAG, "Exiting signData()...");
@@ -263,9 +240,7 @@ public class KeystoreUtil {
             Log.w(TAG, "Exiting signData()...");
             return null;
         }
-        // END_INCLUDE(sign_data)
 
-        // BEGIN_INCLUDE(sign_create_signature)
         // This class doesn't actually represent the signature,
         // just the engine for creating/verifying signatures, using
         // the specified algorithm.
@@ -277,20 +252,28 @@ public class KeystoreUtil {
         // Sign the data, store the result as a Base64 encoded String.
         s.update(data);
         byte[] signature = s.sign();
-        // END_INCLUDE(sign_data)
 
         return Base64.encodeToString(signature, Base64.NO_WRAP);
     }
 
-    public boolean verifyData(String input, String signatureStr, String certification) throws CertificateException, NoSuchProviderException, NoSuchAlgorithmException, InvalidKeyException, SignatureException, KeyStoreException {
-        X509Certificate certificate = convertToX509Cert(certification);
+    /**
+     * Given some data and a signature, uses the X509Certification stored in the Android Key Store to verify
+     * that the data was signed by this certification, using that public key.
+     *
+     * @param input         The data to be verified.
+     * @param signatureStr  The signature provided for the data.
+     * @param certification The certification stored in the Android Keystore
+     * @return A boolean value telling you whether the signature is valid or not.
+     */
+    public boolean verifyData(String input, String signatureStr, String certification)
+            throws CertificateException, NoSuchProviderException, NoSuchAlgorithmException,
+            InvalidKeyException, SignatureException {
+        X509Certificate certificate = stringToCertificate(certification);
 
         byte[] data = input.getBytes();
         byte[] signature;
-        // BEGIN_INCLUDE(decode_signature)
 
         // Make sure the signature string exists.  If not, bail out, nothing to do.
-
         if (signatureStr == null) {
             Log.w(TAG, "Invalid signature.");
             Log.w(TAG, "Exiting verifyData()...");
@@ -306,19 +289,16 @@ public class KeystoreUtil {
             // It's not a valid Base64 string.
             return false;
         }
-        // END_INCLUDE(decode_signature)
 
         // This class doesn't actually represent the signature,
         // just the engine for creating/verifying signatures, using
         // the specified algorithm.
         Signature s = Signature.getInstance(SecurityConstants.SIGNATURE_SHA256withRSA);
 
-        // BEGIN_INCLUDE(verify_data)
         // Verify the data.
         s.initVerify(certificate.getPublicKey());
         s.update(data);
         return s.verify(signature);
-        // END_INCLUDE(verify_data)
     }
 
     /**
@@ -329,15 +309,13 @@ public class KeystoreUtil {
      * @param signatureStr The signature provided for the data.
      * @return A boolean value telling you whether the signature is valid or not.
      */
-    public boolean verifyData(String input, String signatureStr) throws KeyStoreException,
-            CertificateException, NoSuchAlgorithmException, IOException,
+    public boolean verifyData(String input, String signatureStr)
+            throws KeyStoreException, CertificateException, NoSuchAlgorithmException, IOException,
             UnrecoverableEntryException, InvalidKeyException, SignatureException {
         byte[] data = input.getBytes();
         byte[] signature;
-        // BEGIN_INCLUDE(decode_signature)
 
         // Make sure the signature string exists.  If not, bail out, nothing to do.
-
         if (signatureStr == null) {
             Log.w(TAG, "Invalid signature.");
             Log.w(TAG, "Exiting verifyData()...");
@@ -353,12 +331,8 @@ public class KeystoreUtil {
             // It's not a valid Base64 string.
             return false;
         }
-        // END_INCLUDE(decode_signature)
 
         KeyStore ks = KeyStore.getInstance(KEYSTORE_PROVIDER_ANDROID_KEYSTORE);
-
-        // Weird artifact of Java API.  If you don't have an InputStream to load, you still need
-        // to call "load", or it'll crash.
         ks.load(null);
 
         // Load the key pair from the Android Key Store
@@ -380,29 +354,43 @@ public class KeystoreUtil {
         // the specified algorithm.
         Signature s = Signature.getInstance(SecurityConstants.SIGNATURE_SHA256withRSA);
 
-        // BEGIN_INCLUDE(verify_data)
         // Verify the data.
         s.initVerify(ks.getCertificate(mAlias).getPublicKey());
         s.update(data);
         return s.verify(signature);
-        // END_INCLUDE(verify_data)
     }
 
-    public void setAlias(SecurityConstants.Alias alias) {
-        mAlias = alias.name();
-    }
-
-    public byte[] pubKeyToPointXhex(PublicKey pubKey) {
+    /**
+     * Extract X point from  public key
+     *
+     * @param pubKey public key
+     * @return X point value on EC (hex)
+     */
+    public byte[] pubToXpoint(PublicKey pubKey) {
         ECPublicKey key = (ECPublicKey) pubKey;
         return Hex.encode(key.getW().getAffineX().toByteArray());
     }
 
-    public byte[] pubKeyToPointYhex(PublicKey pubKey) {
+    /**
+     * Extract Y point from  public key
+     *
+     * @param pubKey public key
+     * @return Y point value on EC (hex)
+     */
+    public byte[] pubToYpoint(PublicKey pubKey) {
         ECPublicKey key = (ECPublicKey) pubKey;
         return Hex.encode(key.getW().getAffineY().toByteArray());
     }
 
-    public PublicKey ecPointToPubkey(String x, String y) throws NoSuchProviderException, NoSuchAlgorithmException, InvalidKeySpecException {
+    /**
+     * Decode Public Key From EC Point Value
+     *
+     * @param x hex value
+     * @param y hex value
+     * @return public key
+     */
+    public PublicKey pointToPub(String x, String y)
+            throws NoSuchProviderException, NoSuchAlgorithmException, InvalidKeySpecException {
         ECParameterSpec ecParameterSpec = ECNamedCurveTable.getParameterSpec(CURVE_SECP256R1);
         ECCurve curve = ecParameterSpec.getCurve();
 
@@ -415,44 +403,54 @@ public class KeystoreUtil {
         return kf.generatePublic(publicKeySpec);
     }
 
-    @TestOnly
-    public PrivateKey stringToPrvKey(String string) throws NoSuchProviderException, NoSuchAlgorithmException, InvalidKeySpecException {
-        Security.addProvider(new org.spongycastle.jce.provider.BouncyCastleProvider());
-        ECParameterSpec ecParameterSpec = ECNamedCurveTable.getParameterSpec(CURVE_SECP256R1);
-
-        byte[] prv = Hex.decode(string.getBytes());
-        ECPrivateKeySpec privateKeySpec = new ECPrivateKeySpec(new BigInteger(1, prv), ecParameterSpec);
-        KeyFactory kf = KeyFactory.getInstance(TYPE_ECDH, "SC");
-        return kf.generatePrivate(privateKeySpec);
-    }
-
-    public KeyPair ecdhKeyGen() throws NoSuchProviderException, NoSuchAlgorithmException, InvalidAlgorithmParameterException {
-        Security.addProvider(new org.spongycastle.jce.provider.BouncyCastleProvider());
-
+    /**
+     * Generate ECDH key pair on secp256r1 Curve
+     *
+     * @return generated ECDH key pair
+     */
+    public KeyPair generateEcdhKeys()
+            throws NoSuchProviderException, NoSuchAlgorithmException, InvalidAlgorithmParameterException {
         KeyPairGenerator kp = KeyPairGenerator.getInstance(TYPE_ECDH, "SC");
         kp.initialize(new ECGenParameterSpec(CURVE_SECP256R1), new SecureRandom());
 
         return kp.generateKeyPair();
     }
 
-    public byte[] doEcdh(PrivateKey myPrvKey, PublicKey otherPubKey) throws NoSuchProviderException, NoSuchAlgorithmException, InvalidKeyException {
-        Security.addProvider(new org.spongycastle.jce.provider.BouncyCastleProvider());
-
+    /**
+     * Generate DH shared secret mac key
+     *
+     * @param myPrvKey     my private key
+     * @param othersPubKey other's public key
+     * @return shared secret key(SHA256 encoded byte array)
+     */
+    public byte[] getSharedSecreyKey(PrivateKey myPrvKey, PublicKey othersPubKey)
+            throws NoSuchProviderException, NoSuchAlgorithmException, InvalidKeyException {
         KeyAgreement ka = KeyAgreement.getInstance(TYPE_ECDH, "SC");
         ka.init(myPrvKey);
-        ka.doPhase(otherPubKey, true);
+        ka.doPhase(othersPubKey, true);
         return encodeSha256(ka.generateSecret());
     }
 
-    private byte[] encodeSha256(byte[] sharedSecretKey) throws NoSuchAlgorithmException {
+    /**
+     * @param bytes to decode into SHA256
+     * @return encoded SHA256 byte array
+     */
+    private byte[] encodeSha256(byte[] bytes) throws NoSuchAlgorithmException {
         MessageDigest md = MessageDigest.getInstance(TYPE_SHA256);
-        md.update(sharedSecretKey);
+        md.update(bytes);
         return Hex.encode(md.digest());
     }
 
-    public byte[] getMacSig(String key, byte[] data) {
+    /**
+     * Generates HMAC signature
+     *
+     * @param key   HMAC sign할 때 쓸 key(DH Key교환으로 생성한 shared secret key)
+     * @param data  인증 할 Data
+     * @return  HMAC signature
+     */
+    public byte[] getHmacSignature(String key, byte[] data) {
         try {
-            Mac sha256Hmac = Mac.getInstance("HmacSHA256");
+            Mac sha256Hmac = Mac.getInstance(TYPE_HMAC);
             SecretKeySpec secretKey = new SecretKeySpec(key.getBytes("UTF-8"), TYPE_HMAC);
             sha256Hmac.init(secretKey);
 

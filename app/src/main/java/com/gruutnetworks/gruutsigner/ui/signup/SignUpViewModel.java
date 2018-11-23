@@ -129,7 +129,7 @@ public class SignUpViewModel extends AndroidViewModel implements LifecycleObserv
     private String generateCsr() {
         try {
             if (!keystoreUtil.isKeyPairExist()) {
-                keystoreUtil.createKeys(getApplication().getApplicationContext());
+                keystoreUtil.generateRsaKeys();
             }
             return keystoreUtil.generateCsr();
         } catch (Exception e) {
@@ -140,7 +140,7 @@ public class SignUpViewModel extends AndroidViewModel implements LifecycleObserv
 
     private boolean storeCertificate(String cert) {
         try {
-            keystoreUtil.updateEntry(cert, KeystoreUtil.SecurityConstants.Alias.GRUUT_AUTH);
+            keystoreUtil.storeCert(cert, KeystoreUtil.SecurityConstants.Alias.GRUUT_AUTH);
             return true;
         } catch (Exception e) {
             Log.e(TAG, e.getMessage());
