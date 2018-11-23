@@ -76,16 +76,17 @@
                 app:layout_constraintTop_toBottomOf="@+id/edit_phone" />
 
             <Button
-                android:id="@+id/button"
+                android:id="@+id/btn_join"
                 style="@style/AppTheme.RoundedCornerMaterialButton"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
                 android:layout_marginBottom="8dp"
+                android:enabled="@{safeUnbox(model.canJoin) ? true : false}"
+                android:onClick="@{() -> model.joiningTest()}"
                 android:padding="16dp"
                 android:text="Join"
                 android:textSize="20sp"
-                android:onClick="@{() -> model.joiningTest()}"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="@+id/btn_sign_up"
                 app:layout_constraintStart_toStartOf="@+id/btn_sign_up"
