@@ -1,38 +1,51 @@
-language : android
+notifications:
+    slack:
+        secure: AY1Csy3LpbknfakX6RAMBDnufgdIzCre73SaDbGmZ5uI2UT/gGaSaw3TXvzAoJLChWASVdze656pdx4E/R3ioU3kIQZwnCtOBDHhU3XGZDy6GVV0g4d8+URI8G8BM0rPl4y4PcSGiu661nsQLQM2V5KT48ik4kjeOAyu8MAbmItKt8WfAYvwBZIsJyzam/3BhtcPwPmY5461GW6NC2aRK24L4B59Cv4K9VKt8h1Mfp/EJ9hC2racWv9QgYnKkwAXc2ogYo42taMk1Iva87P7jTBLlrVCLk41P4HOy2mCrBmtb55bOl9CTNhtf6AGdFxM4bTAj3sUSk/cpQQBl16PdtClIlbbQXae5xMmoCiFW9kpPMwncWZKzQNUU/rOuCon6IudqPcFJ/bNdB7l4IQxID9/+uR+6wWxxUJDMrovZ0bJzndaboJ0yoNAZZWTTeShaMqW1sqwpc2mhgoaPrfLQHNMTGjqUns3/UeBPXGPpkULok3gYvKinaD+GalPaH17dqSTpxikwW8/z5qfYXhLsYgKUIg2VEHYbz++ltoC95+PZGcmuLvNtVbV2eUv05hkMKY665JNmXmNR2QO4oZp/HIVphgZUPsbkUlgIwCp4HeOjM1+2fcWIgwD+cKAKoReQXq7mB/HLmukRSbGsMEUDm9s+CUKSPlvpO8yxvCyYcI=
+language: android
+jdk: oraclejdk8
 sudo : required
-jdk : oraclejdk8
 env:
   global :
     - ANROID_API_LEVEL = 27
     - ANDROID_BUILD_TOOLS_VERSION = 27.0.3
-android :
-  components :
-    - tools
-    - platform-tools
-    - build-tools-$ANDROID_BUILD_TOOLS_VERSION
-    - android-$ANDROID_API_LEVEL
-    - extra-google-google_play_services
-    - extra-google-m2repository
-    - addon-google_apis-google-$ANDROID_API_LEVEL
-  licences :
-    - 'android-sdk-preview-license-.+'
-    - 'android-sdk-license-.+'
-    - 'google-gdk-license-.+'
-before_install:
-  - yes | sdkmanager "platforms;android-27"
-  - yes | sdkmanager "build-tools;28.0.3"
-  - mkdir "$ANDROID_HOME/licenses" || true
-  - echo -e "\n8933bad161af4178b1185d1a37fbf41ea5269c55" > "$ANDROID_HOME/licenses/android-sdk-license"
-  - echo -e "\n84831b9409646a918e30573bab4c9c91346d8abd" > "$ANDROID_HOME/licenses/android-sdk-preview-license"
-  - chmod +x gradlew
-  - ./gradlew dependencies || true
+
 before_cache:
+    # Do not cache a few Gradle files/directories (see https://docs.travis-ci.com/user/languages/java/#Caching)
     - rm -f  $HOME/.gradle/caches/modules-2/modules-2.lock
     - rm -fr $HOME/.gradle/caches/*/plugin-resolution/
+
 cache:
-  directories:
-    - $HOME/.gradle/caches/
-    - $HOME/.gradle/wrapper/
-    - $HOME/.android/build-cache
+    directories:
+        # Gradle dependencies
+        - $HOME/.gradle/caches/
+        - $HOME/.gradle/wrapper/
+
+        # Android build cache (see http://tools.android.com/tech-docs/build-cache)
+        - $HOME/.android/build-cache
+
+before_install:
+    - yes | sdkmanager "platforms;android-27"
+    - yes | sdkmanager "build-tools;28.0.3"
+
+    - mkdir "$ANDROID_HOME/licenses" || true
+    - echo -e "\n8933bad161af4178b1185d1a37fbf41ea5269c55" > "$ANDROID_HOME/licenses/android-sdk-license"
+    - echo -e "\n84831b9409646a918e30573bab4c9c91346d8abd" > "$ANDROID_HOME/licenses/android-sdk-preview-license"
+
+    - chmod +x gradlew
+    - ./gradlew dependencies || true
+
+android :
+    components :
+        - tools
+        - platform-tools
+        - build-tools-$ANDROID_BUILD_TOOLS_VERSION
+        - android-$ANDROID_API_LEVEL
+        - extra-google-google_play_services
+        - extra-google-m2repository
+    licences :
+        - 'android-sdk-preview-license-.+'
+        - 'android-sdk-license-.+'
+        - 'google-gdk-license-.+'
+skip_cleanup : true
 script :
-    - ./gradlew build assembleDebug
+    - ./gradlew --no-daemon --parallel assembleDebug lintDebug
