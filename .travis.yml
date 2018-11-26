@@ -54,6 +54,4 @@ deploy :
     skip_cleanup : true
     script : "sh script/deploy.sh"
     on :
-        branch:
-            -develop
-            -master
+        all_branches : true

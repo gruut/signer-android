@@ -177,14 +177,14 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
             // generate ecdh key
             testData.postValue("Generate ECDH key pair");
             try {
-                keyPair = keystoreUtil.ecdhKeyGen();
+                keyPair = keystoreUtil.generateEcdhKeys();
             } catch (NoSuchProviderException | NoSuchAlgorithmException | InvalidAlgorithmParameterException e) {
                 throw new AuthUtilException(AuthUtilException.AuthErr.KEY_GEN_ERROR);
             }
         }
 
-        String x = new String(keystoreUtil.pubKeyToPointXhex(keyPair.getPublic()));
-        String y = new String(keystoreUtil.pubKeyToPointYhex(keyPair.getPublic()));
+        String x = new String(keystoreUtil.pubToXpoint(keyPair.getPublic()));
+        String y = new String(keystoreUtil.pubToYpoint(keyPair.getPublic()));
         String time = AuthUtil.getTimestamp();
         String sigTarget = mergerNonce + signerNonce + x + y + time;
 
@@ -263,7 +263,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         try {
             isSigValid = keystoreUtil.verifyData(input, messageResponse2.getSig(), messageResponse2.getCert());
         } catch (CertificateException | NoSuchAlgorithmException | InvalidKeyException |
-                SignatureException | KeyStoreException | NoSuchProviderException e) {
+                SignatureException | NoSuchProviderException e) {
             throw new AuthUtilException(AuthUtilException.AuthErr.VERIFYING_ERROR);
         }
 
@@ -274,7 +274,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         // X,Y 좌표로부터 Pulbic key get
         PublicKey mergerPubKey = null;
         try {
-            mergerPubKey = keystoreUtil.ecPointToPubkey(messageResponse2.getDhPubKeyX(), messageResponse2.getDhPubKeyY());
+            mergerPubKey = keystoreUtil.pointToPub(messageResponse2.getDhPubKeyX(), messageResponse2.getDhPubKeyY());
         } catch (NoSuchProviderException | NoSuchAlgorithmException | InvalidKeySpecException e) {
             throw new AuthUtilException(AuthUtilException.AuthErr.KEY_GEN_ERROR);
         }
@@ -282,7 +282,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         // HMAC KEY 계산
         byte[] hmac;
         try {
-            hmac = keystoreUtil.doEcdh(keyPair.getPrivate(), mergerPubKey);
+            hmac = keystoreUtil.getSharedSecreyKey(keyPair.getPrivate(), mergerPubKey);
         } catch (NoSuchProviderException | NoSuchAlgorithmException | InvalidKeyException e) {
             throw new AuthUtilException(AuthUtilException.AuthErr.HMAC_KEY_GEN_ERROR);
         }
@@ -305,7 +305,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
                 .build();
 
         Message message = new Message(header, messageSuccess.getJson(), null);
-        byte[] signature = keystoreUtil.getMacSig(preferenceUtil.getString(PreferenceUtil.Key.HMAC_STR),
+        byte[] signature = keystoreUtil.getHmacSignature(preferenceUtil.getString(PreferenceUtil.Key.HMAC_STR),
                 message.convertToByteArrWithoutSig());
 
         message.setSignature(signature);
@@ -399,7 +399,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
                 .build();
 
         Message message = new Message(header, messageSignature.getJson(), null);
-        byte[] macSig = keystoreUtil.getMacSig(preferenceUtil.getString(PreferenceUtil.Key.HMAC_STR),
+        byte[] macSig = keystoreUtil.getHmacSignature(preferenceUtil.getString(PreferenceUtil.Key.HMAC_STR),
                 message.convertToByteArrWithoutSig());
 
         message.setSignature(macSig);
