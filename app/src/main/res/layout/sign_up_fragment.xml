@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context=".ui.signup.SignUpFragment">
+
+    <data>
+
+        <import type="android.view.View" />
+
+        <variable
+            name="model"
+            type="com.gruutnetworks.gruutsigner.ui.signup.SignUpViewModel" />
+    </data>
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@color/background_transparent"
+            android:elevation="1dp"
+            android:visibility="@{safeUnbox(model.loading) ? View.VISIBLE : View.GONE}">
+
+            <ProgressBar
+                android:id="@+id/loading_view"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center" />
+
+        </FrameLayout>
+
+        <android.support.constraint.ConstraintLayout
+            android:id="@+id/signUpConstraintLayout"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <EditText
+                android:id="@+id/edit_phone"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="40dp"
+                android:layout_marginTop="16dp"
+                android:layout_marginEnd="40dp"
+                android:ems="10"
+                android:hint="@string/sign_up_mobile_number"
+                android:inputType="phone"
+                android:maxLength="13"
+                android:singleLine="true"
+                android:text="@={model.phoneNum}"
+                android:textAlignment="center"
+                android:textSize="30sp"
+                app:layout_constraintBottom_toTopOf="@+id/btn_sign_up"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintHorizontal_bias="0.5"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/guideline"
+                app:layout_constraintVertical_bias="0.0"
+                app:layout_constraintVertical_chainStyle="packed" />
+
+            <Button
+                android:id="@+id/btn_sign_up"
+                style="@style/AppTheme.RoundedCornerMaterialButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:onClick="@{() -> model.onSignUpClickButton()}"
+                android:padding="16dp"
+                android:text="@string/sign_up"
+                android:textSize="20sp"
+                app:layout_constraintEnd_toEndOf="@+id/edit_phone"
+                app:layout_constraintHorizontal_bias="0.5"
+                app:layout_constraintStart_toStartOf="@+id/edit_phone"
+                app:layout_constraintTop_toBottomOf="@+id/edit_phone" />
+
+            <Button
+                android:id="@+id/btn_join"
+                style="@style/AppTheme.RoundedCornerMaterialButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="8dp"
+                android:enabled="@{safeUnbox(model.canJoin) ? true : false}"
+                android:onClick="@{() -> model.joiningTest()}"
+                android:padding="16dp"
+                android:text="Join"
+                android:textSize="20sp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="@+id/btn_sign_up"
+                app:layout_constraintStart_toStartOf="@+id/btn_sign_up"
+                app:layout_constraintTop_toBottomOf="@+id/btn_sign_up"
+                app:layout_constraintVertical_bias="0.0" />
+
+            <ImageView
+                android:id="@+id/img_logo"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="24dp"
+                android:layout_marginEnd="24dp"
+                android:layout_marginBottom="16dp"
+                app:layout_constraintBottom_toTopOf="@+id/guideline"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:srcCompat="@drawable/ic_logo" />
+
+            <android.support.constraint.Guideline
+                android:id="@+id/guideline"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                app:layout_constraintGuide_percent="0.5" />
+        </android.support.constraint.ConstraintLayout>
+
+    </FrameLayout>
+
+</layout>
