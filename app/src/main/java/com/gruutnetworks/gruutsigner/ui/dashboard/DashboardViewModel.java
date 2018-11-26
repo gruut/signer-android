@@ -263,7 +263,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         try {
             isSigValid = keystoreUtil.verifyData(input, messageResponse2.getSig(), messageResponse2.getCert());
         } catch (CertificateException | NoSuchAlgorithmException | InvalidKeyException |
-                SignatureException | KeyStoreException | NoSuchProviderException e) {
+                SignatureException | NoSuchProviderException e) {
             throw new AuthUtilException(AuthUtilException.AuthErr.VERIFYING_ERROR);
         }
 
