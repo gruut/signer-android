@@ -114,7 +114,6 @@ public class KeystoreUtil {
 
     /**
      * String to X509Certificate Converter
-     * TODO: PemObject로 parsing 하도록 추후 변경
      *
      * @param certificateString base64 formatted string without tag
      * @return X509Certificate object
@@ -465,16 +464,11 @@ public class KeystoreUtil {
     public interface SecurityConstants {
         String KEYSTORE_PROVIDER_ANDROID_KEYSTORE = "AndroidKeyStore";
 
-        String PADDING_TYPE = "PKCS1Padding";
-        String BLOCKING_MODE = "NONE";
-
-        String TYPE_RSA = "RSA";
         String TYPE_ECDH = "ECDH";
         String TYPE_SHA256 = "SHA-256";
         String TYPE_HMAC = "HmacSHA256";
 
         String SIGNATURE_SHA256withRSA = "SHA256withRSA";
-        String SIGNATURE_SHA512withRSA = "SHA512withRSA";
 
         String CURVE_SECP256R1 = "secp256r1";
 
