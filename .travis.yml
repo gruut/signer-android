@@ -32,6 +32,7 @@ before_install:
     - echo -e "\n84831b9409646a918e30573bab4c9c91346d8abd" > "$ANDROID_HOME/licenses/android-sdk-preview-license"
 
     - chmod +x gradlew
+    - chmod +x script/deploy.sh
     - ./gradlew dependencies || true
 
 android :
@@ -53,4 +54,6 @@ deploy :
     skip_cleanup : true
     script : "sh script/deploy.sh"
     on :
-      branch : master
+        branch:
+            -develop
+            -master
