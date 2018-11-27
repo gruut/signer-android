@@ -152,7 +152,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         }
 
         testData.postValue("[RECEIVE]" + "MSG_CHALLENGE");
-        return gson.fromJson(new String(receivedMsg.getCompressedJsonMsg()), MessageChallenge.class);
+        return gson.fromJson(new String(receivedMsg.getBody()), MessageChallenge.class);
     }
 
     /**
@@ -243,7 +243,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         }
 
         testData.postValue("[RECEIVED]" + "MSG_RESPONSE_2");
-        return gson.fromJson(new String(receivedMsg.getCompressedJsonMsg()), MessageResponse2.class);
+        return gson.fromJson(new String(receivedMsg.getBody()), MessageResponse2.class);
     }
 
     /**
@@ -305,10 +305,10 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
                 .build();
 
         Message message = new Message(header, messageSuccess.getJson(), null);
-        byte[] signature = keystoreUtil.getHmacSignature(preferenceUtil.getString(PreferenceUtil.Key.HMAC_STR),
+        byte[] mac = keystoreUtil.getHmacSignature(preferenceUtil.getString(PreferenceUtil.Key.HMAC_STR),
                 message.convertToByteArrWithoutSig());
 
-        message.setSignature(signature);
+        message.setMac(mac);
 
         Message receivedMsg = null;
         try {
@@ -327,7 +327,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         }
 
         testData.postValue("[RECEIVED]" + "MSG_ACCEPT");
-        return gson.fromJson(new String(receivedMsg.getCompressedJsonMsg()), MessageAccept.class);
+        return gson.fromJson(new String(receivedMsg.getBody()), MessageAccept.class);
     }
 
     private void standBy(ManagedChannel channel) {
@@ -365,7 +365,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         String signature;
         try {
             // TODO 임시블록 검증하는 부분이 필요함.
-            MessageRequestSignature requestSignature = gson.fromJson(new String(msg.getCompressedJsonMsg()), MessageRequestSignature.class);
+            MessageRequestSignature requestSignature = gson.fromJson(new String(msg.getBody()), MessageRequestSignature.class);
 
             // TODO hard coded. check this out later
             ByteBuffer buffer = ByteBuffer.allocate(72);
@@ -402,7 +402,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         byte[] macSig = keystoreUtil.getHmacSignature(preferenceUtil.getString(PreferenceUtil.Key.HMAC_STR),
                 message.convertToByteArrWithoutSig());
 
-        message.setSignature(macSig);
+        message.setMac(macSig);
         testData.postValue("[SEND]" + "MSG_JOIN");
         try {
             new GrpcTask(channel).execute(message);

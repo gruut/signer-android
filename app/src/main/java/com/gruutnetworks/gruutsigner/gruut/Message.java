@@ -8,8 +8,8 @@ import static com.gruutnetworks.gruutsigner.gruut.MessageHeader.*;
 public class Message {
 
     private MessageHeader header; // 32 bytes
-    private byte[] compressedJsonMsg; // Compressed JSON message
-    private byte[] signature;
+    private byte[] body; // message body
+    private byte[] mac;
 
     /**
      * Byte array to formatted message
@@ -36,32 +36,42 @@ public class Message {
                 .build();
 
         byte[] jsonMsg = Arrays.copyOfRange(bytes, offset, offset += (header.getTotalLen() - MSG_HEADER_LEN));
-        byte[] signature = Arrays.copyOfRange(bytes, offset, bytes.length);
+        byte[] mac = Arrays.copyOfRange(bytes, offset, bytes.length);
 
         this.header = header;
-        this.compressedJsonMsg = jsonMsg;
-        this.signature = signature;
+        this.mac = mac;
+
+        // 압축 해제가 필요할 경우 해제 후 body에 넣음.
+        switch (header.getCompressType()) {
+            case LZ4:
+                this.body = CompressionUtil.decompress(jsonMsg);
+                break;
+            case NONE:
+            default:
+                this.body = jsonMsg;
+                break;
+        }
     }
 
-    public Message(MessageHeader header, byte[] compressedJsonMsg, byte[] signature) {
+    public Message(MessageHeader header, byte[] body, byte[] mac) {
         this.header = header;
-        this.compressedJsonMsg = compressedJsonMsg;
-        this.signature = signature;
+        this.body = body;
+        this.mac = mac;
     }
 
     public byte[] convertToByteArr() {
         int totalLength = header.getTotalLen();
 
-        if (signature == null) {
+        if (mac == null) {
             return convertToByteArrWithoutSig();
         }
 
-        totalLength += signature.length;
+        totalLength += mac.length;
         ByteBuffer buffer = ByteBuffer.allocate(totalLength);
         buffer.clear();
         buffer.put(header.convertToByteArr());
-        buffer.put(compressedJsonMsg);
-        buffer.put(signature);
+        buffer.put(body);
+        buffer.put(mac);
 
         byte[] bytes = buffer.array();
         buffer.clear();
@@ -74,7 +84,7 @@ public class Message {
         ByteBuffer buffer = ByteBuffer.allocate(totalLength);
         buffer.clear();
         buffer.put(header.convertToByteArr());
-        buffer.put(compressedJsonMsg);
+        buffer.put(body);
 
         byte[] bytes = buffer.array();
         buffer.clear();
@@ -89,28 +99,28 @@ public class Message {
         this.header = header;
     }
 
-    public byte[] getCompressedJsonMsg() {
-        return compressedJsonMsg;
+    public byte[] getBody() {
+        return body;
     }
 
-    public void setCompressedJsonMsg(byte[] compressedJsonMsg) {
-        this.compressedJsonMsg = compressedJsonMsg;
+    public void setBody(byte[] body) {
+        this.body = body;
     }
 
-    public byte[] getSignature() {
-        return signature;
+    public byte[] getMac() {
+        return mac;
     }
 
-    public void setSignature(byte[] signature) {
-        this.signature = signature;
+    public void setMac(byte[] mac) {
+        this.mac = mac;
     }
 
     @Override
     public String toString() {
         String str = header.toString();
-        str += "\njson: " + new String(compressedJsonMsg);
-        if (signature != null) {
-            str += "\nsignature: " + new String(signature);
+        str += "\njson: " + new String(body);
+        if (mac != null) {
+            str += "\nmac: " + new String(mac);
         }
         return str;
     }
