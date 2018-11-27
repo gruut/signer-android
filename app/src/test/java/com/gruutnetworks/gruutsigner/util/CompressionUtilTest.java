@@ -5,7 +5,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertThat;
 
 public class CompressionUtilTest {
 
@@ -48,11 +48,19 @@ public class CompressionUtilTest {
     }
 
     @Test
-    public void compressAndDecompress() {
+    public void compressAndFastDecompress() {
+        // 압축한 후 풀어서 원본 데이터와 비교
         byte[] targetStr = testStr.getBytes();
-        int originalLen = targetStr.length;
+        int len = targetStr.length;
+        byte[] compressed = CompressionUtil.compress(targetStr);
+        assertThat(CompressionUtil.decompress(compressed, len), is(targetStr));
+    }
 
-        byte[] compressed = CompressionUtil.compress(testStr.getBytes());
-        assertThat(CompressionUtil.decompress(compressed, originalLen), is(targetStr));
+    @Test
+    public void compressAndSafeDecompress() {
+        // 압축한 후 풀어서 원본 데이터와 비교
+        byte[] targetStr = testStr.getBytes();
+        byte[] compressed = CompressionUtil.compress(targetStr);
+        assertThat(CompressionUtil.decompress(compressed), is(targetStr));
     }
 }
