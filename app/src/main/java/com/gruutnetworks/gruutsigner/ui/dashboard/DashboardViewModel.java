@@ -466,7 +466,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
                                 .setMessage(ByteString.copyFrom(msg.convertToByteArr()))
                                 .build();
 
-                        GrpcMsgResponse2 grpcMsgResponse2 = stub.withDeadlineAfter(TIME_OUT, TimeUnit.SECONDS).dHKeyEx(grpcMsgResponse1);
+                        GrpcMsgResponse2 grpcMsgResponse2 = stub.withDeadlineAfter(TIME_OUT, TimeUnit.SECONDS).dhKeyEx(grpcMsgResponse1);
                         return new Message(grpcMsgResponse2.getMessage().toByteArray());
                     case MSG_SUCCESS:
                         GrpcMsgSuccess grpcMsgSuccess = GrpcMsgSuccess.newBuilder()
