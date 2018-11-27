@@ -92,6 +92,10 @@ public class MessageHeader {
         return TypeMsg.convert(msgType);
     }
 
+    public TypeComp getCompressType() {
+        return TypeComp.convert(compressionType);
+    }
+
     public static class Builder {
         private byte gruutConstant = 'G';
         private byte mainVersion = 0x01;

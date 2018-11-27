@@ -1,5 +1,7 @@
 package com.gruutnetworks.gruutsigner.gruut;
 
+import com.gruutnetworks.gruutsigner.util.CompressionUtil;
+
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
@@ -37,6 +39,7 @@ public class Message {
 
         byte[] jsonMsg = Arrays.copyOfRange(bytes, offset, offset += (header.getTotalLen() - MSG_HEADER_LEN));
         byte[] mac = Arrays.copyOfRange(bytes, offset, bytes.length);
+
 
         this.header = header;
         this.mac = mac;
