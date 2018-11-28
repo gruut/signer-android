@@ -45,6 +45,7 @@ import java.security.interfaces.ECPublicKey;
 import java.security.spec.AlgorithmParameterSpec;
 import java.security.spec.ECGenParameterSpec;
 import java.security.spec.InvalidKeySpecException;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 
@@ -443,12 +444,15 @@ public class KeystoreUtil {
     /**
      * Generates HMAC signature
      *
-     * @param key   HMAC sign할 때 쓸 key(DH Key교환으로 생성한 shared secret key)
      * @param data  인증 할 Data
      * @return  HMAC signature
      */
-    public byte[] getHmacSignature(String key, byte[] data) {
+    public static byte[] getHmacSignature( byte[] data) {
         try {
+            PreferenceUtil preferenceUtil = PreferenceUtil.getInstance();
+            // HMAC sign할 때 쓸 key(DH Key교환으로 생성한 shared secret key
+            String key = preferenceUtil.getString(PreferenceUtil.Key.HMAC_STR);
+
             Mac sha256Hmac = Mac.getInstance(TYPE_HMAC);
             SecretKeySpec secretKey = new SecretKeySpec(key.getBytes("UTF-8"), TYPE_HMAC);
             sha256Hmac.init(secretKey);
@@ -459,6 +463,10 @@ public class KeystoreUtil {
         }
 
         return null;
+    }
+
+    public static boolean verifyHmacSignature(byte[] data, byte[] mac) {
+        return Arrays.equals(getHmacSignature(data) , mac);
     }
 
     public interface SecurityConstants {

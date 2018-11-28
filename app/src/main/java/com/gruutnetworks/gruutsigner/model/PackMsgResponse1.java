@@ -1,13 +1,11 @@
-package com.gruutnetworks.gruutsigner.gruut;
+package com.gruutnetworks.gruutsigner.model;
 
 import android.util.Base64;
 import com.google.gson.Gson;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
-import com.gruutnetworks.gruutsigner.model.TypeComp;
-import com.gruutnetworks.gruutsigner.model.TypeMsg;
 
-import static com.gruutnetworks.gruutsigner.gruut.MessageHeader.MSG_HEADER_LEN;
+import static com.gruutnetworks.gruutsigner.model.MsgHeader.MSG_HEADER_LEN;
 
 /**
  * Title: Response1 to Challenge
@@ -68,7 +66,7 @@ public class PackMsgResponse1 extends MsgPacker {
     @Override
     void setHeader() {
         if (headerLocalChainId != null) {
-            this.header = new MessageHeader.Builder()
+            this.header = new MsgHeader.Builder()
                     .setMsgType(TypeMsg.MSG_RESPONSE_1.getType())
                     .setCompressionType(TypeComp.LZ4.getType())
                     .setTotalLen(MSG_HEADER_LEN + getCompressedJsonLen())
@@ -76,7 +74,7 @@ public class PackMsgResponse1 extends MsgPacker {
                     .setLocalChainId(Base64.decode(headerLocalChainId, Base64.NO_WRAP))
                     .build();
         } else {
-            this.header = new MessageHeader.Builder()
+            this.header = new MsgHeader.Builder()
                     .setMsgType(TypeMsg.MSG_RESPONSE_1.getType())
                     .setCompressionType(TypeComp.LZ4.getType())
                     .setTotalLen(MSG_HEADER_LEN + getCompressedJsonLen())

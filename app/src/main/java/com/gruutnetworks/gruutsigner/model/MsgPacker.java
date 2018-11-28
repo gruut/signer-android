@@ -1,8 +1,5 @@
-package com.gruutnetworks.gruutsigner.gruut;
+package com.gruutnetworks.gruutsigner.model;
 
-import com.gruutnetworks.gruutsigner.model.TypeComp;
-import com.gruutnetworks.gruutsigner.model.TypeMac;
-import com.gruutnetworks.gruutsigner.model.TypeMsg;
 import com.gruutnetworks.gruutsigner.util.CompressionUtil;
 import com.gruutnetworks.gruutsigner.util.KeystoreUtil;
 
@@ -14,7 +11,7 @@ public abstract class MsgPacker {
 
     abstract byte[] bodyToJson();
 
-    MessageHeader header;
+    MsgHeader header;
 
     int getCompressedJsonLen() {
         return CompressionUtil.compress(bodyToJson()).length;

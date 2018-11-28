@@ -1,7 +1,5 @@
-package com.gruutnetworks.gruutsigner.gruut;
+package com.gruutnetworks.gruutsigner.model;
 
-import com.gruutnetworks.gruutsigner.model.TypeComp;
-import com.gruutnetworks.gruutsigner.model.TypeMsg;
 import com.gruutnetworks.gruutsigner.util.CompressionUtil;
 import com.gruutnetworks.gruutsigner.util.KeystoreUtil;
 
@@ -9,13 +7,13 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
 
-import static com.gruutnetworks.gruutsigner.gruut.MessageHeader.*;
-import static com.gruutnetworks.gruutsigner.gruut.MessageHeader.MSG_HEADER_LEN;
+import static com.gruutnetworks.gruutsigner.model.MsgHeader.*;
+import static com.gruutnetworks.gruutsigner.model.MsgHeader.MSG_HEADER_LEN;
 
 public abstract class MsgUnpacker {
     abstract void bodyFromJson(byte[] bodyBytes);
 
-    MessageHeader header;
+    MsgHeader header;
     byte[] body;
     byte[] mac;
     boolean macValidity;
@@ -23,7 +21,7 @@ public abstract class MsgUnpacker {
     void parse(byte[] bytes) {
         int offset = 0;
 
-        MessageHeader header = new MessageHeader.Builder()
+        MsgHeader header = new MsgHeader.Builder()
                 .setGruutConstant(bytes[offset++])
                 .setMainVersion((byte) (bytes[offset] >> 4))
                 .setSubVersion((byte) (bytes[offset++] & 0x0f))
@@ -58,7 +56,7 @@ public abstract class MsgUnpacker {
         }
     }
 
-    private boolean checkMacValidity(MessageHeader header, byte[] compressedData, byte[] mac) {
+    private boolean checkMacValidity(MsgHeader header, byte[] compressedData, byte[] mac) {
         try {
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             outputStream.write(header.convertToByteArr());

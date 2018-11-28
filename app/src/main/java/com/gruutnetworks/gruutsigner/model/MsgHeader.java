@@ -1,15 +1,12 @@
-package com.gruutnetworks.gruutsigner.gruut;
+package com.gruutnetworks.gruutsigner.model;
 
 import android.util.Base64;
-import com.gruutnetworks.gruutsigner.model.TypeComp;
-import com.gruutnetworks.gruutsigner.model.TypeMac;
-import com.gruutnetworks.gruutsigner.model.TypeMsg;
 import org.spongycastle.util.encoders.Hex;
 
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 
-public class MessageHeader {
+public class MsgHeader {
     public static final int MSG_HEADER_LEN = 32;
     public static final int HEADER_TOTAL_LEN_SIZE = 4;
     public static final int HEADER_LOCAL_CHAIN_ID_SIZE = 8;
@@ -28,7 +25,7 @@ public class MessageHeader {
     private final byte[] sender;        // 64 bits
     private final byte[] reserved;      // 48 bits
 
-    private MessageHeader(Builder builder) {
+    private MsgHeader(Builder builder) {
         this.gruutConstant = builder.gruutConstant;
         this.mainVersion = builder.mainVersion;
         this.subVersion = builder.subVersion;
@@ -114,8 +111,8 @@ public class MessageHeader {
         private byte[] sender = new byte[HEADER_SENDER_SIZE];
         private byte[] reserved = new byte[HEADER_RESERVED_SIZE];
 
-        public MessageHeader build() {
-            return new MessageHeader(this);
+        public MsgHeader build() {
+            return new MsgHeader(this);
         }
 
         public Builder setGruutConstant(byte gruutConstant) {

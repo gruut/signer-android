@@ -1,4 +1,4 @@
-package com.gruutnetworks.gruutsigner.gruut;
+package com.gruutnetworks.gruutsigner.model;
 
 import com.google.gson.Gson;
 import com.google.gson.annotations.Expose;
