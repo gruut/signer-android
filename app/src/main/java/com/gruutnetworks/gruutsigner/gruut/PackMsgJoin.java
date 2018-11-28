@@ -9,7 +9,7 @@ import com.gruutnetworks.gruutsigner.model.TypeMsg;
 
 import static com.gruutnetworks.gruutsigner.gruut.MessageHeader.MSG_HEADER_LEN;
 
-public class ReqMsgJoin extends ReqMsg {
+public class PackMsgJoin extends MsgPacker {
     @Expose
     @SerializedName("sender")
     private String sender;  // BASE64 encoded 8 byte data
@@ -23,7 +23,7 @@ public class ReqMsgJoin extends ReqMsg {
     @SerializedName("cID")
     private String localChainId;  // BASE64 encoded 8 byte data
 
-    public ReqMsgJoin(String sender, String time, String ver, String localChainId) {
+    public PackMsgJoin(String sender, String time, String ver, String localChainId) {
         this.sender = sender;
         this.time = time;
         this.ver = ver;
@@ -46,6 +46,6 @@ public class ReqMsgJoin extends ReqMsg {
     @Override
     public byte[] bodyToJson() {
         Gson gson = new Gson();
-        return gson.toJson(ReqMsgJoin.this).getBytes();
+        return gson.toJson(PackMsgJoin.this).getBytes();
     }
 }

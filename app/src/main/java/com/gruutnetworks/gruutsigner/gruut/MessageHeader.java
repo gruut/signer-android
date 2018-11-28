@@ -1,5 +1,6 @@
 package com.gruutnetworks.gruutsigner.gruut;
 
+import android.util.Base64;
 import com.gruutnetworks.gruutsigner.model.TypeComp;
 import com.gruutnetworks.gruutsigner.model.TypeMac;
 import com.gruutnetworks.gruutsigner.model.TypeMsg;
@@ -92,6 +93,10 @@ public class MessageHeader {
         return TypeMsg.convert(msgType);
     }
 
+    public TypeMac getMacType() {
+        return TypeMac.convert(macType);
+    }
+
     public TypeComp getCompressType() {
         return TypeComp.convert(compressionType);
     }
@@ -105,7 +110,7 @@ public class MessageHeader {
         private byte compressionType = TypeComp.NONE.getType();
         private byte notUsed = 0;
         private byte[] totalLen = new byte[HEADER_TOTAL_LEN_SIZE];
-        private byte[] localChainId = new byte[HEADER_LOCAL_CHAIN_ID_SIZE];
+        private byte[] localChainId = Base64.decode("R0VOVEVTVDE=", Base64.NO_WRAP);
         private byte[] sender = new byte[HEADER_SENDER_SIZE];
         private byte[] reserved = new byte[HEADER_RESERVED_SIZE];
 

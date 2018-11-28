@@ -4,7 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
-public class ResMsgChallenge extends ResMsg {
+public class UnpackMsgAccept extends MsgUnpacker {
     @Expose
     @SerializedName("sender")
     private String sender;
@@ -12,21 +12,25 @@ public class ResMsgChallenge extends ResMsg {
     @SerializedName("time")
     private String time;
     @Expose
-    @SerializedName("mN")
-    private String mergerNonce;
+    @SerializedName("val")
+    private boolean val;
 
-    public ResMsgChallenge(byte[] bytes) {
-        parse(bytes); // parse the whole message
+    public UnpackMsgAccept(byte[] bytes) {
+        parse(bytes);
         bodyFromJson(body);
+    }
+
+    public boolean isVal() {
+        return val;
     }
 
     @Override
     void bodyFromJson(byte[] bodyBytes) {
         Gson gson = new Gson();
-        ResMsgChallenge msgChallenge = gson.fromJson(new String(bodyBytes), ResMsgChallenge.class);
+        UnpackMsgAccept msgAccept = gson.fromJson(new String(bodyBytes), UnpackMsgAccept.class);
 
-        this.sender = msgChallenge.sender;
-        this.time = msgChallenge.time;
-        this.mergerNonce = msgChallenge.mergerNonce;
+        this.sender = msgAccept.sender;
+        this.time = msgAccept.time;
+        this.val = msgAccept.val;
     }
 }
