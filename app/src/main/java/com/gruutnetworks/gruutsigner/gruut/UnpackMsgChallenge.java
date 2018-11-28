@@ -4,6 +4,11 @@ import com.google.gson.Gson;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
+/**
+ * Title: Challenge for Join
+ * Description: Requesting identity verification from Merger to Signer
+ * Message Type: 0x55
+ */
 public class UnpackMsgChallenge extends MsgUnpacker {
     @Expose
     @SerializedName("sender")

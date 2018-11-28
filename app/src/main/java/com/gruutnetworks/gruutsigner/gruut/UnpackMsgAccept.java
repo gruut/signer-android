@@ -4,6 +4,11 @@ import com.google.gson.Gson;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
+/**
+ * Title: Approval for Joining
+ * Description: Merger approves Signer's participation
+ * Message Type: 0x59
+ */
 public class UnpackMsgAccept extends MsgUnpacker {
     @Expose
     @SerializedName("sender")

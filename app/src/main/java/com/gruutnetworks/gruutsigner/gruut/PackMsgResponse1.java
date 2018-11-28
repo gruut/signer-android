@@ -9,6 +9,11 @@ import com.gruutnetworks.gruutsigner.model.TypeMsg;
 
 import static com.gruutnetworks.gruutsigner.gruut.MessageHeader.MSG_HEADER_LEN;
 
+/**
+ * Title: Response1 to Challenge
+ * Description: Merger's response to identity verification request from Signer
+ * Message Type: 0x56
+ */
 public class PackMsgResponse1 extends MsgPacker {
     @Expose(serialize = false)
     private String headerLocalChainId;

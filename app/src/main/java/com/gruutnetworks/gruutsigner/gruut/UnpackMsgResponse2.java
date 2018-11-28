@@ -4,6 +4,11 @@ import com.google.gson.Gson;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
+/**
+ * Title: Response2 to Challenge
+ * Description: Signer's response to Response1 from Merger
+ * Message Type: 0x57
+ */
 public class UnpackMsgResponse2 extends MsgUnpacker {
     @Expose
     @SerializedName("sender")

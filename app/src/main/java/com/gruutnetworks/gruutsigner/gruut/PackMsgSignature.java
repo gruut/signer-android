@@ -9,6 +9,11 @@ import com.gruutnetworks.gruutsigner.model.TypeMsg;
 
 import static com.gruutnetworks.gruutsigner.gruut.MessageHeader.MSG_HEADER_LEN;
 
+/**
+ * Title: Signer's Signature
+ * Description: Signer's signature to Merger
+ * Message Type: 0xB3
+ */
 public class PackMsgSignature extends MsgPacker {
     @Expose(serialize = false)
     private String headerLocalChainId;

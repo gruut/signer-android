@@ -10,6 +10,11 @@ import com.gruutnetworks.gruutsigner.model.TypeMsg;
 
 import static com.gruutnetworks.gruutsigner.gruut.MessageHeader.MSG_HEADER_LEN;
 
+/**
+ * Title: Success in Key Exchange
+ * Description: Success in Diff-Hellman Key Exchange
+ * Message Type: 0x58
+ */
 public class PackMsgSuccess extends MsgPacker {
     @Expose(serialize = false)
     private String headerLocalChainId;

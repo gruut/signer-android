@@ -4,6 +4,11 @@ import com.google.gson.Gson;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
+/**
+ * Title: Partial Block
+ * Description: Temporary block for Merger to request Signer to sign
+ * Message Type: 0xB2
+ */
 public class UnpackMsgRequestSignature extends MsgUnpacker {
     @Expose
     @SerializedName("time")

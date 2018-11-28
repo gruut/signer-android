@@ -9,6 +9,11 @@ import com.gruutnetworks.gruutsigner.model.TypeMsg;
 
 import static com.gruutnetworks.gruutsigner.gruut.MessageHeader.MSG_HEADER_LEN;
 
+/**
+ * Title: Join
+ * Description: Signer's network participation request
+ * Message Type: 0x54
+ */
 public class PackMsgJoin extends MsgPacker {
     @Expose
     @SerializedName("sender")
