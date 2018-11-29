@@ -4,7 +4,6 @@ import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyProperties;
 import android.util.Base64;
 import android.util.Log;
-import org.jetbrains.annotations.TestOnly;
 import org.spongycastle.asn1.DERBitString;
 import org.spongycastle.asn1.DERSet;
 import org.spongycastle.asn1.pkcs.Attribute;
@@ -21,7 +20,6 @@ import org.spongycastle.crypto.util.PublicKeyFactory;
 import org.spongycastle.crypto.util.SubjectPublicKeyInfoFactory;
 import org.spongycastle.jce.ECNamedCurveTable;
 import org.spongycastle.jce.spec.ECParameterSpec;
-import org.spongycastle.jce.spec.ECPrivateKeySpec;
 import org.spongycastle.jce.spec.ECPublicKeySpec;
 import org.spongycastle.math.ec.ECCurve;
 import org.spongycastle.util.encoders.Hex;
@@ -368,7 +366,16 @@ public class KeystoreUtil {
      */
     public byte[] pubToXpoint(PublicKey pubKey) {
         ECPublicKey key = (ECPublicKey) pubKey;
-        return Hex.encode(key.getW().getAffineX().toByteArray());
+        byte[] bytes = key.getW().getAffineX().toByteArray();
+
+        // BigInteger를 byte array로 변환 하면 자동으로 맨 앞에 0을 붙여서 출력하므로 제거함
+        if (bytes[0] == 0) {
+            byte[] tmp = new byte[bytes.length - 1];
+            System.arraycopy(bytes, 1, tmp, 0, tmp.length);
+            bytes = tmp;
+        }
+
+        return Hex.encode(bytes);
     }
 
     /**
@@ -379,7 +386,16 @@ public class KeystoreUtil {
      */
     public byte[] pubToYpoint(PublicKey pubKey) {
         ECPublicKey key = (ECPublicKey) pubKey;
-        return Hex.encode(key.getW().getAffineY().toByteArray());
+        byte[] bytes = key.getW().getAffineY().toByteArray();
+
+        // BigInteger를 byte array로 변환 하면 자동으로 맨 앞에 0을 붙여서 출력하므로 제거함
+        if (bytes[0] == 0) {
+            byte[] tmp = new byte[bytes.length - 1];
+            System.arraycopy(bytes, 1, tmp, 0, tmp.length);
+            bytes = tmp;
+        }
+
+        return Hex.encode(bytes);
     }
 
     /**
@@ -444,14 +460,19 @@ public class KeystoreUtil {
     /**
      * Generates HMAC signature
      *
-     * @param data  인증 할 Data
-     * @return  HMAC signature
+     * @param data 인증 할 Data
+     * @return HMAC signature
      */
-    public static byte[] getHmacSignature( byte[] data) {
+    public static byte[] getHmacSignature(byte[] data) {
         try {
             PreferenceUtil preferenceUtil = PreferenceUtil.getInstance();
             // HMAC sign할 때 쓸 key(DH Key교환으로 생성한 shared secret key
             String key = preferenceUtil.getString(PreferenceUtil.Key.HMAC_STR);
+
+            if (key == null || key.isEmpty()) {
+                // Shared secret key not found.
+                return null;
+            }
 
             Mac sha256Hmac = Mac.getInstance(TYPE_HMAC);
             SecretKeySpec secretKey = new SecretKeySpec(key.getBytes("UTF-8"), TYPE_HMAC);
@@ -466,7 +487,7 @@ public class KeystoreUtil {
     }
 
     public static boolean verifyHmacSignature(byte[] data, byte[] mac) {
-        return Arrays.equals(getHmacSignature(data) , mac);
+        return Arrays.equals(getHmacSignature(data), mac);
     }
 
     public interface SecurityConstants {
