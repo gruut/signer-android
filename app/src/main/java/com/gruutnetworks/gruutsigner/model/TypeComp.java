@@ -13,4 +13,13 @@ public enum TypeComp {
     public byte getType() {
         return typeVal;
     }
+
+    public static TypeComp convert(byte value) {
+        for (TypeComp t : TypeComp.values()) {
+            if (t.getType() == value) {
+                return t;
+            }
+        }
+        return NONE;
+    }
 }

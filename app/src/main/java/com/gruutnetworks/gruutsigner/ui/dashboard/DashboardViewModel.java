@@ -15,10 +15,7 @@ import com.gruutnetworks.gruutsigner.R;
 import com.gruutnetworks.gruutsigner.exceptions.AsyncException;
 import com.gruutnetworks.gruutsigner.exceptions.AuthUtilException;
 import com.gruutnetworks.gruutsigner.exceptions.ErrorMsgException;
-import com.gruutnetworks.gruutsigner.gruut.Merger;
-import com.gruutnetworks.gruutsigner.gruut.MergerList;
-import com.gruutnetworks.gruutsigner.gruut.Message;
-import com.gruutnetworks.gruutsigner.gruut.MessageHeader;
+import com.gruutnetworks.gruutsigner.gruut.*;
 import com.gruutnetworks.gruutsigner.model.*;
 import com.gruutnetworks.gruutsigner.util.*;
 import io.grpc.ManagedChannel;
@@ -33,9 +30,6 @@ import java.security.cert.CertificateException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-
-import static com.gruutnetworks.gruutsigner.gruut.MessageHeader.MSG_HEADER_LEN;
-import static com.gruutnetworks.gruutsigner.model.TypeMsg.MSG_JOIN;
 
 public class DashboardViewModel extends AndroidViewModel implements LifecycleObserver {
 
@@ -52,7 +46,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
     private ManagedChannel channel2;
 
     private String sender;
-    private String localChainId = "12345";
+    private String localChainId = "R0VOVEVTVDE=";
     private String ver = "1";
 
     private String signerNonce;
@@ -91,9 +85,9 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
             public void run() {
                 SystemClock.sleep(1000);
                 try {
-                    MessageChallenge challenge = requestJoin(channel1);
-                    MessageResponse2 response2 = sendPublicKey(channel1, challenge);
-                    MessageAccept accept = sendSuccess(channel1, response2);
+                    UnpackMsgChallenge challenge = requestJoin(channel1);
+                    UnpackMsgResponse2 response2 = sendPublicKey(channel1, challenge);
+                    UnpackMsgAccept accept = sendSuccess(channel1, response2);
                     if (accept.isVal()) {
                         standBy(channel1);
                     }
@@ -105,7 +99,6 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
             }
         }.start();
     }
-
 
 
     private ManagedChannel setChannel(Merger merger) {
@@ -120,39 +113,31 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
      * @return received MSG_CHALLENGE
      * @throws StatusRuntimeException on GRPC error
      */
-    private MessageChallenge requestJoin(ManagedChannel channel) throws StatusRuntimeException {
+    private UnpackMsgChallenge requestJoin(ManagedChannel channel) throws StatusRuntimeException {
         testData.postValue("START requestJoin...");
-        MessageJoin messageJoin = new MessageJoin();
-        messageJoin.setSender(sender);
-        messageJoin.setTime(AuthUtil.getTimestamp());
-        messageJoin.setVer(ver);
-        messageJoin.setLocalChainId(localChainId);
 
-        MessageHeader header = new MessageHeader.Builder()
-                .setMsgType(MSG_JOIN.getType())
-                .setTotalLen(MSG_HEADER_LEN + messageJoin.getJson().length)
-                .setLocalChainId(localChainId.getBytes())
-                .setSender(sender.getBytes())
-                .build();
+        PackMsgJoin packMsgJoin = new PackMsgJoin(
+                Base64.encodeToString(sender.getBytes(), Base64.NO_WRAP),
+                AuthUtil.getTimestamp(),
+                ver,
+                localChainId
+        );
 
-        Message message = new Message(header, messageJoin.getJson(), null);
-        Message receivedMsg = null;
+        MsgUnpacker receivedMsg = null;
         try {
             testData.postValue("[SEND]" + "MSG_JOIN");
-            receivedMsg = new GrpcTask(channel).execute(message).get();
-        } catch (InterruptedException | ExecutionException e) {
+            receivedMsg = new GrpcTask(channel).execute(packMsgJoin).get();
+        } catch (InterruptedException | ExecutionException | StatusRuntimeException e) {
             throw new AsyncException();
-        } catch (StatusRuntimeException e) {
-            throw e;
         }
 
         // Check received message's type
-        if (receivedMsg == null || receivedMsg.getHeader().getMsgType() == TypeMsg.MSG_ERROR) {
+        if (receivedMsg == null || receivedMsg.getMessageType() == TypeMsg.MSG_ERROR) {
             throw new ErrorMsgException();
         }
 
         testData.postValue("[RECEIVE]" + "MSG_CHALLENGE");
-        return gson.fromJson(new String(receivedMsg.getCompressedJsonMsg()), MessageChallenge.class);
+        return (UnpackMsgChallenge) receivedMsg;
     }
 
     /**
@@ -164,7 +149,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
      * @return received MSG_RESPONSE_2
      * @throws StatusRuntimeException on GRPC error
      */
-    private MessageResponse2 sendPublicKey(ManagedChannel channel, MessageChallenge messageChallenge) throws StatusRuntimeException {
+    private UnpackMsgResponse2 sendPublicKey(ManagedChannel channel, UnpackMsgChallenge messageChallenge) throws StatusRuntimeException {
         testData.postValue("START sendPublicKey...");
 
         // generate signer nonce
@@ -209,41 +194,31 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
             throw new AuthUtilException(AuthUtilException.AuthErr.NO_CERT_ERROR);
         }
 
-        MessageResponse1 response1 = new MessageResponse1();
-        response1.setSignerNonce(signerNonce);
-        response1.setSig(signature);
-        response1.setDhPubKeyX(x);
-        response1.setDhPubKeyY(y);
-        response1.setSender(sender);
-        response1.setTime(time);
-        response1.setCert(cert);
+        PackMsgResponse1 msgResponse1 = new PackMsgResponse1(
+                Base64.encodeToString(sender.getBytes(), Base64.NO_WRAP),
+                time,
+                cert,
+                signerNonce,
+                x,  /* HEX */
+                y,  /* HEX */
+                signature /* BASE64 */
+        );
 
-        MessageHeader header = new MessageHeader.Builder()
-                .setMsgType(TypeMsg.MSG_RESPONSE_1.getType())
-                .setTotalLen(MSG_HEADER_LEN + response1.getJson().length)
-                .setLocalChainId(localChainId.getBytes())
-                .setSender(sender.getBytes())
-                .build();
-
-        Message message = new Message(header, response1.getJson(), null);
-        Message receivedMsg = null;
+        MsgUnpacker receivedMsg = null;
         try {
             testData.postValue("[SEND]" + "MSG_RESPONSE_1");
-            receivedMsg = new GrpcTask(channel).execute(message).get();
-        } catch (InterruptedException | ExecutionException e) {
+            receivedMsg = new GrpcTask(channel).execute(msgResponse1).get();
+        } catch (InterruptedException | ExecutionException | StatusRuntimeException e) {
             throw new AsyncException();
-        } catch (StatusRuntimeException e) {
-            throw e;
         }
 
-
         // Check received message's type
-        if (receivedMsg == null || receivedMsg.getHeader().getMsgType() == TypeMsg.MSG_ERROR) {
+        if (receivedMsg == null || receivedMsg.getMessageType() == TypeMsg.MSG_ERROR) {
             throw new ErrorMsgException();
         }
 
         testData.postValue("[RECEIVED]" + "MSG_RESPONSE_2");
-        return gson.fromJson(new String(receivedMsg.getCompressedJsonMsg()), MessageResponse2.class);
+        return (UnpackMsgResponse2) receivedMsg;
     }
 
     /**
@@ -255,10 +230,11 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
      * @return received MSG_ACCEPT
      * @throws StatusRuntimeException on GRPC error
      */
-    private MessageAccept sendSuccess(ManagedChannel channel, MessageResponse2 messageResponse2) throws StatusRuntimeException {
+    private UnpackMsgAccept sendSuccess(ManagedChannel channel, UnpackMsgResponse2 messageResponse2) throws StatusRuntimeException {
         // signature 검증
         String input = mergerNonce + signerNonce + messageResponse2.getDhPubKeyX() +
                 messageResponse2.getDhPubKeyY() + messageResponse2.getTime();
+
         boolean isSigValid = false;
         try {
             isSigValid = keystoreUtil.verifyData(input, messageResponse2.getSig(), messageResponse2.getCert());
@@ -290,30 +266,16 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         // HMAC KEY 저장
         preferenceUtil.put(PreferenceUtil.Key.HMAC_STR, new String(hmac));
 
-        // 성공 메세지 송신
-        MessageSuccess messageSuccess = new MessageSuccess();
-        messageSuccess.setSender(sender);
-        messageSuccess.setTime(AuthUtil.getTimestamp());
-        messageSuccess.setVal(true);
+        PackMsgSuccess msgSuccess = new PackMsgSuccess(
+                Base64.encodeToString(sender.getBytes(), Base64.NO_WRAP),
+                AuthUtil.getTimestamp(),
+                true
+        );
 
-        MessageHeader header = new MessageHeader.Builder()
-                .setMsgType(TypeMsg.MSG_SUCCESS.getType())
-                .setMacType(TypeMac.HMAC_SHA256.getType())
-                .setTotalLen(MSG_HEADER_LEN + messageSuccess.getJson().length)
-                .setLocalChainId(localChainId.getBytes())
-                .setSender(sender.getBytes())
-                .build();
-
-        Message message = new Message(header, messageSuccess.getJson(), null);
-        byte[] signature = keystoreUtil.getHmacSignature(preferenceUtil.getString(PreferenceUtil.Key.HMAC_STR),
-                message.convertToByteArrWithoutSig());
-
-        message.setSignature(signature);
-
-        Message receivedMsg = null;
+        MsgUnpacker receivedMsg = null;
         try {
             testData.postValue("[SEND]" + "MSG_SUCCESS");
-            receivedMsg = new GrpcTask(channel).execute(message).get();
+            receivedMsg = new GrpcTask(channel).execute(msgSuccess).get();
         } catch (InterruptedException | ExecutionException e) {
             throw new AsyncException();
         } catch (StatusRuntimeException e) {
@@ -322,12 +284,12 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
 
 
         // Check received message's type
-        if (receivedMsg == null || receivedMsg.getHeader().getMsgType() == TypeMsg.MSG_ERROR) {
+        if (receivedMsg == null || receivedMsg.getMessageType() == TypeMsg.MSG_ERROR) {
             throw new ErrorMsgException();
         }
 
         testData.postValue("[RECEIVED]" + "MSG_ACCEPT");
-        return gson.fromJson(new String(receivedMsg.getCompressedJsonMsg()), MessageAccept.class);
+        return (UnpackMsgAccept) receivedMsg;
     }
 
     private void standBy(ManagedChannel channel) {
@@ -361,19 +323,18 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
     }
 
     private void sendSignature(ManagedChannel channel, GrpcMsgReqSsig grpcMsgReqSsig) throws StatusRuntimeException {
-        Message msg = new Message(grpcMsgReqSsig.getMessage().toByteArray());
+        UnpackMsgRequestSignature msgRequestSignature
+                = new UnpackMsgRequestSignature(grpcMsgReqSsig.getMessage().toByteArray());
+
         String signature;
         try {
-            // TODO 임시블록 검증하는 부분이 필요함.
-            MessageRequestSignature requestSignature = gson.fromJson(new String(msg.getCompressedJsonMsg()), MessageRequestSignature.class);
-
             // TODO hard coded. check this out later
             ByteBuffer buffer = ByteBuffer.allocate(72);
             buffer.putInt(Integer.parseInt(sender));
-            buffer.putInt(Integer.parseInt(requestSignature.getTime()));
-            buffer.put(Base64.decode(requestSignature.getmID(), Base64.NO_WRAP));
-            buffer.putInt(Integer.parseInt(requestSignature.getBlockHeight()));
-            buffer.put(Base64.decode(requestSignature.getTransaction(), Base64.NO_WRAP));
+            buffer.putInt(Integer.parseInt(msgRequestSignature.getTime()));
+            buffer.put(Base64.decode(msgRequestSignature.getmID(), Base64.NO_WRAP));
+            buffer.putInt(Integer.parseInt(msgRequestSignature.getBlockHeight()));
+            buffer.put(Base64.decode(msgRequestSignature.getTransaction(), Base64.NO_WRAP));
 
             signature = keystoreUtil.signData(new String(buffer.array()));
             buffer.clear();
@@ -385,27 +346,15 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
             return;
         }
 
-        MessageSignature messageSignature = new MessageSignature();
-        messageSignature.setSid(sender);
-        messageSignature.setTime(AuthUtil.getTimestamp());
-        messageSignature.setSignature(signature);
+        PackMsgSignature msgSignature = new PackMsgSignature(
+                Base64.encodeToString(sender.getBytes(), Base64.NO_WRAP),
+                AuthUtil.getTimestamp(),
+                signature
+        );
 
-        MessageHeader header = new MessageHeader.Builder()
-                .setMsgType(TypeMsg.MSG_SSIG.getType())
-                .setMacType(TypeMac.HMAC_SHA256.getType())
-                .setTotalLen(MSG_HEADER_LEN + messageSignature.getJson().length)
-                .setLocalChainId(localChainId.getBytes())
-                .setSender(sender.getBytes())
-                .build();
-
-        Message message = new Message(header, messageSignature.getJson(), null);
-        byte[] macSig = keystoreUtil.getHmacSignature(preferenceUtil.getString(PreferenceUtil.Key.HMAC_STR),
-                message.convertToByteArrWithoutSig());
-
-        message.setSignature(macSig);
         testData.postValue("[SEND]" + "MSG_JOIN");
         try {
-            new GrpcTask(channel).execute(message);
+            new GrpcTask(channel).execute(msgSignature);
         } catch (StatusRuntimeException e) {
             throw e;
         }
@@ -435,7 +384,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         }
     }
 
-    private static class GrpcTask extends AsyncTask<Message, Void, Message> {
+    private static class GrpcTask extends AsyncTask<MsgPacker, Void, MsgUnpacker> {
 
         private static final int TIME_OUT = 5;
         private long start;
@@ -446,34 +395,34 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         }
 
         @Override
-        protected Message doInBackground(Message... messages) {
-            Message msg = messages[0];
+        protected MsgUnpacker doInBackground(MsgPacker... msgPackers) {
+            MsgPacker msg = msgPackers[0];
 
             GruutNetworkServiceGrpc.GruutNetworkServiceBlockingStub stub = GruutNetworkServiceGrpc.newBlockingStub(channel);
-
             start = System.currentTimeMillis();
+
             try {
-                switch (msg.getHeader().getMsgType()) {
+                switch (msg.getMessageType()) {
                     case MSG_JOIN:
                         GrpcMsgJoin grpcMsgJoin = GrpcMsgJoin.newBuilder()
                                 .setMessage(ByteString.copyFrom(msg.convertToByteArr()))
                                 .build();
 
                         GrpcMsgChallenge grpcMsgChallenge = stub.withDeadlineAfter(TIME_OUT, TimeUnit.SECONDS).join(grpcMsgJoin);
-                        return new Message(grpcMsgChallenge.getMessage().toByteArray());
+                        return new UnpackMsgChallenge(grpcMsgChallenge.getMessage().toByteArray());
                     case MSG_RESPONSE_1:
                         GrpcMsgResponse1 grpcMsgResponse1 = GrpcMsgResponse1.newBuilder()
                                 .setMessage(ByteString.copyFrom(msg.convertToByteArr()))
                                 .build();
 
                         GrpcMsgResponse2 grpcMsgResponse2 = stub.withDeadlineAfter(TIME_OUT, TimeUnit.SECONDS).dhKeyEx(grpcMsgResponse1);
-                        return new Message(grpcMsgResponse2.getMessage().toByteArray());
+                        return new UnpackMsgResponse2(grpcMsgResponse2.getMessage().toByteArray());
                     case MSG_SUCCESS:
                         GrpcMsgSuccess grpcMsgSuccess = GrpcMsgSuccess.newBuilder()
                                 .setMessage(ByteString.copyFrom(msg.convertToByteArr()))
                                 .build();
                         GrpcMsgAccept grpcMsgAccept = stub.withDeadlineAfter(TIME_OUT, TimeUnit.SECONDS).keyExFinished(grpcMsgSuccess);
-                        return new Message(grpcMsgAccept.getMessage().toByteArray());
+                        return new UnpackMsgAccept(grpcMsgAccept.getMessage().toByteArray());
                     case MSG_SSIG:
                         GrpcMsgSsig grpcMsgSsig = GrpcMsgSsig.newBuilder()
                                 .setMessage(ByteString.copyFrom(msg.convertToByteArr()))
@@ -489,7 +438,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         }
 
         @Override
-        protected void onPostExecute(Message result) {
+        protected void onPostExecute(MsgUnpacker result) {
             Log.d(TAG, "Result: " + result);
             Log.d(TAG, "Response Time: " + (System.currentTimeMillis() - start));
         }

@@ -17,4 +17,13 @@ public enum TypeMac {
     public byte getType() {
         return typeVal;
     }
+
+    public static TypeMac convert(byte value) {
+        for (TypeMac t : TypeMac.values()) {
+            if (t.getType() == value) {
+                return t;
+            }
+        }
+        return NONE;
+    }
 }
