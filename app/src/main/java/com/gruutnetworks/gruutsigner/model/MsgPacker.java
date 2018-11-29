@@ -47,7 +47,9 @@ public abstract class MsgPacker {
 
             // Generate the mac if necessary
             byte[] mac = generateMac(header.getMacType(), outputStream.toByteArray());
-            outputStream.write(mac);
+            if (mac != null) {
+                outputStream.write(mac);
+            }
 
             byte[] wholeMsg = outputStream.toByteArray();
             outputStream.close();
