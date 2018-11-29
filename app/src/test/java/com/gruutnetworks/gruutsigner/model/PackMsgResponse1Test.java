@@ -15,14 +15,19 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
 @PrepareForTest({Base64.class})
-public class PackMsgJoinTest extends RobolectricTest {
+public class PackMsgResponse1Test extends RobolectricTest {
 
-    private PackMsgJoin msgJoin;
+    private PackMsgResponse1 msgResponse1;
     private Gson gson;
 
     @Before
     public void setUp() throws Exception {
-        msgJoin = new PackMsgJoin("UAABACACAAE=", "1543323592", "1.0.20181127", "AAAAAAAAAAE=");
+        msgResponse1 = new PackMsgResponse1("UAABACACAAE=", "1543323592",
+                "-----BEGIN CERTIFICATE-----\nMIIDLDCCAhQCBgEZlK1CPjA....\n-----END CERTIFICATE-----",
+                "luLSQgVDnMyZjkAh8h2HNokaY1Oe9Md6a4VpjcdGgzs=",
+                "92943e52e02476bd1a4d74c2498db3b01c204f29a32698495b4ed0a274e12294",
+                "96e2d24205439ccc998e4021f21d8736891a63539ef4c77a6b85698dc746833b",
+                "QWVMP1UfUJIemaLFqnXvQfGqghVCmYH0yXo1/g5hUWAbouuXdTI/O7Gkgz3C5kXhnIWZ+dHp....");
 
         gson = new GsonBuilder().addDeserializationExclusionStrategy(new ExclusionStrategy() {
             @Override
@@ -42,13 +47,13 @@ public class PackMsgJoinTest extends RobolectricTest {
     }
 
     @Test
-    public void checkMsgJoin() {
-        byte[] bytes = msgJoin.convertToByteArr();
+    public void checkMsgResponse1() {
+        byte[] bytes = msgResponse1.convertToByteArr();
 
         MsgPackerTest msgPackerTest = new MsgPackerTest();
         byte[] parsedBody = msgPackerTest.getBodyByteArr(bytes);
-        PackMsgJoin decomp = gson.fromJson(new String(parsedBody), PackMsgJoin.class);
+        PackMsgResponse1 decomp = gson.fromJson(new String(parsedBody), PackMsgResponse1.class);
 
-        assertThat(decomp.bodyToJson(), is(msgJoin.bodyToJson()));
+        assertThat(decomp.bodyToJson(), is(msgResponse1.bodyToJson()));
     }
 }
