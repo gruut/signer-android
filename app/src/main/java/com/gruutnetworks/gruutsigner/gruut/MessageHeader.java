@@ -65,10 +65,14 @@ public class MessageHeader {
 
     @Override
     public String toString() {
+        byte version = (byte) (mainVersion << 4);
+        version += subVersion;
+
         String str = "{";
         str += "gruutConstant: " + String.format("0x%02X", gruutConstant) + ", ";
-        str += "mainVersion: " + mainVersion + ", ";
-        str += "subVersion: " + subVersion + ", ";
+        str += "Version: " + String.format("0x%02X", version) + ", ";
+        str += "mainVersion: " + String.format("0x%01X",mainVersion) + ", ";
+        str += "subVersion: " +String.format("0x%01X", subVersion) + ", ";
         str += "msgType: " + String.format("0x%02X", msgType) + ", ";
         str += "macType: " + String.format("0x%02X", macType) + ", ";
         str += "compressionType: " + String.format("0x%02X", compressionType) + ", ";
@@ -90,7 +94,7 @@ public class MessageHeader {
 
     public static class Builder {
         private byte gruutConstant = 'G';
-        private byte mainVersion = 0x00;
+        private byte mainVersion = 0x01;
         private byte subVersion = 0x00;
         private byte msgType;
         private byte macType = TypeMac.NONE.getType();
