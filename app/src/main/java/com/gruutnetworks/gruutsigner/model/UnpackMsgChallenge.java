@@ -1,6 +1,9 @@
 package com.gruutnetworks.gruutsigner.model;
 
+import com.google.gson.ExclusionStrategy;
+import com.google.gson.FieldAttributes;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
@@ -31,7 +34,19 @@ public class UnpackMsgChallenge extends MsgUnpacker {
 
     @Override
     void bodyFromJson(byte[] bodyBytes) {
-        Gson gson = new Gson();
+        // Super class는 제외하고 deserialize
+        Gson gson = new GsonBuilder().addDeserializationExclusionStrategy(new ExclusionStrategy() {
+            @Override
+            public boolean shouldSkipField(FieldAttributes f) {
+                return f.getDeclaringClass().equals(MsgUnpacker.class);
+            }
+
+            @Override
+            public boolean shouldSkipClass(Class<?> clazz) {
+                return false;
+            }
+        }).create();
+
         UnpackMsgChallenge msgChallenge = gson.fromJson(new String(bodyBytes), UnpackMsgChallenge.class);
 
         this.sender = msgChallenge.sender;

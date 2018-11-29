@@ -1,7 +1,10 @@
 package com.gruutnetworks.gruutsigner.model;
 
 import android.util.Base64;
+import com.google.gson.ExclusionStrategy;
+import com.google.gson.FieldAttributes;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
@@ -65,7 +68,18 @@ public class PackMsgSignature extends MsgPacker {
 
     @Override
     byte[] bodyToJson() {
-        Gson gson = new Gson();
+        // Super class는 제외하고 serialize
+        Gson gson = new GsonBuilder().addSerializationExclusionStrategy(new ExclusionStrategy() {
+            @Override
+            public boolean shouldSkipField(FieldAttributes f) {
+                return f.getDeclaringClass().equals(MsgPacker.class);
+            }
+
+            @Override
+            public boolean shouldSkipClass(Class<?> clazz) {
+                return false;
+            }
+        }).create();
         return gson.toJson(PackMsgSignature.this).getBytes();
     }
 }
