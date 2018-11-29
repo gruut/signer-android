@@ -1,4 +1,4 @@
-package com.gruutnetworks.gruutsigner.gruut;
+package com.gruutnetworks.gruutsigner.model;
 
 import android.util.Base64;
 import org.junit.After;
@@ -9,12 +9,15 @@ import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
-import static org.mockito.ArgumentMatchers.*;
+import static org.junit.Assert.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.powermock.api.mockito.PowerMockito.when;
 
 @RunWith(PowerMockRunner.class)
 @PrepareForTest({Base64.class})
-public class ResMsgChallengeTest {
+public class PackMsgJoinTest {
 
     @Before
     public void setUp() throws Exception {
@@ -23,24 +26,13 @@ public class ResMsgChallengeTest {
         when(Base64.decode(anyString(), anyInt())).thenAnswer(invocation -> java.util.Base64.getMimeDecoder().decode((String) invocation.getArguments()[0]));
     }
 
+
     @After
     public void tearDown() throws Exception {
     }
 
     @Test
-    public void parseMsgChallenge() {
-
-        /*
-         * "sender" : "AAAAAAAAAAE="
-         * "time" : "1543323592"
-         * "mN" : "Z+twlKQjBGwezre8aTFJcrC47BgiX9HLMR8piqNGArY="
-         *
-         * compression type : LZ4
-         * local chain id : "AAAAAAAAAAE="
-         */
-        String sampleMsg = "RwBV/wQAAAAAgwAAAAAAAAABAAAAAAAAAAEAAAAAAAD0N3sibU4iOiJaK3R3bEtRakJHd2V6cmU4YVRGSm" +
-                "NyQzQ3QmdpWDlITE1SOHBpcU5HQXJZXHUwMDNkIiwic2VuZGVyIjoiQUECABVFHQDwBHRpbWUiOiIxNTQzMzIzNTkyIn0=";
-
-        ResMsgChallenge resMsgChallenge = new ResMsgChallenge(Base64.decode(sampleMsg, Base64.NO_WRAP));
+    public void generateMsgJoin() {
+        PackMsgJoin msgJoin = new PackMsgJoin("UAABACACAAE=", "1543323592", "1.0.20181127", "AAAAAAAAAAE=");
     }
 }

@@ -48,7 +48,7 @@ android :
         - 'android-sdk-license-.+'
         - 'google-gdk-license-.+'
 script :
-    - ./gradlew --no-daemon --parallel assembleDebug lintDebug
+    - ./gradlew --no-daemon --parallel assembleDebug lintDebug test
 deploy :
     provider : script
     skip_cleanup : true
