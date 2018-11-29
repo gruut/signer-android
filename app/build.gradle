@@ -39,6 +39,11 @@ android {
     lintOptions {
         disable 'InvalidPackage'
     }
+    testOptions {
+        unitTests {
+            includeAndroidResources = true
+        }
+    }
     dataBinding {
         enabled = true
     }
@@ -104,6 +109,8 @@ dependencies {
     testImplementation 'junit:junit:4.12'
     testImplementation "org.powermock:powermock-module-junit4:1.7.4"
     testImplementation "org.powermock:powermock-api-mockito2:1.7.4"
+    testImplementation 'org.robolectric:robolectric:4.0.2'
+    testImplementation 'androidx.test:core:1.0.0'
     
     androidTestImplementation 'com.android.support.test:runner:1.0.2'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
