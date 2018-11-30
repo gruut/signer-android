@@ -36,6 +36,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
     private static final String TAG = "DashboardViewModel";
 
     public MutableLiveData<String> testData = new MutableLiveData<>();
+    public MutableLiveData<Boolean> error = new MutableLiveData<>();
     private final SingleLiveEvent onRefresh = new SingleLiveEvent();
 
     private KeystoreUtil keystoreUtil;
@@ -69,8 +70,9 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
      * 화면이 다 그려졌을 때 join 시작
      */
     @OnLifecycleEvent(Lifecycle.Event.ON_RESUME)
-    private void onResume() {
+    public void onResume() {
         onRefresh.call();
+        error.setValue(false);
 
         Merger merger = MergerList.MERGER_LIST.get(0);
         channel1 = setChannel(merger);
@@ -92,8 +94,10 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
                     }
                 } catch (ErrorMsgException e) {
                     testData.postValue("[ERROR]" + e.getMessage());
+                    error.postValue(true);
                 } catch (AuthUtilException e) {
                     testData.postValue("[CRYPTO_ERROR]" + e.getMessage());
+                    error.postValue(true);
                 }
             }
         }.start();
@@ -306,21 +310,19 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
             public void onNext(GrpcMsgReqSsig value) {
                 // Signature request from Merger
                 testData.postValue("I've got MSG_REQ_SSIG!");
-                try {
-                    sendSignature(channel, value);
-                } catch (StatusRuntimeException e) {
-                    testData.postValue("[ERROR]" + "Timeout... I gave 5 seconds of mercy.");
-                }
+                sendSignature(channel, value);
             }
 
             @Override
             public void onError(Throwable t) {
                 testData.postValue("This Merger is DEAD... Now Dobby is free!");
+                error.postValue(true);
             }
 
             @Override
             public void onCompleted() {
-
+                testData.postValue("GRPC stream onComplete()");
+                error.postValue(true);
             }
         });
 

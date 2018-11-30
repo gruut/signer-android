@@ -7,5 +7,6 @@
     <color name="textSecondary">#008f77</color>
 
     <color name="background_transparent">#99000000</color>
+    <color name="transparent">#00ffffff</color>
     <color name="white">#FFFFFF</color>
 </resources>
