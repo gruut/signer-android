@@ -39,6 +39,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
     public MutableLiveData<String> addressMerger1 = new MutableLiveData<>();
     public MutableLiveData<Boolean> errorMerger1 = new MutableLiveData<>();
     private final SingleLiveEvent refreshMerger1 = new SingleLiveEvent();
+    private final SingleLiveEvent openSettingDialog = new SingleLiveEvent();
 
     private KeystoreUtil keystoreUtil;
     private PreferenceUtil preferenceUtil;
@@ -105,6 +106,9 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         }.start();
     }
 
+    public void openAddressSetting() {
+        openSettingDialog.call();
+    }
 
     private ManagedChannel setChannel(Merger merger) {
         return ManagedChannelBuilder.forAddress(merger.getUri(), merger.getPort()).usePlaintext().build();
@@ -382,6 +386,10 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
 
     public SingleLiveEvent getRefreshMerger1() {
         return refreshMerger1;
+    }
+
+    public SingleLiveEvent getOpenSettingDialog() {
+        return openSettingDialog;
     }
 
     @Override

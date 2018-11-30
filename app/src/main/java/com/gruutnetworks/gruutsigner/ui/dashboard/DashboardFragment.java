@@ -46,6 +46,10 @@ public class DashboardFragment extends Fragment {
 
         viewModel.getLogMerger1().observe(this, text -> tvLogMerger1.append("\n" + text));
         viewModel.getRefreshMerger1().observe(this , o -> tvLogMerger1.setText(""));
+        viewModel.getOpenSettingDialog().observe(this, o -> {
+            SettingFragment settingFragment = SettingFragment.newInstance();
+            settingFragment.show(getFragmentManager(), "fragment_address_setting");
+        });
     }
 
 }
