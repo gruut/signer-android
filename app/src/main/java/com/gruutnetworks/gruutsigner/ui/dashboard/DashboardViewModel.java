@@ -36,6 +36,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
     private static final String TAG = "DashboardViewModel";
 
     public MutableLiveData<String> logMerger1 = new MutableLiveData<>();
+    public MutableLiveData<String> addressMerger1 = new MutableLiveData<>();
     public MutableLiveData<Boolean> errorMerger1 = new MutableLiveData<>();
     private final SingleLiveEvent refreshMerger1 = new SingleLiveEvent();
 
@@ -76,6 +77,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
 
         Merger merger = MergerList.MERGER_LIST.get(0);
         channel1 = setChannel(merger);
+        addressMerger1.postValue(merger.getUri() + ":" + merger.getPort());
         logMerger1.postValue("[Channel Setting]" + merger.getUri() + ":" + merger.getPort());
         startJoining();
     }
@@ -372,6 +374,10 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
 
     public MutableLiveData<String> getLogMerger1() {
         return logMerger1;
+    }
+
+    public MutableLiveData<String> getAddressMerger1() {
+        return addressMerger1;
     }
 
     public SingleLiveEvent getRefreshMerger1() {
