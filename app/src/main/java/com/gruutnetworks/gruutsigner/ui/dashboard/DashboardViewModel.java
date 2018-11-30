@@ -91,7 +91,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
                         standBy(channel1);
                     }
                 } catch (ErrorMsgException e) {
-                    testData.postValue("[ERROR]" + "MSG_ERROR received...");
+                    testData.postValue("[ERROR]" + e.getMessage());
                 } catch (AuthUtilException e) {
                     testData.postValue("[CRYPTO_ERROR]" + e.getMessage());
                 }
@@ -131,8 +131,11 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         }
 
         // Check received message's type
-        if (receivedMsg == null || receivedMsg.getMessageType() == TypeMsg.MSG_ERROR) {
-            throw new ErrorMsgException();
+        if (receivedMsg == null) {
+            // This error message may be caused by a timeout.
+            throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_NOT_FOUND);
+        } else if (receivedMsg.getMessageType() == TypeMsg.MSG_ERROR) {
+            throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_ERR_RECEIVED);
         }
 
         testData.postValue("[RECEIVE]" + "MSG_CHALLENGE");
@@ -212,8 +215,11 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         }
 
         // Check received message's type
-        if (receivedMsg == null || receivedMsg.getMessageType() == TypeMsg.MSG_ERROR) {
-            throw new ErrorMsgException();
+        if (receivedMsg == null) {
+            // This error message may be caused by a timeout.
+            throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_NOT_FOUND);
+        } else if (receivedMsg.getMessageType() == TypeMsg.MSG_ERROR) {
+            throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_ERR_RECEIVED);
         }
 
         testData.postValue("[RECEIVED]" + "MSG_RESPONSE_2");
@@ -281,10 +287,12 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
             throw e;
         }
 
-
         // Check received message's type
-        if (receivedMsg == null || receivedMsg.getMessageType() == TypeMsg.MSG_ERROR) {
-            throw new ErrorMsgException();
+        if (receivedMsg == null) {
+            // This error message may be caused by a timeout.
+            throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_NOT_FOUND);
+        } else if (receivedMsg.getMessageType() == TypeMsg.MSG_ERROR) {
+            throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_ERR_RECEIVED);
         }
 
         testData.postValue("[RECEIVED]" + "MSG_ACCEPT");
