@@ -44,8 +44,8 @@ public class DashboardFragment extends Fragment {
         TextView tvLogMerger1 = binding.tvLogMerger1;
         tvLogMerger1.setMovementMethod(new ScrollingMovementMethod());
 
-        viewModel.getTestData().observe(this, text -> tvLogMerger1.append("\n" + text));
-        viewModel.getOnRefresh().observe(this , o -> tvLogMerger1.setText(""));
+        viewModel.getLogMerger1().observe(this, text -> tvLogMerger1.append("\n" + text));
+        viewModel.getRefreshMerger1().observe(this , o -> tvLogMerger1.setText(""));
     }
 
 }

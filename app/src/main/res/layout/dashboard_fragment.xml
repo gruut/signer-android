@@ -92,7 +92,7 @@
             android:layout_marginBottom="8dp"
             android:layout_gravity="center"
             android:onClick="@{() -> model.onResume()}"
-            android:visibility="@{safeUnbox(model.error) ? View.VISIBLE : View.GONE}"
+            android:visibility="@{safeUnbox(model.errorMerger1) ? View.VISIBLE : View.GONE}"
             android:src="@drawable/ic_refresh"
             android:background="@color/background_transparent"
             app:layout_constraintBottom_toTopOf="@+id/guideline"
