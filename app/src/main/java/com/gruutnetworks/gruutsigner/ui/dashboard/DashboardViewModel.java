@@ -7,7 +7,6 @@ import android.os.SystemClock;
 import android.support.annotation.NonNull;
 import android.util.Base64;
 import android.util.Log;
-import com.google.gson.Gson;
 import com.google.protobuf.ByteString;
 import com.gruutnetworks.gruutsigner.*;
 import com.gruutnetworks.gruutsigner.Identity;
@@ -15,7 +14,8 @@ import com.gruutnetworks.gruutsigner.R;
 import com.gruutnetworks.gruutsigner.exceptions.AsyncException;
 import com.gruutnetworks.gruutsigner.exceptions.AuthUtilException;
 import com.gruutnetworks.gruutsigner.exceptions.ErrorMsgException;
-import com.gruutnetworks.gruutsigner.gruut.*;
+import com.gruutnetworks.gruutsigner.gruut.Merger;
+import com.gruutnetworks.gruutsigner.gruut.MergerList;
 import com.gruutnetworks.gruutsigner.model.*;
 import com.gruutnetworks.gruutsigner.util.*;
 import io.grpc.ManagedChannel;
@@ -35,9 +35,8 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
 
     private static final String TAG = "DashboardViewModel";
 
-    private final SnackbarMessage snackbarMessage = new SnackbarMessage();
     public MutableLiveData<String> testData = new MutableLiveData<>();
-    public MutableLiveData<Boolean> isChannel1Set = new MutableLiveData<>();
+    private final SingleLiveEvent onRefresh = new SingleLiveEvent();
 
     private KeystoreUtil keystoreUtil;
     private PreferenceUtil preferenceUtil;
@@ -54,8 +53,6 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
 
     private KeyPair keyPair;
 
-    private Gson gson = new Gson();
-
     public DashboardViewModel(@NonNull Application application) {
         super(application);
         this.keystoreUtil = KeystoreUtil.getInstance();
@@ -63,8 +60,8 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         this.sender = Integer.toString(preferenceUtil.getInt(PreferenceUtil.Key.SID_INT));
 
         if (!NetworkUtil.isConnected(application.getApplicationContext())) {
+            SnackbarMessage snackbarMessage = new SnackbarMessage();
             snackbarMessage.postValue(R.string.sign_up_error_network);
-            return;
         }
     }
 
@@ -73,10 +70,12 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
      */
     @OnLifecycleEvent(Lifecycle.Event.ON_RESUME)
     private void onResume() {
+        onRefresh.call();
+
         Merger merger = MergerList.MERGER_LIST.get(0);
         channel1 = setChannel(merger);
         testData.postValue("[Channel Setting]" + merger.getUri() + ":" + merger.getPort());
-        isChannel1Set.postValue(channel1 != null);
+        startJoining();
     }
 
     void startJoining() {
@@ -365,8 +364,8 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         return testData;
     }
 
-    public MutableLiveData<Boolean> getIsChannel1Set() {
-        return isChannel1Set;
+    public SingleLiveEvent getOnRefresh() {
+        return onRefresh;
     }
 
     @Override

@@ -45,9 +45,7 @@ public class DashboardFragment extends Fragment {
         tvLogMerger1.setMovementMethod(new ScrollingMovementMethod());
 
         viewModel.getTestData().observe(this, text -> tvLogMerger1.append("\n" + text));
-        viewModel.getIsChannel1Set().observe(this, aBoolean -> {
-            if (aBoolean) viewModel.startJoining();
-        });
+        viewModel.getOnRefresh().observe(this , o -> tvLogMerger1.setText(""));
     }
 
 }
