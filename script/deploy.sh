@@ -6,6 +6,6 @@ SLACK_TEXT="[ \`$DEPLOY_BRANCH\` | \`$DEPLOY_COMMIT\` ] ${TRAVIS_COMMIT_MESSAGE:
 
 curl https://slack.com/api/files.upload \
   -F "token=$SLACK_KEY" \
-  -F "channels=#test_gruut" \
+  -F "channels=#dev_thevaulters" \
   -F "initial_comment=$SLACK_TEXT" \
   -F "file=@app/build/outputs/apk/debug/app-debug.apk"
