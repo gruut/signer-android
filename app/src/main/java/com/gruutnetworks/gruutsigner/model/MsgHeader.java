@@ -1,14 +1,12 @@
-package com.gruutnetworks.gruutsigner.gruut;
+package com.gruutnetworks.gruutsigner.model;
 
-import com.gruutnetworks.gruutsigner.model.TypeComp;
-import com.gruutnetworks.gruutsigner.model.TypeMac;
-import com.gruutnetworks.gruutsigner.model.TypeMsg;
+import android.util.Base64;
 import org.spongycastle.util.encoders.Hex;
 
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 
-public class MessageHeader {
+public class MsgHeader {
     public static final int MSG_HEADER_LEN = 32;
     public static final int HEADER_TOTAL_LEN_SIZE = 4;
     public static final int HEADER_LOCAL_CHAIN_ID_SIZE = 8;
@@ -27,7 +25,7 @@ public class MessageHeader {
     private final byte[] sender;        // 64 bits
     private final byte[] reserved;      // 48 bits
 
-    private MessageHeader(Builder builder) {
+    private MsgHeader(Builder builder) {
         this.gruutConstant = builder.gruutConstant;
         this.mainVersion = builder.mainVersion;
         this.subVersion = builder.subVersion;
@@ -65,10 +63,14 @@ public class MessageHeader {
 
     @Override
     public String toString() {
+        byte version = (byte) (mainVersion << 4);
+        version += subVersion;
+
         String str = "{";
         str += "gruutConstant: " + String.format("0x%02X", gruutConstant) + ", ";
-        str += "mainVersion: " + mainVersion + ", ";
-        str += "subVersion: " + subVersion + ", ";
+        str += "Version: " + String.format("0x%02X", version) + ", ";
+        str += "mainVersion: " + String.format("0x%01X",mainVersion) + ", ";
+        str += "subVersion: " +String.format("0x%01X", subVersion) + ", ";
         str += "msgType: " + String.format("0x%02X", msgType) + ", ";
         str += "macType: " + String.format("0x%02X", macType) + ", ";
         str += "compressionType: " + String.format("0x%02X", compressionType) + ", ";
@@ -88,21 +90,29 @@ public class MessageHeader {
         return TypeMsg.convert(msgType);
     }
 
+    public TypeMac getMacType() {
+        return TypeMac.convert(macType);
+    }
+
+    public TypeComp getCompressType() {
+        return TypeComp.convert(compressionType);
+    }
+
     public static class Builder {
         private byte gruutConstant = 'G';
-        private byte mainVersion = 0x00;
+        private byte mainVersion = 0x01;
         private byte subVersion = 0x00;
         private byte msgType;
         private byte macType = TypeMac.NONE.getType();
         private byte compressionType = TypeComp.NONE.getType();
         private byte notUsed = 0;
         private byte[] totalLen = new byte[HEADER_TOTAL_LEN_SIZE];
-        private byte[] localChainId = new byte[HEADER_LOCAL_CHAIN_ID_SIZE];
+        private byte[] localChainId = Base64.decode("R0VOVEVTVDE=", Base64.NO_WRAP);
         private byte[] sender = new byte[HEADER_SENDER_SIZE];
         private byte[] reserved = new byte[HEADER_RESERVED_SIZE];
 
-        public MessageHeader build() {
-            return new MessageHeader(this);
+        public MsgHeader build() {
+            return new MsgHeader(this);
         }
 
         public Builder setGruutConstant(byte gruutConstant) {

@@ -14,7 +14,7 @@ import android.widget.TextView;
 import com.gruutnetworks.gruutsigner.R;
 import com.gruutnetworks.gruutsigner.databinding.DashboardFragmentBinding;
 
-public class DashboardFragment extends Fragment {
+public class DashboardFragment extends Fragment implements SettingFragment.SettingDialogInterface {
 
     private DashboardViewModel viewModel;
     private DashboardFragmentBinding binding;
@@ -44,10 +44,19 @@ public class DashboardFragment extends Fragment {
         TextView tvLogMerger1 = binding.tvLogMerger1;
         tvLogMerger1.setMovementMethod(new ScrollingMovementMethod());
 
-        viewModel.getTestData().observe(this, text -> tvLogMerger1.append("\n" + text));
-        viewModel.getIsChannel1Set().observe(this, aBoolean -> {
-            if (aBoolean) viewModel.startJoining();
+        viewModel.getLogMerger1().observe(this, text -> tvLogMerger1.append("\n" + text));
+        viewModel.getRefreshMerger1().observe(this, o -> tvLogMerger1.setText(""));
+        viewModel.getOpenSettingDialog().observe(this, o -> {
+            SettingFragment settingFragment = SettingFragment.newInstance();
+            settingFragment.setTargetFragment(this, 0);
+            settingFragment.show(getFragmentManager(), "fragment_address_setting");
         });
     }
 
+    @Override
+    public void onOkBtnClicked(String ip, String port) {
+        viewModel.ipMerger1.setValue(ip);
+        viewModel.portMerger1.setValue(port);
+        viewModel.onResume();
+    }
 }
