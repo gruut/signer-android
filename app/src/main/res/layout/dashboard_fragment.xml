@@ -66,7 +66,7 @@
 
         <TextView
             android:id="@+id/tv_address_merger1"
-            android:text="@{model.addressMerger1}"
+            android:text="@{model.ipMerger1 + `:` + model.portMerger1}"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textSize="12sp"

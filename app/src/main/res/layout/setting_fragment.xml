@@ -35,7 +35,7 @@
                 android:layout_height="wrap_content"
                 android:hint="IP Address"
                 android:singleLine="true"
-                android:inputType="number"
+                android:inputType="numberDecimal"
                 android:digits="0123456789." />
         </android.support.design.widget.TextInputLayout>
 
