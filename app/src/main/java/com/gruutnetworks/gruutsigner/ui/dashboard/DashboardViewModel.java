@@ -14,8 +14,6 @@ import com.gruutnetworks.gruutsigner.R;
 import com.gruutnetworks.gruutsigner.exceptions.AsyncException;
 import com.gruutnetworks.gruutsigner.exceptions.AuthUtilException;
 import com.gruutnetworks.gruutsigner.exceptions.ErrorMsgException;
-import com.gruutnetworks.gruutsigner.gruut.Merger;
-import com.gruutnetworks.gruutsigner.gruut.MergerList;
 import com.gruutnetworks.gruutsigner.model.*;
 import com.gruutnetworks.gruutsigner.util.*;
 import io.grpc.ManagedChannel;
@@ -36,9 +34,11 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
     private static final String TAG = "DashboardViewModel";
 
     public MutableLiveData<String> logMerger1 = new MutableLiveData<>();
-    public MutableLiveData<String> addressMerger1 = new MutableLiveData<>();
+    public MutableLiveData<String> ipMerger1 = new MutableLiveData<>();
+    public MutableLiveData<String> portMerger1 = new MutableLiveData<>();
     public MutableLiveData<Boolean> errorMerger1 = new MutableLiveData<>();
     private final SingleLiveEvent refreshMerger1 = new SingleLiveEvent();
+    private final SingleLiveEvent openSettingDialog = new SingleLiveEvent();
 
     private KeystoreUtil keystoreUtil;
     private PreferenceUtil preferenceUtil;
@@ -75,11 +75,21 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         refreshMerger1.call();
         errorMerger1.setValue(false);
 
-        Merger merger = MergerList.MERGER_LIST.get(0);
-        channel1 = setChannel(merger);
-        addressMerger1.postValue(merger.getUri() + ":" + merger.getPort());
-        logMerger1.postValue("[Channel Setting]" + merger.getUri() + ":" + merger.getPort());
-        startJoining();
+        ipMerger1.setValue(preferenceUtil.getString(PreferenceUtil.Key.IP_STR));
+        portMerger1.setValue(preferenceUtil.getString(PreferenceUtil.Key.PORT_STR));
+
+        if (ipMerger1.getValue() != null && portMerger1.getValue() != null &&
+                !ipMerger1.getValue().isEmpty() && !portMerger1.getValue().isEmpty()) {
+            channel1 = ManagedChannelBuilder
+                    .forAddress(ipMerger1.getValue(), Integer.parseInt(portMerger1.getValue()))
+                    .usePlaintext()
+                    .build();
+            logMerger1.postValue("[Channel Setting]" + ipMerger1.getValue() + ":" + portMerger1.getValue());
+
+            startJoining();
+        } else {
+            logMerger1.postValue("Please set merger's ip address first.");
+        }
     }
 
     void startJoining() {
@@ -105,9 +115,8 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         }.start();
     }
 
-
-    private ManagedChannel setChannel(Merger merger) {
-        return ManagedChannelBuilder.forAddress(merger.getUri(), merger.getPort()).usePlaintext().build();
+    public void openAddressSetting() {
+        openSettingDialog.call();
     }
 
     /**
@@ -376,12 +385,20 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         return logMerger1;
     }
 
-    public MutableLiveData<String> getAddressMerger1() {
-        return addressMerger1;
+    public MutableLiveData<String> getIpMerger1() {
+        return ipMerger1;
+    }
+
+    public MutableLiveData<String> getPortMerger1() {
+        return portMerger1;
     }
 
     public SingleLiveEvent getRefreshMerger1() {
         return refreshMerger1;
+    }
+
+    public SingleLiveEvent getOpenSettingDialog() {
+        return openSettingDialog;
     }
 
     @Override
