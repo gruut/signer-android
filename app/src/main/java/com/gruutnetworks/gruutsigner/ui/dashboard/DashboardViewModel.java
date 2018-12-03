@@ -75,16 +75,18 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         refreshMerger1.call();
         errorMerger1.setValue(false);
 
-        if (ipMerger1.getValue() != null && portMerger1.getValue() != null) {
-            if (!ipMerger1.getValue().isEmpty() && !portMerger1.getValue().isEmpty()) {
-                channel1 = ManagedChannelBuilder
-                        .forAddress(ipMerger1.getValue(), Integer.parseInt(portMerger1.getValue()))
-                        .usePlaintext()
-                        .build();
-                logMerger1.postValue("[Channel Setting]" + ipMerger1.getValue() + ":" + portMerger1.getValue());
+        ipMerger1.setValue(preferenceUtil.getString(PreferenceUtil.Key.IP_STR));
+        portMerger1.setValue(preferenceUtil.getString(PreferenceUtil.Key.PORT_STR));
 
-                startJoining();
-            }
+        if (ipMerger1.getValue() != null && portMerger1.getValue() != null &&
+                !ipMerger1.getValue().isEmpty() && !portMerger1.getValue().isEmpty()) {
+            channel1 = ManagedChannelBuilder
+                    .forAddress(ipMerger1.getValue(), Integer.parseInt(portMerger1.getValue()))
+                    .usePlaintext()
+                    .build();
+            logMerger1.postValue("[Channel Setting]" + ipMerger1.getValue() + ":" + portMerger1.getValue());
+
+            startJoining();
         } else {
             logMerger1.postValue("Please set merger's ip address first.");
         }

@@ -36,7 +36,8 @@
                 android:hint="IP Address"
                 android:singleLine="true"
                 android:inputType="numberDecimal"
-                android:digits="0123456789." />
+                android:digits="0123456789."
+                android:text="@={model.ipAddress}" />
         </android.support.design.widget.TextInputLayout>
 
         <android.support.design.widget.TextInputLayout
@@ -57,7 +58,8 @@
                 android:hint="Port Number"
                 android:singleLine="true"
                 android:inputType="number"
-                android:digits="0123456789" />
+                android:digits="0123456789"
+                android:text="@={model.portNumber}" />
         </android.support.design.widget.TextInputLayout>
     </android.support.constraint.ConstraintLayout>
 </layout>

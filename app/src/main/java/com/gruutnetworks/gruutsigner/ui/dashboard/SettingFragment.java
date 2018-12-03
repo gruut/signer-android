@@ -34,6 +34,8 @@ public class SettingFragment extends DialogFragment implements View.OnClickListe
                 R.layout.setting_fragment, null, false);
 
         viewModel = ViewModelProviders.of(this).get(SettingViewModel.class);
+        getLifecycle().addObserver(viewModel);
+
         binding.setModel(viewModel);
 
         builder.setView(binding.getRoot())
@@ -43,6 +45,7 @@ public class SettingFragment extends DialogFragment implements View.OnClickListe
                             binding.inputIp.getText().toString(),
                             binding.inputPort.getText().toString());
 
+                    viewModel.pullPreference();
                     dialog.dismiss();
                 });
 
