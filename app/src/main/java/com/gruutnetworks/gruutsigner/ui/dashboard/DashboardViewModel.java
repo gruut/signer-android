@@ -418,7 +418,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
 
     private static class GrpcTask extends AsyncTask<MsgPacker, Void, MsgUnpacker> {
 
-        private static final int TIME_OUT = 5;
+        private static final int TIME_OUT = 10;
         private long start;
         private ManagedChannel channel;
 
@@ -465,6 +465,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
                         return null;
                 }
             } catch (Exception e) {
+                e.printStackTrace();
                 return null;
             }
         }
