@@ -377,7 +377,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
                 signature
         );
 
-        logMerger1.postValue("[SEND]" + "MSG_JOIN");
+        logMerger1.postValue("[SEND]" + "MSG_SSIG");
         try {
             new GrpcTask(channel).execute(msgSignature);
         } catch (StatusRuntimeException e) {
