@@ -210,11 +210,9 @@ public class KeystoreUtil {
      *
      * @return A string encoding of the data signature generated
      */
-    public String signData(String inputStr)
+    public String signData(byte[] data)
             throws KeyStoreException, UnrecoverableEntryException, NoSuchAlgorithmException,
             InvalidKeyException, SignatureException, IOException, CertificateException {
-        byte[] data = inputStr.getBytes();
-
         KeyStore ks = KeyStore.getInstance(KEYSTORE_PROVIDER_ANDROID_KEYSTORE);
         ks.load(null);
 
