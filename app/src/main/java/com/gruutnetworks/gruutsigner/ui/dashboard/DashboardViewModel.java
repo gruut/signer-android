@@ -21,6 +21,7 @@ import io.grpc.ManagedChannelBuilder;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.security.*;
@@ -348,16 +349,20 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
 
         String signature;
         try {
-            // TODO hard coded. check this out later
-            ByteBuffer buffer = ByteBuffer.allocate(72);
-            buffer.putInt(Integer.parseInt(sender));
-            buffer.putInt(Integer.parseInt(msgRequestSignature.getTime()));
-            buffer.put(Base64.decode(msgRequestSignature.getmID(), Base64.NO_WRAP));
-            buffer.putInt(Integer.parseInt(msgRequestSignature.getBlockHeight()));
-            buffer.put(Base64.decode(msgRequestSignature.getTransaction(), Base64.NO_WRAP));
+            // TODO check this out later. format 맞추기
+            byte[] sigSender = ByteBuffer.allocate(8).putInt(Integer.parseInt(sender)).array();
+            byte[] sigTime = ByteBuffer.allocate(8).putInt(Integer.parseInt(msgRequestSignature.getTime())).array();
+            byte[] sigHgt = ByteBuffer.allocate(8).putInt(Integer.parseInt(msgRequestSignature.getBlockHeight())).array();
 
-            signature = keystoreUtil.signData(new String(buffer.array()));
-            buffer.clear();
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            outputStream.write(sigSender);
+            outputStream.write(sigTime);
+            outputStream.write(Base64.decode(msgRequestSignature.getmID(), Base64.NO_WRAP));
+            outputStream.write(sigHgt);
+            outputStream.write(Base64.decode(msgRequestSignature.getTransaction(), Base64.NO_WRAP));
+
+            signature = keystoreUtil.signData(outputStream.toString());
+            outputStream.close();
 
             logMerger1.postValue("Signature generated!");
         } catch (Exception e) {
