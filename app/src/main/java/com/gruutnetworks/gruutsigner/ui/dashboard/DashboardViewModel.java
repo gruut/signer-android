@@ -347,12 +347,13 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         UnpackMsgRequestSignature msgRequestSignature
                 = new UnpackMsgRequestSignature(grpcMsgReqSsig.getMessage().toByteArray());
 
+        String time = AuthUtil.getTimestamp();
         String signature;
         try {
             // TODO check this out later. format 맞추기
-            byte[] sigSender = ByteBuffer.allocate(8).putInt(Integer.parseInt(sender)).array();
-            byte[] sigTime = ByteBuffer.allocate(8).putInt(Integer.parseInt(msgRequestSignature.getTime())).array();
-            byte[] sigHgt = ByteBuffer.allocate(8).putInt(Integer.parseInt(msgRequestSignature.getBlockHeight())).array();
+            byte[] sigSender = ByteBuffer.allocate(8).putLong(Integer.parseInt(sender)).array();
+            byte[] sigTime = ByteBuffer.allocate(8).putLong(Integer.parseInt(time)).array();
+            byte[] sigHgt = ByteBuffer.allocate(8).putLong(Integer.parseInt(msgRequestSignature.getBlockHeight())).array();
 
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             outputStream.write(sigSender);
@@ -373,7 +374,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
 
         PackMsgSignature msgSignature = new PackMsgSignature(
                 Base64.encodeToString(sender.getBytes(), Base64.NO_WRAP),
-                AuthUtil.getTimestamp(),
+                time,
                 signature
         );
 

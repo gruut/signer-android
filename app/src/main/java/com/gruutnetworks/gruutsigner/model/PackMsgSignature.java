@@ -51,6 +51,7 @@ public class PackMsgSignature extends MsgPacker {
         if (headerLocalChainId != null) {
             this.header = new MsgHeader.Builder()
                     .setMsgType(TypeMsg.MSG_SSIG.getType())
+                    .setMacType(TypeMac.HMAC_SHA256.getType())
                     .setCompressionType(TypeComp.LZ4.getType())
                     .setTotalLen(MSG_HEADER_LEN + getCompressedJsonLen())
                     .setSender(Base64.decode(sid, Base64.NO_WRAP)) // Base64 decoding
@@ -59,6 +60,7 @@ public class PackMsgSignature extends MsgPacker {
         } else {
             this.header = new MsgHeader.Builder()
                     .setMsgType(TypeMsg.MSG_SSIG.getType())
+                    .setMacType(TypeMac.HMAC_SHA256.getType())
                     .setCompressionType(TypeComp.LZ4.getType())
                     .setTotalLen(MSG_HEADER_LEN + getCompressedJsonLen())
                     .setSender(Base64.decode(sid, Base64.NO_WRAP)) // Base64 decoding

@@ -1,15 +1,23 @@
 package com.gruutnetworks.gruutsigner.model;
 
 import com.gruutnetworks.gruutsigner.util.CompressionUtil;
+import com.gruutnetworks.gruutsigner.util.KeystoreUtil;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.Arrays;
 
 import static com.gruutnetworks.gruutsigner.model.MsgHeader.*;
 
 public class MsgPackerTest {
+
+    MsgHeader header;
+    byte[] compressedMsg;
+    byte[] mac;
+    byte[] body;
 
     @Before
     public void setUp() throws Exception {
@@ -21,7 +29,7 @@ public class MsgPackerTest {
 
     byte[] getBodyByteArr(byte[] bytes) {
         int offset = 0;
-        MsgHeader header = new MsgHeader.Builder()
+        header = new Builder()
                 .setGruutConstant(bytes[offset++])
                 .setMainVersion((byte) (bytes[offset] >> 4))
                 .setSubVersion((byte) (bytes[offset++] & 0x0f))
@@ -35,10 +43,10 @@ public class MsgPackerTest {
                 .setReserved(Arrays.copyOfRange(bytes, offset, offset += HEADER_RESERVED_SIZE))
                 .build();
 
-        byte[] compressedMsg = Arrays.copyOfRange(bytes, offset, offset += (header.getTotalLen() - MSG_HEADER_LEN));
+        compressedMsg = Arrays.copyOfRange(bytes, offset, offset += (header.getTotalLen() - MSG_HEADER_LEN));
 
-        byte[] mac = Arrays.copyOfRange(bytes, offset, bytes.length);
-        byte[] body = decompressData(header.getCompressType(), compressedMsg);
+        mac = Arrays.copyOfRange(bytes, offset, bytes.length);
+        body = decompressData(header.getCompressType(), compressedMsg);
 
         return body;
     }
@@ -50,6 +58,21 @@ public class MsgPackerTest {
             case NONE:
             default:
                 return data;
+        }
+    }
+
+    boolean checkMacValidity(MsgHeader header, byte[] compressedData, byte[] mac) {
+        try {
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            outputStream.write(header.convertToByteArr());
+            outputStream.write(compressedData);
+
+            byte[] headerAndBody = outputStream.toByteArray();
+            outputStream.close();
+
+            return KeystoreUtil.verifyHmacSignature(headerAndBody, mac);
+        } catch (IOException e) {
+            return false;
         }
     }
 }
