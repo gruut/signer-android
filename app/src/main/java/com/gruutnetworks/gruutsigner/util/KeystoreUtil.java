@@ -210,11 +210,9 @@ public class KeystoreUtil {
      *
      * @return A string encoding of the data signature generated
      */
-    public String signData(String inputStr)
+    public String signData(byte[] data)
             throws KeyStoreException, UnrecoverableEntryException, NoSuchAlgorithmException,
             InvalidKeyException, SignatureException, IOException, CertificateException {
-        byte[] data = inputStr.getBytes();
-
         KeyStore ks = KeyStore.getInstance(KEYSTORE_PROVIDER_ANDROID_KEYSTORE);
         ks.load(null);
 
@@ -475,11 +473,11 @@ public class KeystoreUtil {
             }
 
             Mac sha256Hmac = Mac.getInstance(TYPE_HMAC);
-            SecretKeySpec secretKey = new SecretKeySpec(key.getBytes("UTF-8"), TYPE_HMAC);
+            SecretKeySpec secretKey = new SecretKeySpec(Hex.decode(key.getBytes()), TYPE_HMAC);
             sha256Hmac.init(secretKey);
 
             return sha256Hmac.doFinal(data);
-        } catch (NoSuchAlgorithmException | UnsupportedEncodingException | InvalidKeyException e) {
+        } catch (NoSuchAlgorithmException | InvalidKeyException e) {
             e.printStackTrace();
         }
 

@@ -194,7 +194,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         // Generate Signature
         String signature = null;
         try {
-            signature = keystoreUtil.signData(sigTarget);
+            signature = keystoreUtil.signData(sigTarget.getBytes());
         } catch (KeyStoreException | UnrecoverableEntryException | NoSuchAlgorithmException
                 | SignatureException | InvalidKeyException | CertificateException | IOException e) {
             throw new AuthUtilException(AuthUtilException.AuthErr.SIGNING_ERROR);
@@ -277,15 +277,15 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         }
 
         // HMAC KEY 계산
-        byte[] hmac;
+        byte[] hmacKey;
         try {
-            hmac = keystoreUtil.getSharedSecreyKey(keyPair.getPrivate(), mergerPubKey);
+            hmacKey = keystoreUtil.getSharedSecreyKey(keyPair.getPrivate(), mergerPubKey);
         } catch (NoSuchProviderException | NoSuchAlgorithmException | InvalidKeyException e) {
             throw new AuthUtilException(AuthUtilException.AuthErr.HMAC_KEY_GEN_ERROR);
         }
 
         // HMAC KEY 저장
-        preferenceUtil.put(PreferenceUtil.Key.HMAC_STR, new String(hmac));
+        preferenceUtil.put(PreferenceUtil.Key.HMAC_STR, new String(hmacKey));
 
         PackMsgSuccess msgSuccess = new PackMsgSuccess(
                 Base64.encodeToString(sender.getBytes(), Base64.NO_WRAP),
@@ -347,12 +347,13 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         UnpackMsgRequestSignature msgRequestSignature
                 = new UnpackMsgRequestSignature(grpcMsgReqSsig.getMessage().toByteArray());
 
+        String time = AuthUtil.getTimestamp();
         String signature;
         try {
             // TODO check this out later. format 맞추기
-            byte[] sigSender = ByteBuffer.allocate(8).putInt(Integer.parseInt(sender)).array();
-            byte[] sigTime = ByteBuffer.allocate(8).putInt(Integer.parseInt(msgRequestSignature.getTime())).array();
-            byte[] sigHgt = ByteBuffer.allocate(8).putInt(Integer.parseInt(msgRequestSignature.getBlockHeight())).array();
+            byte[] sigSender = ByteBuffer.allocate(8).putLong(Integer.parseInt(sender)).array();
+            byte[] sigTime = ByteBuffer.allocate(8).putLong(Integer.parseInt(time)).array();
+            byte[] sigHgt = ByteBuffer.allocate(8).putLong(Integer.parseInt(msgRequestSignature.getBlockHeight())).array();
 
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             outputStream.write(sigSender);
@@ -361,7 +362,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
             outputStream.write(sigHgt);
             outputStream.write(Base64.decode(msgRequestSignature.getTransaction(), Base64.NO_WRAP));
 
-            signature = keystoreUtil.signData(outputStream.toString());
+            signature = keystoreUtil.signData(outputStream.toByteArray());
             outputStream.close();
 
             logMerger1.postValue("Signature generated!");
@@ -373,7 +374,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
 
         PackMsgSignature msgSignature = new PackMsgSignature(
                 Base64.encodeToString(sender.getBytes(), Base64.NO_WRAP),
-                AuthUtil.getTimestamp(),
+                time,
                 signature
         );
 
