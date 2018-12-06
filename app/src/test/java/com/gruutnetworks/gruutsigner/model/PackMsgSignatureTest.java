@@ -29,7 +29,7 @@ public class PackMsgSignatureTest extends RobolectricTest {
 
         // preference init
         PreferenceUtil preferenceUtil = PreferenceUtil.getInstance(ApplicationProvider.getApplicationContext());
-        preferenceUtil.put(PreferenceUtil.Key.HMAC_STR, "test_key");
+        preferenceUtil.put(PreferenceUtil.Key.HMAC_STR, "a9b56e68ccbfe9bdcb5dbc82e00859421abd6bfe3c28ee0e7d751e32baf1e65b");
 
         gson = new GsonBuilder().addDeserializationExclusionStrategy(new ExclusionStrategy() {
             @Override
