@@ -194,7 +194,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         // Generate Signature
         String signature = null;
         try {
-            signature = keystoreUtil.signData(sigTarget);
+            signature = keystoreUtil.signData(sigTarget.getBytes());
         } catch (KeyStoreException | UnrecoverableEntryException | NoSuchAlgorithmException
                 | SignatureException | InvalidKeyException | CertificateException | IOException e) {
             throw new AuthUtilException(AuthUtilException.AuthErr.SIGNING_ERROR);
@@ -362,7 +362,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
             outputStream.write(sigHgt);
             outputStream.write(Base64.decode(msgRequestSignature.getTransaction(), Base64.NO_WRAP));
 
-            signature = keystoreUtil.signData(outputStream.toString());
+            signature = keystoreUtil.signData(outputStream.toByteArray());
             outputStream.close();
 
             logMerger1.postValue("Signature generated!");
