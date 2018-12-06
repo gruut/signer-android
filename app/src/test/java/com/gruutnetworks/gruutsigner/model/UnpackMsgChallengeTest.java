@@ -18,7 +18,7 @@ public class UnpackMsgChallengeTest extends RobolectricTest {
     @Before
     public void setUp() throws Exception {
         PreferenceUtil preferenceUtil = PreferenceUtil.getInstance(ApplicationProvider.getApplicationContext());
-        preferenceUtil.put(PreferenceUtil.Key.HMAC_STR, "TEST_KEY");
+        preferenceUtil.put(PreferenceUtil.Key.HMAC_STR, "a9b56e68ccbfe9bdcb5dbc82e00859421abd6bfe3c28ee0e7d751e32baf1e65b");
     }
 
     @After
