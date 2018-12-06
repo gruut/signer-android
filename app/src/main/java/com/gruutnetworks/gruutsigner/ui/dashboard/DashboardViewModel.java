@@ -309,6 +309,8 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
             throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_NOT_FOUND);
         } else if (receivedMsg.getMessageType() == TypeMsg.MSG_ERROR) {
             throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_ERR_RECEIVED);
+        } else if (!receivedMsg.isMacValid()) {
+            throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_INVALID_HMAC);
         }
 
         logMerger1.postValue("[RECEIVED]" + "MSG_ACCEPT");
@@ -322,7 +324,15 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
             public void onNext(GrpcMsgReqSsig value) {
                 // Signature request from Merger
                 logMerger1.postValue("I've got MSG_REQ_SSIG!");
-                sendSignature(channel, value);
+                try {
+                    sendSignature(channel, value);
+                } catch (ErrorMsgException e) {
+                    logMerger1.postValue("[ERROR]" + e.getMessage());
+                    errorMerger1.postValue(true);
+                } catch (AuthUtilException e) {
+                    logMerger1.postValue("[CRYPTO_ERROR]" + e.getMessage());
+                    errorMerger1.postValue(true);
+                }
             }
 
             @Override
@@ -347,6 +357,10 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         UnpackMsgRequestSignature msgRequestSignature
                 = new UnpackMsgRequestSignature(grpcMsgReqSsig.getMessage().toByteArray());
 
+        if (!msgRequestSignature.isMacValid()) {
+            throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_INVALID_HMAC);
+        }
+
         String time = AuthUtil.getTimestamp();
         String signature;
         try {
@@ -367,9 +381,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
 
             logMerger1.postValue("Signature generated!");
         } catch (Exception e) {
-            logMerger1.postValue("Error... signing...\n" + e.getMessage());
-            Log.e(TAG, "Error... signing...\n" + e.getMessage());
-            return;
+            throw new AuthUtilException(AuthUtilException.AuthErr.SIGNING_ERROR);
         }
 
         PackMsgSignature msgSignature = new PackMsgSignature(
