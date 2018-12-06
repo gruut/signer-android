@@ -58,14 +58,20 @@ public abstract class MsgUnpacker {
 
     private boolean checkMacValidity(MsgHeader header, byte[] compressedData, byte[] mac) {
         try {
-            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-            outputStream.write(header.convertToByteArr());
-            outputStream.write(compressedData);
+            switch (header.getMacType()) {
+                case HMAC_SHA256:
+                    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+                    outputStream.write(header.convertToByteArr());
+                    outputStream.write(compressedData);
 
-            byte[] headerAndBody = outputStream.toByteArray();
-            outputStream.close();
+                    byte[] headerAndBody = outputStream.toByteArray();
+                    outputStream.close();
 
-            return KeystoreUtil.verifyHmacSignature(headerAndBody, mac);
+                    return KeystoreUtil.verifyHmacSignature(headerAndBody, mac);
+                case NONE:
+                default:
+                    return true;
+            }
         } catch (IOException e) {
             return false;
         }
