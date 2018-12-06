@@ -277,15 +277,15 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         }
 
         // HMAC KEY 계산
-        byte[] hmac;
+        byte[] hmacKey;
         try {
-            hmac = keystoreUtil.getSharedSecreyKey(keyPair.getPrivate(), mergerPubKey);
+            hmacKey = keystoreUtil.getSharedSecreyKey(keyPair.getPrivate(), mergerPubKey);
         } catch (NoSuchProviderException | NoSuchAlgorithmException | InvalidKeyException e) {
             throw new AuthUtilException(AuthUtilException.AuthErr.HMAC_KEY_GEN_ERROR);
         }
 
         // HMAC KEY 저장
-        preferenceUtil.put(PreferenceUtil.Key.HMAC_STR, new String(hmac));
+        preferenceUtil.put(PreferenceUtil.Key.HMAC_STR, new String(hmacKey));
 
         PackMsgSuccess msgSuccess = new PackMsgSuccess(
                 Base64.encodeToString(sender.getBytes(), Base64.NO_WRAP),
