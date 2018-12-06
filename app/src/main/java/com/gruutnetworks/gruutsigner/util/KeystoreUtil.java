@@ -473,11 +473,11 @@ public class KeystoreUtil {
             }
 
             Mac sha256Hmac = Mac.getInstance(TYPE_HMAC);
-            SecretKeySpec secretKey = new SecretKeySpec(key.getBytes("UTF-8"), TYPE_HMAC);
+            SecretKeySpec secretKey = new SecretKeySpec(Hex.decode(key.getBytes()), TYPE_HMAC);
             sha256Hmac.init(secretKey);
 
             return sha256Hmac.doFinal(data);
-        } catch (NoSuchAlgorithmException | UnsupportedEncodingException | InvalidKeyException e) {
+        } catch (NoSuchAlgorithmException | InvalidKeyException e) {
             e.printStackTrace();
         }
 
