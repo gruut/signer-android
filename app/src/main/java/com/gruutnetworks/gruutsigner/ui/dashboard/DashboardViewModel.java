@@ -20,6 +20,7 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
+import org.spongycastle.util.encoders.Hex;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -191,14 +192,21 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         String x = new String(authHmacUtil.pubToXpoint(keyPair.getPublic()));
         String y = new String(authHmacUtil.pubToYpoint(keyPair.getPublic()));
         String time = AuthGeneralUtil.getTimestamp();
-        String sigTarget = mergerNonce + signerNonce + x + y + time;
-
-        // Generate Signature
         String signature = null;
         try {
-            signature = authCertUtil.signData(sigTarget.getBytes());
-        } catch (KeyStoreException | UnrecoverableEntryException | NoSuchAlgorithmException
-                | SignatureException | InvalidKeyException | CertificateException | IOException e) {
+            byte[] sigTime = ByteBuffer.allocate(8).putLong(Integer.parseInt(time)).array();
+
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            outputStream.write(Base64.decode(mergerNonce, Base64.NO_WRAP));
+            outputStream.write(Base64.decode(signerNonce, Base64.NO_WRAP));
+            outputStream.write(Hex.decode(x));
+            outputStream.write(Hex.decode(y));
+            outputStream.write(sigTime);
+
+            // Generate Signature
+            signature = authCertUtil.signData(outputStream.toByteArray());
+            outputStream.close();
+        } catch (Exception e) {
             throw new AuthUtilException(AuthUtilException.AuthErr.SIGNING_ERROR);
         }
 
@@ -254,15 +262,23 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
      * @throws StatusRuntimeException on GRPC errorMerger1
      */
     private UnpackMsgAccept sendSuccess(ManagedChannel channel, UnpackMsgResponse2 messageResponse2) throws StatusRuntimeException {
-        // signature 검증
-        String input = mergerNonce + signerNonce + messageResponse2.getDhPubKeyX() +
-                messageResponse2.getDhPubKeyY() + messageResponse2.getTime();
-
         boolean isSigValid = false;
         try {
-            isSigValid = authCertUtil.verifyData(input, messageResponse2.getSig(), messageResponse2.getCert());
-        } catch (CertificateException | NoSuchAlgorithmException | InvalidKeyException |
-                SignatureException | NoSuchProviderException e) {
+            // signature 검증
+            byte[] sigTime = ByteBuffer.allocate(8).putLong(Integer.parseInt(messageResponse2.getTime())).array();
+
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            outputStream.write(Base64.decode(mergerNonce, Base64.NO_WRAP));
+            outputStream.write(Base64.decode(signerNonce, Base64.NO_WRAP));
+            outputStream.write(Hex.decode(messageResponse2.getDhPubKeyX()));
+            outputStream.write(Hex.decode(messageResponse2.getDhPubKeyY()));
+            outputStream.write(sigTime);
+
+            byte[] mergerSig = outputStream.toByteArray();
+            outputStream.close();
+
+            isSigValid = authCertUtil.verifyData(mergerSig, messageResponse2.getSig(), messageResponse2.getCert());
+        } catch (Exception e) {
             throw new AuthUtilException(AuthUtilException.AuthErr.VERIFYING_ERROR);
         }
 

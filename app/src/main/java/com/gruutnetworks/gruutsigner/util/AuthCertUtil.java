@@ -250,12 +250,11 @@ public class AuthCertUtil {
      * @param certification The certification stored in the Android Keystore
      * @return A boolean value telling you whether the signature is valid or not.
      */
-    public boolean verifyData(String input, String signatureStr, String certification)
+    public boolean verifyData(byte[] input, String signatureStr, String certification)
             throws CertificateException, NoSuchProviderException, NoSuchAlgorithmException,
             InvalidKeyException, SignatureException {
         X509Certificate certificate = stringToCertificate(certification);
 
-        byte[] data = input.getBytes();
         byte[] signature;
 
         // Make sure the signature string exists.  If not, bail out, nothing to do.
@@ -282,7 +281,7 @@ public class AuthCertUtil {
 
         // Verify the data.
         s.initVerify(certificate.getPublicKey());
-        s.update(data);
+        s.update(input);
         return s.verify(signature);
     }
 
