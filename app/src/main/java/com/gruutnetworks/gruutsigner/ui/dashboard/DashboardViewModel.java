@@ -41,7 +41,8 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
     private final SingleLiveEvent refreshMerger1 = new SingleLiveEvent();
     private final SingleLiveEvent openSettingDialog = new SingleLiveEvent();
 
-    private KeystoreUtil keystoreUtil;
+    private AuthCertUtil authCertUtil;
+    private AuthHmacUtil authHmacUtil;
     private PreferenceUtil preferenceUtil;
 
     private ManagedChannel channel1;
@@ -58,7 +59,8 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
 
     public DashboardViewModel(@NonNull Application application) {
         super(application);
-        this.keystoreUtil = KeystoreUtil.getInstance();
+        this.authCertUtil = AuthCertUtil.getInstance();
+        this.authHmacUtil = AuthHmacUtil.getInstance();
         this.preferenceUtil = PreferenceUtil.getInstance(application.getApplicationContext());
         this.sender = Integer.toString(preferenceUtil.getInt(PreferenceUtil.Key.SID_INT));
 
@@ -133,7 +135,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
 
         PackMsgJoin packMsgJoin = new PackMsgJoin(
                 Base64.encodeToString(sender.getBytes(), Base64.NO_WRAP),
-                AuthUtil.getTimestamp(),
+                AuthGeneralUtil.getTimestamp(),
                 ver,
                 localChainId
         );
@@ -171,7 +173,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         logMerger1.postValue("START sendPublicKey...");
 
         // generate signer nonce
-        signerNonce = AuthUtil.getNonce();
+        signerNonce = AuthGeneralUtil.getNonce();
 
         // get merger nonce
         mergerNonce = messageChallenge.getMergerNonce();
@@ -180,21 +182,21 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
             // generate ecdh key
             logMerger1.postValue("Generate ECDH key pair");
             try {
-                keyPair = keystoreUtil.generateEcdhKeys();
+                keyPair = authHmacUtil.generateEcdhKeys();
             } catch (NoSuchProviderException | NoSuchAlgorithmException | InvalidAlgorithmParameterException e) {
                 throw new AuthUtilException(AuthUtilException.AuthErr.KEY_GEN_ERROR);
             }
         }
 
-        String x = new String(keystoreUtil.pubToXpoint(keyPair.getPublic()));
-        String y = new String(keystoreUtil.pubToYpoint(keyPair.getPublic()));
-        String time = AuthUtil.getTimestamp();
+        String x = new String(authHmacUtil.pubToXpoint(keyPair.getPublic()));
+        String y = new String(authHmacUtil.pubToYpoint(keyPair.getPublic()));
+        String time = AuthGeneralUtil.getTimestamp();
         String sigTarget = mergerNonce + signerNonce + x + y + time;
 
         // Generate Signature
         String signature = null;
         try {
-            signature = keystoreUtil.signData(sigTarget.getBytes());
+            signature = authCertUtil.signData(sigTarget.getBytes());
         } catch (KeyStoreException | UnrecoverableEntryException | NoSuchAlgorithmException
                 | SignatureException | InvalidKeyException | CertificateException | IOException e) {
             throw new AuthUtilException(AuthUtilException.AuthErr.SIGNING_ERROR);
@@ -203,7 +205,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         // Get Certificate issued by GA
         String cert = null;
         try {
-            cert = keystoreUtil.getCert(KeystoreUtil.SecurityConstants.Alias.GRUUT_AUTH);
+            cert = authCertUtil.getCert(SecurityConstants.Alias.GRUUT_AUTH);
         } catch (KeyStoreException | CertificateException | IOException | NoSuchAlgorithmException e) {
             throw new AuthUtilException(AuthUtilException.AuthErr.GET_CERT_ERROR);
         }
@@ -258,7 +260,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
 
         boolean isSigValid = false;
         try {
-            isSigValid = keystoreUtil.verifyData(input, messageResponse2.getSig(), messageResponse2.getCert());
+            isSigValid = authCertUtil.verifyData(input, messageResponse2.getSig(), messageResponse2.getCert());
         } catch (CertificateException | NoSuchAlgorithmException | InvalidKeyException |
                 SignatureException | NoSuchProviderException e) {
             throw new AuthUtilException(AuthUtilException.AuthErr.VERIFYING_ERROR);
@@ -271,7 +273,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         // X,Y 좌표로부터 Pulbic key get
         PublicKey mergerPubKey = null;
         try {
-            mergerPubKey = keystoreUtil.pointToPub(messageResponse2.getDhPubKeyX(), messageResponse2.getDhPubKeyY());
+            mergerPubKey = authHmacUtil.pointToPub(messageResponse2.getDhPubKeyX(), messageResponse2.getDhPubKeyY());
         } catch (NoSuchProviderException | NoSuchAlgorithmException | InvalidKeySpecException e) {
             throw new AuthUtilException(AuthUtilException.AuthErr.KEY_GEN_ERROR);
         }
@@ -279,7 +281,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         // HMAC KEY 계산
         byte[] hmacKey;
         try {
-            hmacKey = keystoreUtil.getSharedSecreyKey(keyPair.getPrivate(), mergerPubKey);
+            hmacKey = authHmacUtil.getSharedSecreyKey(keyPair.getPrivate(), mergerPubKey);
         } catch (NoSuchProviderException | NoSuchAlgorithmException | InvalidKeyException e) {
             throw new AuthUtilException(AuthUtilException.AuthErr.HMAC_KEY_GEN_ERROR);
         }
@@ -289,7 +291,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
 
         PackMsgSuccess msgSuccess = new PackMsgSuccess(
                 Base64.encodeToString(sender.getBytes(), Base64.NO_WRAP),
-                AuthUtil.getTimestamp(),
+                AuthGeneralUtil.getTimestamp(),
                 true
         );
 
@@ -361,10 +363,9 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
             throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_INVALID_HMAC);
         }
 
-        String time = AuthUtil.getTimestamp();
+        String time = AuthGeneralUtil.getTimestamp();
         String signature;
         try {
-            // TODO check this out later. format 맞추기
             byte[] sigSender = ByteBuffer.allocate(8).putLong(Integer.parseInt(sender)).array();
             byte[] sigTime = ByteBuffer.allocate(8).putLong(Integer.parseInt(time)).array();
             byte[] sigHgt = ByteBuffer.allocate(8).putLong(Integer.parseInt(msgRequestSignature.getBlockHeight())).array();
@@ -376,7 +377,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
             outputStream.write(sigHgt);
             outputStream.write(Base64.decode(msgRequestSignature.getTransaction(), Base64.NO_WRAP));
 
-            signature = keystoreUtil.signData(outputStream.toByteArray());
+            signature = authCertUtil.signData(outputStream.toByteArray());
             outputStream.close();
 
             logMerger1.postValue("Signature generated!");

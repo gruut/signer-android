@@ -18,56 +18,45 @@ import org.spongycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.spongycastle.crypto.params.AsymmetricKeyParameter;
 import org.spongycastle.crypto.util.PublicKeyFactory;
 import org.spongycastle.crypto.util.SubjectPublicKeyInfoFactory;
-import org.spongycastle.jce.ECNamedCurveTable;
-import org.spongycastle.jce.spec.ECParameterSpec;
-import org.spongycastle.jce.spec.ECPublicKeySpec;
-import org.spongycastle.math.ec.ECCurve;
-import org.spongycastle.util.encoders.Hex;
 import org.spongycastle.util.io.pem.PemObject;
 import org.spongycastle.util.io.pem.PemWriter;
 
-import javax.crypto.KeyAgreement;
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
 import javax.security.auth.x500.X500Principal;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.StringWriter;
-import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.security.*;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
-import java.security.interfaces.ECPublicKey;
 import java.security.spec.AlgorithmParameterSpec;
-import java.security.spec.ECGenParameterSpec;
-import java.security.spec.InvalidKeySpecException;
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 
-import static com.gruutnetworks.gruutsigner.util.KeystoreUtil.SecurityConstants.*;
+import static com.gruutnetworks.gruutsigner.util.SecurityConstants.Alias.GRUUT_AUTH;
+import static com.gruutnetworks.gruutsigner.util.SecurityConstants.KEYSTORE_PROVIDER_ANDROID_KEYSTORE;
+import static com.gruutnetworks.gruutsigner.util.SecurityConstants.SIGNATURE_SHA256withRSA;
 
-public class KeystoreUtil {
+public class AuthCertUtil {
 
-    private static final String TAG = "KeystoreUtil";
+    private static final String TAG = "AuthCertUtil";
 
     // You can store multiple key pairs in the Key Store.  The string used to refer to the Key you
     // want to store, or later pull, is referred to as an "alias" in this case, because calling it
     // a key, when you use it to retrieve a key, would just be irritating.
     private String mAlias = SecurityConstants.Alias.SELF_CERT.name();
-    private static KeystoreUtil keystoreUtil;
+    private static AuthCertUtil authCertUtil;
 
-    public static KeystoreUtil getInstance() {
-        if (keystoreUtil != null) {
-            return keystoreUtil;
+    public static AuthCertUtil getInstance() {
+        if (authCertUtil != null) {
+            return authCertUtil;
         }
-        keystoreUtil = new KeystoreUtil();
+        authCertUtil = new AuthCertUtil();
 
         // Add Provider
         Security.addProvider(new org.spongycastle.jce.provider.BouncyCastleProvider());
-        return keystoreUtil;
+        return authCertUtil;
     }
 
     /**
@@ -99,6 +88,44 @@ public class KeystoreUtil {
 
         KeyPair kp = kpGenerator.generateKeyPair();
         return kp.getPublic();
+    }
+
+    /**
+     * Generates CSR(Certificate Signing Request) with stored key
+     *
+     * @return CSR pem string
+     */
+    public String generateCsr()
+            throws KeyStoreException, CertificateException, NoSuchAlgorithmException, IOException {
+        KeyStore ks = KeyStore.getInstance(KEYSTORE_PROVIDER_ANDROID_KEYSTORE);
+        ks.load(null);
+
+        byte[] pubKey = ks.getCertificate(mAlias).getPublicKey().getEncoded();
+
+        X500NameBuilder nameBuilder = new X500NameBuilder(X500Name.getDefaultStyle());
+        nameBuilder.addRDN(BCStyle.CN, GRUUT_AUTH.name());
+
+        AsymmetricKeyParameter pubKeyParam = PublicKeyFactory.createKey(pubKey);
+        SubjectPublicKeyInfo publicKeyInfo = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(pubKeyParam);
+        CertificationRequestInfo requestInfo =
+                new CertificationRequestInfo(nameBuilder.build(), publicKeyInfo, null);
+
+        AlgorithmIdentifier signatureAi = new AlgorithmIdentifier(PKCSObjectIdentifiers.sha256WithRSAEncryption);
+        Attribute attribute = new Attribute(PKCSObjectIdentifiers.pkcs_9_at_extensionRequest, new DERSet());
+
+        CertificationRequest certificationRequest
+                = new CertificationRequest(requestInfo, signatureAi, new DERBitString(attribute));
+
+        // CSR pem 형식으로 생성
+        String type = "CERTIFICATE REQUEST";
+        PemObject pemObject = new PemObject(type, certificationRequest.getEncoded());
+        StringWriter str = new StringWriter();
+        PemWriter pemWriter = new PemWriter(str);
+        pemWriter.writeObject(pemObject);
+        pemWriter.close();
+        str.close();
+
+        return str.toString();
     }
 
     /**
@@ -167,44 +194,6 @@ public class KeystoreUtil {
     }
 
     /**
-     * Generates CSR with stored key
-     *
-     * @return CSR pem string
-     */
-    public String generateCsr()
-            throws KeyStoreException, CertificateException, NoSuchAlgorithmException, IOException {
-        KeyStore ks = KeyStore.getInstance(KEYSTORE_PROVIDER_ANDROID_KEYSTORE);
-        ks.load(null);
-
-        byte[] pubKey = ks.getCertificate(mAlias).getPublicKey().getEncoded();
-
-        X500NameBuilder nameBuilder = new X500NameBuilder(X500Name.getDefaultStyle());
-        nameBuilder.addRDN(BCStyle.CN, "GRUUT_AUTH");
-
-        AsymmetricKeyParameter pubKeyParam = PublicKeyFactory.createKey(pubKey);
-        SubjectPublicKeyInfo publicKeyInfo = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(pubKeyParam);
-        CertificationRequestInfo requestInfo =
-                new CertificationRequestInfo(nameBuilder.build(), publicKeyInfo, null);
-
-        AlgorithmIdentifier signatureAi = new AlgorithmIdentifier(PKCSObjectIdentifiers.sha256WithRSAEncryption);
-        Attribute attribute = new Attribute(PKCSObjectIdentifiers.pkcs_9_at_extensionRequest, new DERSet());
-
-        CertificationRequest certificationRequest
-                = new CertificationRequest(requestInfo, signatureAi, new DERBitString(attribute));
-
-        // CSR pem 형식으로 생성
-        String type = "CERTIFICATE REQUEST";
-        PemObject pemObject = new PemObject(type, certificationRequest.getEncoded());
-        StringWriter str = new StringWriter();
-        PemWriter pemWriter = new PemWriter(str);
-        pemWriter.writeObject(pemObject);
-        pemWriter.close();
-        str.close();
-
-        return str.toString();
-    }
-
-    /**
      * Signs the data using the key pair stored in the Android Key Store.
      * This signature can be used with the data later to verify it was signed by this application.
      *
@@ -240,7 +229,7 @@ public class KeystoreUtil {
         // This class doesn't actually represent the signature,
         // just the engine for creating/verifying signatures, using
         // the specified algorithm.
-        Signature s = Signature.getInstance(SecurityConstants.SIGNATURE_SHA256withRSA);
+        Signature s = Signature.getInstance(SIGNATURE_SHA256withRSA);
 
         // Initialize Signature using specified private key
         s.initSign(((KeyStore.PrivateKeyEntry) entry).getPrivateKey());
@@ -289,7 +278,7 @@ public class KeystoreUtil {
         // This class doesn't actually represent the signature,
         // just the engine for creating/verifying signatures, using
         // the specified algorithm.
-        Signature s = Signature.getInstance(SecurityConstants.SIGNATURE_SHA256withRSA);
+        Signature s = Signature.getInstance(SIGNATURE_SHA256withRSA);
 
         // Verify the data.
         s.initVerify(certificate.getPublicKey());
@@ -348,160 +337,11 @@ public class KeystoreUtil {
         // This class doesn't actually represent the signature,
         // just the engine for creating/verifying signatures, using
         // the specified algorithm.
-        Signature s = Signature.getInstance(SecurityConstants.SIGNATURE_SHA256withRSA);
+        Signature s = Signature.getInstance(SIGNATURE_SHA256withRSA);
 
         // Verify the data.
         s.initVerify(ks.getCertificate(mAlias).getPublicKey());
         s.update(data);
         return s.verify(signature);
-    }
-
-    /**
-     * Extract X point from  public key
-     *
-     * @param pubKey public key
-     * @return X point value on EC (hex)
-     */
-    public byte[] pubToXpoint(PublicKey pubKey) {
-        ECPublicKey key = (ECPublicKey) pubKey;
-        byte[] bytes = key.getW().getAffineX().toByteArray();
-
-        // BigInteger를 byte array로 변환 하면 자동으로 맨 앞에 0을 붙여서 출력하므로 제거함
-        if (bytes[0] == 0) {
-            byte[] tmp = new byte[bytes.length - 1];
-            System.arraycopy(bytes, 1, tmp, 0, tmp.length);
-            bytes = tmp;
-        }
-
-        return Hex.encode(bytes);
-    }
-
-    /**
-     * Extract Y point from  public key
-     *
-     * @param pubKey public key
-     * @return Y point value on EC (hex)
-     */
-    public byte[] pubToYpoint(PublicKey pubKey) {
-        ECPublicKey key = (ECPublicKey) pubKey;
-        byte[] bytes = key.getW().getAffineY().toByteArray();
-
-        // BigInteger를 byte array로 변환 하면 자동으로 맨 앞에 0을 붙여서 출력하므로 제거함
-        if (bytes[0] == 0) {
-            byte[] tmp = new byte[bytes.length - 1];
-            System.arraycopy(bytes, 1, tmp, 0, tmp.length);
-            bytes = tmp;
-        }
-
-        return Hex.encode(bytes);
-    }
-
-    /**
-     * Decode Public Key From EC Point Value
-     *
-     * @param x hex value
-     * @param y hex value
-     * @return public key
-     */
-    public PublicKey pointToPub(String x, String y)
-            throws NoSuchProviderException, NoSuchAlgorithmException, InvalidKeySpecException {
-        ECParameterSpec ecParameterSpec = ECNamedCurveTable.getParameterSpec(CURVE_SECP256R1);
-        ECCurve curve = ecParameterSpec.getCurve();
-
-        String str = "04" + x + y; // 04 for encoding type
-        org.spongycastle.math.ec.ECPoint point = curve.decodePoint(Hex.decode(str));
-
-        ECPublicKeySpec publicKeySpec = new ECPublicKeySpec(point, ecParameterSpec);
-        KeyFactory kf = KeyFactory.getInstance(TYPE_ECDH, "SC");
-
-        return kf.generatePublic(publicKeySpec);
-    }
-
-    /**
-     * Generate ECDH key pair on secp256r1 Curve
-     *
-     * @return generated ECDH key pair
-     */
-    public KeyPair generateEcdhKeys()
-            throws NoSuchProviderException, NoSuchAlgorithmException, InvalidAlgorithmParameterException {
-        KeyPairGenerator kp = KeyPairGenerator.getInstance(TYPE_ECDH, "SC");
-        kp.initialize(new ECGenParameterSpec(CURVE_SECP256R1), new SecureRandom());
-
-        return kp.generateKeyPair();
-    }
-
-    /**
-     * Generate DH shared secret mac key
-     *
-     * @param myPrvKey     my private key
-     * @param othersPubKey other's public key
-     * @return shared secret key(SHA256 encoded byte array)
-     */
-    public byte[] getSharedSecreyKey(PrivateKey myPrvKey, PublicKey othersPubKey)
-            throws NoSuchProviderException, NoSuchAlgorithmException, InvalidKeyException {
-        KeyAgreement ka = KeyAgreement.getInstance(TYPE_ECDH, "SC");
-        ka.init(myPrvKey);
-        ka.doPhase(othersPubKey, true);
-        return encodeSha256(ka.generateSecret());
-    }
-
-    /**
-     * @param bytes to decode into SHA256
-     * @return encoded SHA256 byte array
-     */
-    private byte[] encodeSha256(byte[] bytes) throws NoSuchAlgorithmException {
-        MessageDigest md = MessageDigest.getInstance(TYPE_SHA256);
-        md.update(bytes);
-        return Hex.encode(md.digest());
-    }
-
-    /**
-     * Generates HMAC signature
-     *
-     * @param data 인증 할 Data
-     * @return HMAC signature
-     */
-    public static byte[] getHmacSignature(byte[] data) {
-        try {
-            PreferenceUtil preferenceUtil = PreferenceUtil.getInstance();
-            // HMAC sign할 때 쓸 key(DH Key교환으로 생성한 shared secret key
-            String key = preferenceUtil.getString(PreferenceUtil.Key.HMAC_STR);
-
-            if (key == null || key.isEmpty()) {
-                // Shared secret key not found.
-                return null;
-            }
-
-            Mac sha256Hmac = Mac.getInstance(TYPE_HMAC);
-            SecretKeySpec secretKey = new SecretKeySpec(Hex.decode(key.getBytes()), TYPE_HMAC);
-            sha256Hmac.init(secretKey);
-
-            return sha256Hmac.doFinal(data);
-        } catch (NoSuchAlgorithmException | InvalidKeyException e) {
-            e.printStackTrace();
-        }
-
-        return null;
-    }
-
-    public static boolean verifyHmacSignature(byte[] data, byte[] mac) {
-        return Arrays.equals(getHmacSignature(data), mac);
-    }
-
-    public interface SecurityConstants {
-        String KEYSTORE_PROVIDER_ANDROID_KEYSTORE = "AndroidKeyStore";
-
-        String TYPE_ECDH = "ECDH";
-        String TYPE_SHA256 = "SHA-256";
-        String TYPE_HMAC = "HmacSHA256";
-
-        String SIGNATURE_SHA256withRSA = "SHA256withRSA";
-
-        String CURVE_SECP256R1 = "secp256r1";
-
-        enum Alias {
-            SELF_CERT,
-            GRUUT_AUTH
-        }
     }
 }

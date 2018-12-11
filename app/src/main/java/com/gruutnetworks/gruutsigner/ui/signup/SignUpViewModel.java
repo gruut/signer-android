@@ -12,10 +12,7 @@ import com.gruutnetworks.gruutsigner.exceptions.AuthUtilException;
 import com.gruutnetworks.gruutsigner.model.SignUpResponse;
 import com.gruutnetworks.gruutsigner.model.SignUpSourceData;
 import com.gruutnetworks.gruutsigner.restApi.GaApi;
-import com.gruutnetworks.gruutsigner.util.KeystoreUtil;
-import com.gruutnetworks.gruutsigner.util.PreferenceUtil;
-import com.gruutnetworks.gruutsigner.util.SingleLiveEvent;
-import com.gruutnetworks.gruutsigner.util.SnackbarMessage;
+import com.gruutnetworks.gruutsigner.util.*;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -36,18 +33,17 @@ public class SignUpViewModel extends AndroidViewModel implements LifecycleObserv
     private Call<SignUpResponse> signUpCall;
 
     public ObservableField<String> phoneNum = new ObservableField<>();
-    private KeystoreUtil keystoreUtil;
+    private AuthCertUtil authCertUtil;
     private PreferenceUtil preferenceUtil;
 
     public SignUpViewModel(@NonNull Application application) {
         super(application);
-        this.keystoreUtil = KeystoreUtil.getInstance();
+        this.authCertUtil = AuthCertUtil.getInstance();
         this.preferenceUtil = PreferenceUtil.getInstance(application.getApplicationContext());
-
-
+        
         // Get Certificate issued by GA
         try {
-            String cert = keystoreUtil.getCert(KeystoreUtil.SecurityConstants.Alias.GRUUT_AUTH);
+            String cert = authCertUtil.getCert(SecurityConstants.Alias.GRUUT_AUTH);
             canJoin.setValue(cert != null);
         } catch (KeyStoreException | CertificateException | IOException | NoSuchAlgorithmException e) {
             throw new AuthUtilException(AuthUtilException.AuthErr.GET_CERT_ERROR);
@@ -128,10 +124,10 @@ public class SignUpViewModel extends AndroidViewModel implements LifecycleObserv
      */
     private String generateCsr() {
         try {
-            if (!keystoreUtil.isKeyPairExist()) {
-                keystoreUtil.generateRsaKeys();
+            if (!authCertUtil.isKeyPairExist()) {
+                authCertUtil.generateRsaKeys();
             }
-            return keystoreUtil.generateCsr();
+            return authCertUtil.generateCsr();
         } catch (Exception e) {
             Log.e(TAG, e.getMessage());
         }
@@ -140,7 +136,7 @@ public class SignUpViewModel extends AndroidViewModel implements LifecycleObserv
 
     private boolean storeCertificate(String cert) {
         try {
-            keystoreUtil.storeCert(cert, KeystoreUtil.SecurityConstants.Alias.GRUUT_AUTH);
+            authCertUtil.storeCert(cert, SecurityConstants.Alias.GRUUT_AUTH);
             return true;
         } catch (Exception e) {
             Log.e(TAG, e.getMessage());

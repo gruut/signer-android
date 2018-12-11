@@ -3,7 +3,7 @@ package com.gruutnetworks.gruutsigner.util;
 import java.security.SecureRandom;
 import java.util.Calendar;
 
-public class AuthUtil {
+public class AuthGeneralUtil {
 
     private static final int MAX_NONCE_LENGTH = 64;
 
@@ -16,6 +16,7 @@ public class AuthUtil {
 
     /**
      * get 64 byte random string array
+     *
      * @return nonce value
      */
     public static String getNonce() {
@@ -23,7 +24,7 @@ public class AuthUtil {
 
         SecureRandom generator = new SecureRandom();
         StringBuilder randomStringBuilder = new StringBuilder();
-        for (int i = 0; i < MAX_NONCE_LENGTH; i++){
+        for (int i = 0; i < MAX_NONCE_LENGTH; i++) {
             char tempChar = candidateChars.charAt(generator.nextInt(candidateChars.length()));
             randomStringBuilder.append(tempChar);
         }

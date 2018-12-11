@@ -1,10 +1,7 @@
 package com.gruutnetworks.gruutsigner.model;
 
+import com.gruutnetworks.gruutsigner.util.AuthHmacUtil;
 import com.gruutnetworks.gruutsigner.util.CompressionUtil;
-import com.gruutnetworks.gruutsigner.util.KeystoreUtil;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -18,14 +15,6 @@ public class MsgPackerTest {
     byte[] compressedMsg;
     byte[] mac;
     byte[] body;
-
-    @Before
-    public void setUp() throws Exception {
-    }
-
-    @After
-    public void tearDown() throws Exception {
-    }
 
     byte[] getBodyByteArr(byte[] bytes) {
         int offset = 0;
@@ -70,7 +59,7 @@ public class MsgPackerTest {
             byte[] headerAndBody = outputStream.toByteArray();
             outputStream.close();
 
-            return KeystoreUtil.verifyHmacSignature(headerAndBody, mac);
+            return AuthHmacUtil.verifyHmacSignature(headerAndBody, mac);
         } catch (IOException e) {
             return false;
         }

@@ -2,7 +2,7 @@ package com.gruutnetworks.gruutsigner.ui.dashboard;
 
 import android.util.Base64;
 import com.gruutnetworks.gruutsigner.RobolectricTest;
-import com.gruutnetworks.gruutsigner.util.AuthUtil;
+import com.gruutnetworks.gruutsigner.util.AuthGeneralUtil;
 import org.junit.Before;
 import org.junit.Test;
 import org.powermock.core.classloader.annotations.PrepareForTest;
@@ -19,7 +19,7 @@ public class DashboardViewModelTest extends RobolectricTest {
 
     @Test
     public void byteHandingTest() {
-        String time = AuthUtil.getTimestamp();
+        String time = AuthGeneralUtil.getTimestamp();
         byte[] sigSender = ByteBuffer.allocate(8).putLong(Integer.parseInt("15")).array();
         byte[] sigTime = ByteBuffer.allocate(8).putLong(Integer.parseInt(time)).array();
         byte[] sigHgt = ByteBuffer.allocate(8).putLong(Integer.parseInt("1")).array();
