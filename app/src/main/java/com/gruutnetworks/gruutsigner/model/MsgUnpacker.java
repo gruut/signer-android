@@ -1,14 +1,13 @@
 package com.gruutnetworks.gruutsigner.model;
 
+import com.gruutnetworks.gruutsigner.util.AuthHmacUtil;
 import com.gruutnetworks.gruutsigner.util.CompressionUtil;
-import com.gruutnetworks.gruutsigner.util.KeystoreUtil;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
 
 import static com.gruutnetworks.gruutsigner.model.MsgHeader.*;
-import static com.gruutnetworks.gruutsigner.model.MsgHeader.MSG_HEADER_LEN;
 
 public abstract class MsgUnpacker {
     abstract void bodyFromJson(byte[] bodyBytes);
@@ -67,7 +66,7 @@ public abstract class MsgUnpacker {
                     byte[] headerAndBody = outputStream.toByteArray();
                     outputStream.close();
 
-                    return KeystoreUtil.verifyHmacSignature(headerAndBody, mac);
+                    return AuthHmacUtil.verifyHmacSignature(headerAndBody, mac);
                 case NONE:
                 default:
                     return true;

@@ -1,7 +1,8 @@
 package com.gruutnetworks.gruutsigner.model;
 
+import com.gruutnetworks.gruutsigner.util.AuthHmacUtil;
 import com.gruutnetworks.gruutsigner.util.CompressionUtil;
-import com.gruutnetworks.gruutsigner.util.KeystoreUtil;
+import com.gruutnetworks.gruutsigner.util.AuthCertUtil;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -20,7 +21,7 @@ public abstract class MsgPacker {
     private byte[] generateMac(TypeMac typeMac, byte[] data) {
         switch (typeMac) {
             case HMAC_SHA256:
-                return KeystoreUtil.getHmacSignature(data);
+                return AuthHmacUtil.getHmacSignature(data);
             default:
                 return null;
         }
