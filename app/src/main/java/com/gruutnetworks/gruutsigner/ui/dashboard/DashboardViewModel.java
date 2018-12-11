@@ -179,6 +179,10 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         // get merger nonce
         mergerNonce = messageChallenge.getMergerNonce();
 
+        if (!AuthGeneralUtil.isMsgValid(messageChallenge.getTime())) {
+            throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_EXPIRED);
+        }
+
         if (keyPair == null) {
             // generate ecdh key
             logMerger1.postValue("Generate ECDH key pair");
@@ -474,14 +478,12 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
                         GrpcMsgJoin grpcMsgJoin = GrpcMsgJoin.newBuilder()
                                 .setMessage(ByteString.copyFrom(msg.convertToByteArr()))
                                 .build();
-
                         GrpcMsgChallenge grpcMsgChallenge = stub.withDeadlineAfter(TIME_OUT, TimeUnit.SECONDS).join(grpcMsgJoin);
                         return new UnpackMsgChallenge(grpcMsgChallenge.getMessage().toByteArray());
                     case MSG_RESPONSE_1:
                         GrpcMsgResponse1 grpcMsgResponse1 = GrpcMsgResponse1.newBuilder()
                                 .setMessage(ByteString.copyFrom(msg.convertToByteArr()))
                                 .build();
-
                         GrpcMsgResponse2 grpcMsgResponse2 = stub.withDeadlineAfter(TIME_OUT, TimeUnit.SECONDS).dhKeyEx(grpcMsgResponse1);
                         return new UnpackMsgResponse2(grpcMsgResponse2.getMessage().toByteArray());
                     case MSG_SUCCESS:
