@@ -1,6 +1,7 @@
 package com.gruutnetworks.gruutsigner.model;
 
 import android.util.Base64;
+import com.gruutnetworks.gruutsigner.gruut.GruutConfigs;
 import org.spongycastle.util.encoders.Hex;
 
 import java.math.BigInteger;
@@ -99,15 +100,15 @@ public class MsgHeader {
     }
 
     public static class Builder {
-        private byte gruutConstant = 'G';
-        private byte mainVersion = 0x01;
-        private byte subVersion = 0x00;
+        private byte gruutConstant = GruutConfigs.gruutConstant;
+        private byte mainVersion = GruutConfigs.mainVersion;
+        private byte subVersion = GruutConfigs.subVersion;
         private byte msgType;
         private byte macType = TypeMac.NONE.getType();
         private byte compressionType = TypeComp.NONE.getType();
         private byte notUsed = 0;
         private byte[] totalLen = new byte[HEADER_TOTAL_LEN_SIZE];
-        private byte[] localChainId = Base64.decode("R0VOVEVTVDE=", Base64.NO_WRAP);
+        private byte[] localChainId = Base64.decode(GruutConfigs.localChainId, Base64.NO_WRAP);
         private byte[] sender = new byte[HEADER_SENDER_SIZE];
         private byte[] reserved = new byte[HEADER_RESERVED_SIZE];
 
