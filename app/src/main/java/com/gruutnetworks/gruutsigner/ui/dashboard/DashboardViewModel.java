@@ -179,7 +179,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         // get merger nonce
         mergerNonce = messageChallenge.getMergerNonce();
 
-        if (!AuthGeneralUtil.isMsgValid(messageChallenge.getTime())) {
+        if (!AuthGeneralUtil.isMsgInTime(messageChallenge.getTime())) {
             throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_EXPIRED);
         }
 

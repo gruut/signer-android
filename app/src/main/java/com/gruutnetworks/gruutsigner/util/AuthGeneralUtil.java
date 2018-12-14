@@ -26,7 +26,7 @@ public class AuthGeneralUtil {
      * @param msgTimestamp  메세지에 포함된 timestamp(UNIX timestamp)
      * @return 메세지의 validity
      */
-    public static boolean isMsgValid(String msgTimestamp) {
+    public static boolean isMsgInTime(String msgTimestamp) {
         int time = Integer.parseInt(msgTimestamp);
         int current = (int) (Calendar.getInstance().getTimeInMillis() / 1000);
         return (time + MSG_EXPIRATION_TIME > current);
