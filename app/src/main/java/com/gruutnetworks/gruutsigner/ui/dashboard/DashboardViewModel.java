@@ -14,6 +14,7 @@ import com.gruutnetworks.gruutsigner.R;
 import com.gruutnetworks.gruutsigner.exceptions.AsyncException;
 import com.gruutnetworks.gruutsigner.exceptions.AuthUtilException;
 import com.gruutnetworks.gruutsigner.exceptions.ErrorMsgException;
+import com.gruutnetworks.gruutsigner.gruut.GruutConfigs;
 import com.gruutnetworks.gruutsigner.model.*;
 import com.gruutnetworks.gruutsigner.util.*;
 import io.grpc.ManagedChannel;
@@ -50,9 +51,6 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
     private ManagedChannel channel2;
 
     private String sender;
-    private String localChainId = "R0VOVEVTVDE=";
-    private String ver = "1";
-
     private String signerNonce;
     private String mergerNonce;
 
@@ -137,8 +135,8 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         PackMsgJoin packMsgJoin = new PackMsgJoin(
                 Base64.encodeToString(sender.getBytes(), Base64.NO_WRAP),
                 AuthGeneralUtil.getTimestamp(),
-                ver,
-                localChainId
+                GruutConfigs.ver,
+                GruutConfigs.localChainId
         );
 
         MsgUnpacker receivedMsg = null;
@@ -457,7 +455,6 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
 
     private static class GrpcTask extends AsyncTask<MsgPacker, Void, MsgUnpacker> {
 
-        private static final int TIME_OUT = 10;
         private long start;
         private ManagedChannel channel;
 
@@ -478,25 +475,25 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
                         GrpcMsgJoin grpcMsgJoin = GrpcMsgJoin.newBuilder()
                                 .setMessage(ByteString.copyFrom(msg.convertToByteArr()))
                                 .build();
-                        GrpcMsgChallenge grpcMsgChallenge = stub.withDeadlineAfter(TIME_OUT, TimeUnit.SECONDS).join(grpcMsgJoin);
+                        GrpcMsgChallenge grpcMsgChallenge = stub.withDeadlineAfter(GruutConfigs.GRPC_TIMEOUT, TimeUnit.SECONDS).join(grpcMsgJoin);
                         return new UnpackMsgChallenge(grpcMsgChallenge.getMessage().toByteArray());
                     case MSG_RESPONSE_1:
                         GrpcMsgResponse1 grpcMsgResponse1 = GrpcMsgResponse1.newBuilder()
                                 .setMessage(ByteString.copyFrom(msg.convertToByteArr()))
                                 .build();
-                        GrpcMsgResponse2 grpcMsgResponse2 = stub.withDeadlineAfter(TIME_OUT, TimeUnit.SECONDS).dhKeyEx(grpcMsgResponse1);
+                        GrpcMsgResponse2 grpcMsgResponse2 = stub.withDeadlineAfter(GruutConfigs.GRPC_TIMEOUT, TimeUnit.SECONDS).dhKeyEx(grpcMsgResponse1);
                         return new UnpackMsgResponse2(grpcMsgResponse2.getMessage().toByteArray());
                     case MSG_SUCCESS:
                         GrpcMsgSuccess grpcMsgSuccess = GrpcMsgSuccess.newBuilder()
                                 .setMessage(ByteString.copyFrom(msg.convertToByteArr()))
                                 .build();
-                        GrpcMsgAccept grpcMsgAccept = stub.withDeadlineAfter(TIME_OUT, TimeUnit.SECONDS).keyExFinished(grpcMsgSuccess);
+                        GrpcMsgAccept grpcMsgAccept = stub.withDeadlineAfter(GruutConfigs.GRPC_TIMEOUT, TimeUnit.SECONDS).keyExFinished(grpcMsgSuccess);
                         return new UnpackMsgAccept(grpcMsgAccept.getMessage().toByteArray());
                     case MSG_SSIG:
                         GrpcMsgSsig grpcMsgSsig = GrpcMsgSsig.newBuilder()
                                 .setMessage(ByteString.copyFrom(msg.convertToByteArr()))
                                 .build();
-                        stub.withDeadlineAfter(TIME_OUT, TimeUnit.SECONDS).sigSend(grpcMsgSsig);
+                        stub.withDeadlineAfter(GruutConfigs.GRPC_TIMEOUT, TimeUnit.SECONDS).sigSend(grpcMsgSsig);
                         return null;
                     default:
                         return null;

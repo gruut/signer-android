@@ -14,8 +14,7 @@ public abstract class MsgUnpacker {
 
     MsgHeader header;
     byte[] body;
-    byte[] mac;
-    boolean macValidity;
+    private boolean macValidity;
 
     void parse(byte[] bytes) {
         int offset = 0;
@@ -38,7 +37,6 @@ public abstract class MsgUnpacker {
         byte[] mac = Arrays.copyOfRange(bytes, offset, bytes.length);
 
         this.header = header;
-        this.mac = mac;
         this.macValidity = checkMacValidity(header, compressedMsg, mac);
 
         // 압축 해제가 필요할 경우 해제 후 body에 넣음.
