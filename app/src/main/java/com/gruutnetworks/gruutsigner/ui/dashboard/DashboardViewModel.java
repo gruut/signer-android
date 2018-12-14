@@ -196,18 +196,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         String time = AuthGeneralUtil.getTimestamp();
         String signature = null;
         try {
-            byte[] sigTime = ByteBuffer.allocate(8).putLong(Integer.parseInt(time)).array();
-
-            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-            outputStream.write(Base64.decode(mergerNonce, Base64.NO_WRAP));
-            outputStream.write(Base64.decode(signerNonce, Base64.NO_WRAP));
-            outputStream.write(Hex.decode(x));
-            outputStream.write(Hex.decode(y));
-            outputStream.write(sigTime);
-
-            // Generate Signature
-            signature = authCertUtil.signData(outputStream.toByteArray());
-            outputStream.close();
+            signature = authCertUtil.signMsgResponse1(mergerNonce, signerNonce, x, y, time);
         } catch (Exception e) {
             throw new AuthUtilException(AuthUtilException.AuthErr.SIGNING_ERROR);
         }
@@ -264,28 +253,15 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
      * @throws StatusRuntimeException on GRPC errorMerger1
      */
     private UnpackMsgAccept sendSuccess(ManagedChannel channel, UnpackMsgResponse2 messageResponse2) throws StatusRuntimeException {
-        boolean isSigValid = false;
+
         try {
-            // signature 검증
-            byte[] sigTime = ByteBuffer.allocate(8).putLong(Integer.parseInt(messageResponse2.getTime())).array();
-
-            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-            outputStream.write(Base64.decode(mergerNonce, Base64.NO_WRAP));
-            outputStream.write(Base64.decode(signerNonce, Base64.NO_WRAP));
-            outputStream.write(Hex.decode(messageResponse2.getDhPubKeyX()));
-            outputStream.write(Hex.decode(messageResponse2.getDhPubKeyY()));
-            outputStream.write(sigTime);
-
-            byte[] mergerSig = outputStream.toByteArray();
-            outputStream.close();
-
-            isSigValid = authCertUtil.verifyData(mergerSig, messageResponse2.getSig(), messageResponse2.getCert());
+            // 서명 검증
+            if (!authCertUtil.verifyMsgResponse2(messageResponse2.getSig(), messageResponse2.getCert(),
+                    mergerNonce, signerNonce, messageResponse2.getDhPubKeyX(), messageResponse2.getDhPubKeyY(), messageResponse2.getTime())) {
+                throw new AuthUtilException(AuthUtilException.AuthErr.INVALID_SIGNATURE);
+            }
         } catch (Exception e) {
             throw new AuthUtilException(AuthUtilException.AuthErr.VERIFYING_ERROR);
-        }
-
-        if (!isSigValid) {
-            throw new AuthUtilException(AuthUtilException.AuthErr.INVALID_SIGNATURE);
         }
 
         // X,Y 좌표로부터 Pulbic key get
@@ -384,20 +360,8 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         String time = AuthGeneralUtil.getTimestamp();
         String signature;
         try {
-            byte[] sigSender = ByteBuffer.allocate(8).putLong(Integer.parseInt(sender)).array();
-            byte[] sigTime = ByteBuffer.allocate(8).putLong(Integer.parseInt(time)).array();
-            byte[] sigHgt = ByteBuffer.allocate(8).putLong(Integer.parseInt(msgRequestSignature.getBlockHeight())).array();
-
-            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-            outputStream.write(sigSender);
-            outputStream.write(sigTime);
-            outputStream.write(Base64.decode(msgRequestSignature.getmID(), Base64.NO_WRAP));
-            outputStream.write(sigHgt);
-            outputStream.write(Base64.decode(msgRequestSignature.getTransaction(), Base64.NO_WRAP));
-
-            signature = authCertUtil.signData(outputStream.toByteArray());
-            outputStream.close();
-
+            signature = authCertUtil.generateSupportSignature(sender,time, msgRequestSignature.getmID(), GruutConfigs.localChainId,
+                    msgRequestSignature.getBlockHeight(), msgRequestSignature.getTransaction());
             logMerger1.postValue("Signature generated!");
         } catch (Exception e) {
             throw new AuthUtilException(AuthUtilException.AuthErr.SIGNING_ERROR);
