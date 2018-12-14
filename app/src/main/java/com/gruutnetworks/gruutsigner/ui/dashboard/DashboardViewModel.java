@@ -42,6 +42,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
     private AuthCertUtil authCertUtil;
     private AuthHmacUtil authHmacUtil;
     private PreferenceUtil preferenceUtil;
+    private SignedBlockDao blockDao;
 
     private ManagedChannel channel1;
     private ManagedChannel channel2;
@@ -58,6 +59,8 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         this.authHmacUtil = AuthHmacUtil.getInstance();
         this.preferenceUtil = PreferenceUtil.getInstance(application.getApplicationContext());
         this.sender = preferenceUtil.getString(PreferenceUtil.Key.SID_STR);
+
+        blockDao = AppDatabase.getDatabase(application).blockDao();
 
         if (!NetworkUtil.isConnected(application.getApplicationContext())) {
             SnackbarMessage snackbarMessage = new SnackbarMessage();
