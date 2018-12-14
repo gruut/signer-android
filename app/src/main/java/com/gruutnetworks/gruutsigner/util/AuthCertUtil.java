@@ -4,7 +4,6 @@ import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyProperties;
 import android.util.Base64;
 import android.util.Log;
-import com.gruutnetworks.gruutsigner.exceptions.AuthUtilException;
 import org.spongycastle.asn1.DERBitString;
 import org.spongycastle.asn1.DERSet;
 import org.spongycastle.asn1.pkcs.Attribute;
@@ -220,7 +219,7 @@ public class AuthCertUtil {
         outputStream.write(Hex.decode(y));                          // 256 bit
         outputStream.write(sigTime);                                // 64 bit
 
-        String signature = signData(outputStream.toByteArray());
+        String signature = sign(outputStream.toByteArray());
         outputStream.close();
 
         return signature;
@@ -255,7 +254,7 @@ public class AuthCertUtil {
         byte[] mergerSig = outputStream.toByteArray();
         outputStream.close();
 
-        return authCertUtil.verifyData(mergerSig, signature, cert);
+        return authCertUtil.verifySender(mergerSig, signature, cert);
     }
 
     /**
@@ -285,7 +284,7 @@ public class AuthCertUtil {
         outputStream.write(sigHgt);                             // 64 bit
         outputStream.write(Base64.decode(tx, Base64.NO_WRAP));  // 256 bit
 
-        String signature = authCertUtil.signData(outputStream.toByteArray());
+        String signature = authCertUtil.sign(outputStream.toByteArray());
         outputStream.close();
 
         return signature;
@@ -297,7 +296,7 @@ public class AuthCertUtil {
      *
      * @return A string encoding of the data signature generated
      */
-    private String signData(byte[] data)
+    private String sign(byte[] data)
             throws KeyStoreException, UnrecoverableEntryException, NoSuchAlgorithmException,
             InvalidKeyException, SignatureException, IOException, CertificateException {
         KeyStore ks = KeyStore.getInstance(KEYSTORE_PROVIDER_ANDROID_KEYSTORE);
@@ -309,7 +308,7 @@ public class AuthCertUtil {
         // If the entry is null, keys were never stored under this alias.
         if (entry == null) {
             Log.w(TAG, "No key found under alias: " + mAlias);
-            Log.w(TAG, "Exiting signData()...");
+            Log.w(TAG, "Exiting sign()...");
             return null;
         }
 
@@ -320,7 +319,7 @@ public class AuthCertUtil {
          */
         if (!(entry instanceof KeyStore.PrivateKeyEntry)) {
             Log.w(TAG, "Not an instance of a PrivateKeyEntry");
-            Log.w(TAG, "Exiting signData()...");
+            Log.w(TAG, "Exiting sign()...");
             return null;
         }
 
@@ -348,7 +347,7 @@ public class AuthCertUtil {
      * @param certification The certification stored in the Android Keystore
      * @return A boolean value telling you whether the signature is valid or not.
      */
-    private boolean verifyData(byte[] input, String signatureStr, String certification)
+    private boolean verifySender(byte[] input, String signatureStr, String certification)
             throws CertificateException, NoSuchProviderException, NoSuchAlgorithmException,
             InvalidKeyException, SignatureException {
         X509Certificate certificate = stringToCertificate(certification);
@@ -358,7 +357,7 @@ public class AuthCertUtil {
         // Make sure the signature string exists.  If not, bail out, nothing to do.
         if (signatureStr == null) {
             Log.w(TAG, "Invalid signature.");
-            Log.w(TAG, "Exiting verifyData()...");
+            Log.w(TAG, "Exiting verifySender()...");
             return false;
         }
 
@@ -391,7 +390,7 @@ public class AuthCertUtil {
      * @param signatureStr The signature provided for the data.
      * @return A boolean value telling you whether the signature is valid or not.
      */
-    private boolean verifyData(String input, String signatureStr)
+    private boolean verifySelf(String input, String signatureStr)
             throws KeyStoreException, CertificateException, NoSuchAlgorithmException, IOException,
             UnrecoverableEntryException, InvalidKeyException, SignatureException {
         byte[] data = input.getBytes();
@@ -400,7 +399,7 @@ public class AuthCertUtil {
         // Make sure the signature string exists.  If not, bail out, nothing to do.
         if (signatureStr == null) {
             Log.w(TAG, "Invalid signature.");
-            Log.w(TAG, "Exiting verifyData()...");
+            Log.w(TAG, "Exiting verifySender()...");
             return false;
         }
 
@@ -422,7 +421,7 @@ public class AuthCertUtil {
 
         if (entry == null) {
             Log.w(TAG, "No key found under alias: " + mAlias);
-            Log.w(TAG, "Exiting verifyData()...");
+            Log.w(TAG, "Exiting verifySender()...");
             return false;
         }
 
