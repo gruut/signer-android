@@ -40,7 +40,7 @@ public class SignUpViewModel extends AndroidViewModel implements LifecycleObserv
         super(application);
         this.authCertUtil = AuthCertUtil.getInstance();
         this.preferenceUtil = PreferenceUtil.getInstance(application.getApplicationContext());
-        
+
         // Get Certificate issued by GA
         try {
             String cert = authCertUtil.getCert(SecurityConstants.Alias.GRUUT_AUTH);
@@ -83,7 +83,7 @@ public class SignUpViewModel extends AndroidViewModel implements LifecycleObserv
 
                             if (storeCertificate(response.body().getPem())) {
                                 canJoin.postValue(true);
-                                preferenceUtil.put(PreferenceUtil.Key.SID_INT, response.body().getNid());
+                                preferenceUtil.put(PreferenceUtil.Key.SID_STR, response.body().getNid());
                                 navigateToDashboard.call();
                             } else {
                                 snackbarMessage.setValue(R.string.sign_up_error_cert);

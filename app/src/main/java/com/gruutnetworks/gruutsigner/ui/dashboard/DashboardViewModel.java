@@ -5,7 +5,6 @@ import android.arch.lifecycle.*;
 import android.os.AsyncTask;
 import android.os.SystemClock;
 import android.support.annotation.NonNull;
-import android.util.Base64;
 import android.util.Log;
 import com.google.protobuf.ByteString;
 import com.gruutnetworks.gruutsigner.*;
@@ -21,11 +20,8 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
-import org.spongycastle.util.encoders.Hex;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.security.*;
 import java.security.cert.CertificateException;
 import java.security.spec.InvalidKeySpecException;
@@ -61,7 +57,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         this.authCertUtil = AuthCertUtil.getInstance();
         this.authHmacUtil = AuthHmacUtil.getInstance();
         this.preferenceUtil = PreferenceUtil.getInstance(application.getApplicationContext());
-        this.sender = Integer.toString(preferenceUtil.getInt(PreferenceUtil.Key.SID_INT));
+        this.sender = preferenceUtil.getString(PreferenceUtil.Key.SID_STR);
 
         if (!NetworkUtil.isConnected(application.getApplicationContext())) {
             SnackbarMessage snackbarMessage = new SnackbarMessage();
@@ -133,7 +129,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         logMerger1.postValue("START requestJoin...");
 
         PackMsgJoin packMsgJoin = new PackMsgJoin(
-                Base64.encodeToString(sender.getBytes(), Base64.NO_WRAP),
+                sender,
                 AuthGeneralUtil.getTimestamp(),
                 GruutConfigs.ver,
                 GruutConfigs.localChainId
@@ -214,7 +210,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         }
 
         PackMsgResponse1 msgResponse1 = new PackMsgResponse1(
-                Base64.encodeToString(sender.getBytes(), Base64.NO_WRAP),
+                sender,
                 time,
                 cert,
                 signerNonce,
@@ -284,7 +280,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         preferenceUtil.put(PreferenceUtil.Key.HMAC_STR, new String(hmacKey));
 
         PackMsgSuccess msgSuccess = new PackMsgSuccess(
-                Base64.encodeToString(sender.getBytes(), Base64.NO_WRAP),
+                sender,
                 AuthGeneralUtil.getTimestamp(),
                 true
         );
@@ -360,7 +356,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         String time = AuthGeneralUtil.getTimestamp();
         String signature;
         try {
-            signature = authCertUtil.generateSupportSignature(sender,time, msgRequestSignature.getmID(), GruutConfigs.localChainId,
+            signature = authCertUtil.generateSupportSignature(sender, time, msgRequestSignature.getmID(), GruutConfigs.localChainId,
                     msgRequestSignature.getBlockHeight(), msgRequestSignature.getTransaction());
             logMerger1.postValue("Signature generated!");
         } catch (Exception e) {
@@ -368,7 +364,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         }
 
         PackMsgSignature msgSignature = new PackMsgSignature(
-                Base64.encodeToString(sender.getBytes(), Base64.NO_WRAP),
+                sender,
                 time,
                 signature
         );

@@ -9,7 +9,7 @@ public class SignUpResponse {
     @SerializedName("message")
     private String message;
     @SerializedName("nid")
-    private int nid;
+    private String nid;
     @SerializedName("pem")
     private String pem;
 
@@ -17,31 +17,16 @@ public class SignUpResponse {
         return code;
     }
 
-    public void setCode(int code) {
-        this.code = code;
-    }
-
     public String getMessage() {
         return message;
     }
 
-    public void setMessage(String message) {
-        this.message = message;
-    }
-
-    public int getNid() {
+    public String getNid() {
         return nid;
-    }
-
-    public void setNid(int nid) {
-        this.nid = nid;
     }
 
     public String getPem() {
         return pem;
     }
 
-    public void setPem(String pem) {
-        this.pem = pem;
-    }
 }
