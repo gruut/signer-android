@@ -356,6 +356,10 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
             throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_INVALID_HMAC);
         }
 
+        if (!AuthGeneralUtil.isBlockInTime(msgRequestSignature.getTime())) {
+            throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_EXPIRED);
+        }
+
         String time = AuthGeneralUtil.getTimestamp();
         String signature;
         try {
