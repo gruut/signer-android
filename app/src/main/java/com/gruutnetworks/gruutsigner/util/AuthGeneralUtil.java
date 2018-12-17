@@ -23,7 +23,8 @@ public class AuthGeneralUtil {
 
     /**
      * 메세지의 timestamp를 기준으로 하여 유효한 메세지인지 확인한다.
-     * @param msgTimestamp  메세지에 포함된 timestamp(UNIX timestamp)
+     *
+     * @param msgTimestamp 메세지에 포함된 timestamp(UNIX timestamp)
      * @return 메세지의 validity
      */
     public static boolean isMsgInTime(String msgTimestamp) {
