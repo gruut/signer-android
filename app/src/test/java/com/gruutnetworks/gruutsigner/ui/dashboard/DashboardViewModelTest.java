@@ -2,6 +2,7 @@ package com.gruutnetworks.gruutsigner.ui.dashboard;
 
 import android.arch.persistence.room.Room;
 import android.content.Context;
+import android.database.sqlite.SQLiteConstraintException;
 import android.util.Base64;
 import androidx.test.core.app.ApplicationProvider;
 import com.gruutnetworks.gruutsigner.RobolectricTest;
@@ -9,6 +10,7 @@ import com.gruutnetworks.gruutsigner.model.SignedBlock;
 import com.gruutnetworks.gruutsigner.model.SignedBlockDao;
 import com.gruutnetworks.gruutsigner.util.AppDatabase;
 import com.gruutnetworks.gruutsigner.util.AuthGeneralUtil;
+import junit.framework.Assert;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -30,7 +32,9 @@ public class DashboardViewModelTest extends RobolectricTest {
     @Before
     public void setUp() throws Exception {
         Context context = ApplicationProvider.getApplicationContext();
-        mDb = Room.inMemoryDatabaseBuilder(context, AppDatabase.class).build();
+        mDb = Room.inMemoryDatabaseBuilder(context, AppDatabase.class)
+                .allowMainThreadQueries()
+                .build();
         blockDao = mDb.blockDao();
     }
 
@@ -70,6 +74,14 @@ public class DashboardViewModelTest extends RobolectricTest {
         blockDao.insertAll(block);
 
         SignedBlock searchedBlock = blockDao.findByPrimaryKey("R0VOVEVTVDE=", "1");
-        //assertThat(searchedBlock, is(block));
+        assertThat(searchedBlock.getChainId(), is(block.getChainId()));
+        assertThat(searchedBlock.getBlockHeight(), is(block.getBlockHeight()));
+
+        try {
+            blockDao.insertAll(block);
+            Assert.fail("SQLiteConstraintException");
+        } catch (SQLiteConstraintException e) {
+            // expected
+        }
     }
 }
