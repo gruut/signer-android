@@ -11,7 +11,7 @@ public interface SecurityConstants {
 
     String CURVE_SECP256R1 = "secp256r1";
 
-    int MSG_EXPIRATION_TIME = 100;
+    int MSG_EXPIRATION_TIME = 1000 * 10;
     enum Alias {
         SELF_CERT,
         GRUUT_AUTH
