@@ -42,7 +42,6 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
     private AuthCertUtil authCertUtil;
     private AuthHmacUtil authHmacUtil;
     private PreferenceUtil preferenceUtil;
-    private SignedBlockDao blockDao;
 
     private ManagedChannel channel1;
     private ManagedChannel channel2;
@@ -59,8 +58,6 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         this.authHmacUtil = AuthHmacUtil.getInstance();
         this.preferenceUtil = PreferenceUtil.getInstance(application.getApplicationContext());
         this.sender = preferenceUtil.getString(PreferenceUtil.Key.SID_STR);
-
-        blockDao = AppDatabase.getDatabase(application).blockDao();
 
         if (!NetworkUtil.isConnected(application.getApplicationContext())) {
             SnackbarMessage snackbarMessage = new SnackbarMessage();
@@ -359,11 +356,6 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         String time = AuthGeneralUtil.getTimestamp();
         String signature;
         try {
-            SignedBlock block = new SignedBlock();
-            block.setChainId(msgRequestSignature.getChainId());
-            block.setBlockHeight(msgRequestSignature.getBlockHeight());
-            blockDao.insertAll();
-
             signature = authCertUtil.generateSupportSignature(sender, time, msgRequestSignature.getmID(), GruutConfigs.localChainId,
                     msgRequestSignature.getBlockHeight(), msgRequestSignature.getTransaction());
             logMerger1.postValue("Signature generated!");
