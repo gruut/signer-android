@@ -359,6 +359,11 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         String time = AuthGeneralUtil.getTimestamp();
         String signature;
         try {
+            SignedBlock block = new SignedBlock();
+            block.setChainId(msgRequestSignature.getChainId());
+            block.setBlockHeight(msgRequestSignature.getBlockHeight());
+            blockDao.insertAll();
+
             signature = authCertUtil.generateSupportSignature(sender, time, msgRequestSignature.getmID(), GruutConfigs.localChainId,
                     msgRequestSignature.getBlockHeight(), msgRequestSignature.getTransaction());
             logMerger1.postValue("Signature generated!");
