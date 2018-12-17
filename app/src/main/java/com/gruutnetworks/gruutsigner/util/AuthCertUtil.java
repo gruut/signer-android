@@ -199,12 +199,12 @@ public class AuthCertUtil {
     /**
      * Generate a signature for MSG_RESPONSE1
      *
-     * @param mNonce    merger's nonce
-     * @param sNonce    signer's nonce
-     * @param x         signer's dh x hex value
-     * @param y         singer's dh y hex value
-     * @param time      timestamp
-     * @return  signature string
+     * @param mNonce merger's nonce
+     * @param sNonce signer's nonce
+     * @param x      signer's dh x hex value
+     * @param y      singer's dh y hex value
+     * @param time   timestamp
+     * @return signature string
      */
     public String signMsgResponse1(String mNonce, String sNonce, String x, String y, String time)
             throws IOException, CertificateException, InvalidKeyException, NoSuchAlgorithmException,
@@ -260,29 +260,28 @@ public class AuthCertUtil {
     /**
      * MSG_REQ_SSIG에 대한 지지서명 생성
      *
-     * @param sender    signer의 id. int value...?
-     * @param time      timestamp
-     * @param mId       요청한 merger의 id
-     * @param cId       local chain id
-     * @param hgt       block height
-     * @param tx        transaction root
+     * @param sender signer id          (Base64)
+     * @param time   timestamp
+     * @param mId    요청한 merger의 id (Base64)
+     * @param cId    local chain id     (Base64)
+     * @param hgt    block height
+     * @param tx     transaction root   (Base64)
      * @return support signature string
      */
     public String generateSupportSignature(String sender, String time, String mId, String cId, String hgt, String tx)
             throws IOException, CertificateException, InvalidKeyException, NoSuchAlgorithmException,
             KeyStoreException, SignatureException, UnrecoverableEntryException {
 
-        byte[] sigSender = ByteBuffer.allocate(8).putLong(Integer.parseInt(sender)).array();
         byte[] sigTime = ByteBuffer.allocate(8).putLong(Integer.parseInt(time)).array();
         byte[] sigHgt = ByteBuffer.allocate(8).putLong(Integer.parseInt(hgt)).array();
 
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        outputStream.write(sigSender);                          // 64 bit
-        outputStream.write(sigTime);                            // 64 bit
-        outputStream.write(Base64.decode(mId, Base64.NO_WRAP)); // 64 bit
-        outputStream.write(Base64.decode(cId, Base64.NO_WRAP)); // 64 bit
-        outputStream.write(sigHgt);                             // 64 bit
-        outputStream.write(Base64.decode(tx, Base64.NO_WRAP));  // 256 bit
+        outputStream.write(Base64.decode(sender, Base64.NO_WRAP));  // 64 bit
+        outputStream.write(sigTime);                                // 64 bit
+        outputStream.write(Base64.decode(mId, Base64.NO_WRAP));     // 64 bit
+        outputStream.write(Base64.decode(cId, Base64.NO_WRAP));     // 64 bit
+        outputStream.write(sigHgt);                                 // 64 bit
+        outputStream.write(Base64.decode(tx, Base64.NO_WRAP));      // 256 bit
 
         String signature = authCertUtil.sign(outputStream.toByteArray());
         outputStream.close();
