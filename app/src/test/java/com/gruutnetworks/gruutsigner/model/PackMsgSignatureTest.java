@@ -7,17 +7,16 @@ import com.google.gson.FieldAttributes;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.gruutnetworks.gruutsigner.RobolectricTest;
-import com.gruutnetworks.gruutsigner.util.AuthUtil;
+import com.gruutnetworks.gruutsigner.util.AuthGeneralUtil;
 import com.gruutnetworks.gruutsigner.util.PreferenceUtil;
 import org.junit.Before;
 import org.junit.Test;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertThat;
 
 @PrepareForTest({Base64.class})
-
 public class PackMsgSignatureTest extends RobolectricTest {
 
     private PackMsgSignature msgSignature;
@@ -25,7 +24,7 @@ public class PackMsgSignatureTest extends RobolectricTest {
 
     @Before
     public void setUp() throws Exception {
-        msgSignature = new PackMsgSignature("14", AuthUtil.getTimestamp(), "signature!");
+        msgSignature = new PackMsgSignature("14", AuthGeneralUtil.getTimestamp(), "signature!");
 
         // preference init
         PreferenceUtil preferenceUtil = PreferenceUtil.getInstance(ApplicationProvider.getApplicationContext());

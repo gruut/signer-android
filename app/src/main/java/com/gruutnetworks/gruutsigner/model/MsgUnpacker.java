@@ -1,22 +1,20 @@
 package com.gruutnetworks.gruutsigner.model;
 
+import com.gruutnetworks.gruutsigner.util.AuthHmacUtil;
 import com.gruutnetworks.gruutsigner.util.CompressionUtil;
-import com.gruutnetworks.gruutsigner.util.KeystoreUtil;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
 
 import static com.gruutnetworks.gruutsigner.model.MsgHeader.*;
-import static com.gruutnetworks.gruutsigner.model.MsgHeader.MSG_HEADER_LEN;
 
 public abstract class MsgUnpacker {
     abstract void bodyFromJson(byte[] bodyBytes);
 
     MsgHeader header;
     byte[] body;
-    byte[] mac;
-    boolean macValidity;
+    private boolean macValidity;
 
     void parse(byte[] bytes) {
         int offset = 0;
@@ -39,7 +37,6 @@ public abstract class MsgUnpacker {
         byte[] mac = Arrays.copyOfRange(bytes, offset, bytes.length);
 
         this.header = header;
-        this.mac = mac;
         this.macValidity = checkMacValidity(header, compressedMsg, mac);
 
         // 압축 해제가 필요할 경우 해제 후 body에 넣음.
@@ -58,14 +55,20 @@ public abstract class MsgUnpacker {
 
     private boolean checkMacValidity(MsgHeader header, byte[] compressedData, byte[] mac) {
         try {
-            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-            outputStream.write(header.convertToByteArr());
-            outputStream.write(compressedData);
+            switch (header.getMacType()) {
+                case HMAC_SHA256:
+                    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+                    outputStream.write(header.convertToByteArr());
+                    outputStream.write(compressedData);
 
-            byte[] headerAndBody = outputStream.toByteArray();
-            outputStream.close();
+                    byte[] headerAndBody = outputStream.toByteArray();
+                    outputStream.close();
 
-            return KeystoreUtil.verifyHmacSignature(headerAndBody, mac);
+                    return AuthHmacUtil.verifyHmacSignature(headerAndBody, mac);
+                case NONE:
+                default:
+                    return true;
+            }
         } catch (IOException e) {
             return false;
         }

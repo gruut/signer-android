@@ -5,7 +5,6 @@ import android.arch.lifecycle.*;
 import android.os.AsyncTask;
 import android.os.SystemClock;
 import android.support.annotation.NonNull;
-import android.util.Base64;
 import android.util.Log;
 import com.google.protobuf.ByteString;
 import com.gruutnetworks.gruutsigner.*;
@@ -14,6 +13,7 @@ import com.gruutnetworks.gruutsigner.R;
 import com.gruutnetworks.gruutsigner.exceptions.AsyncException;
 import com.gruutnetworks.gruutsigner.exceptions.AuthUtilException;
 import com.gruutnetworks.gruutsigner.exceptions.ErrorMsgException;
+import com.gruutnetworks.gruutsigner.gruut.GruutConfigs;
 import com.gruutnetworks.gruutsigner.model.*;
 import com.gruutnetworks.gruutsigner.util.*;
 import io.grpc.ManagedChannel;
@@ -21,9 +21,7 @@ import io.grpc.ManagedChannelBuilder;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.security.*;
 import java.security.cert.CertificateException;
 import java.security.spec.InvalidKeySpecException;
@@ -41,16 +39,14 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
     private final SingleLiveEvent refreshMerger1 = new SingleLiveEvent();
     private final SingleLiveEvent openSettingDialog = new SingleLiveEvent();
 
-    private KeystoreUtil keystoreUtil;
+    private AuthCertUtil authCertUtil;
+    private AuthHmacUtil authHmacUtil;
     private PreferenceUtil preferenceUtil;
 
     private ManagedChannel channel1;
     private ManagedChannel channel2;
 
     private String sender;
-    private String localChainId = "R0VOVEVTVDE=";
-    private String ver = "1";
-
     private String signerNonce;
     private String mergerNonce;
 
@@ -58,9 +54,10 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
 
     public DashboardViewModel(@NonNull Application application) {
         super(application);
-        this.keystoreUtil = KeystoreUtil.getInstance();
+        this.authCertUtil = AuthCertUtil.getInstance();
+        this.authHmacUtil = AuthHmacUtil.getInstance();
         this.preferenceUtil = PreferenceUtil.getInstance(application.getApplicationContext());
-        this.sender = Integer.toString(preferenceUtil.getInt(PreferenceUtil.Key.SID_INT));
+        this.sender = preferenceUtil.getString(PreferenceUtil.Key.SID_STR);
 
         if (!NetworkUtil.isConnected(application.getApplicationContext())) {
             SnackbarMessage snackbarMessage = new SnackbarMessage();
@@ -132,10 +129,10 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         logMerger1.postValue("START requestJoin...");
 
         PackMsgJoin packMsgJoin = new PackMsgJoin(
-                Base64.encodeToString(sender.getBytes(), Base64.NO_WRAP),
-                AuthUtil.getTimestamp(),
-                ver,
-                localChainId
+                sender,
+                AuthGeneralUtil.getTimestamp(),
+                GruutConfigs.ver,
+                GruutConfigs.localChainId
         );
 
         MsgUnpacker receivedMsg = null;
@@ -171,39 +168,39 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         logMerger1.postValue("START sendPublicKey...");
 
         // generate signer nonce
-        signerNonce = AuthUtil.getNonce();
+        signerNonce = AuthGeneralUtil.getNonce();
 
         // get merger nonce
         mergerNonce = messageChallenge.getMergerNonce();
+
+        if (!AuthGeneralUtil.isMsgInTime(messageChallenge.getTime())) {
+            throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_EXPIRED);
+        }
 
         if (keyPair == null) {
             // generate ecdh key
             logMerger1.postValue("Generate ECDH key pair");
             try {
-                keyPair = keystoreUtil.generateEcdhKeys();
+                keyPair = authHmacUtil.generateEcdhKeys();
             } catch (NoSuchProviderException | NoSuchAlgorithmException | InvalidAlgorithmParameterException e) {
                 throw new AuthUtilException(AuthUtilException.AuthErr.KEY_GEN_ERROR);
             }
         }
 
-        String x = new String(keystoreUtil.pubToXpoint(keyPair.getPublic()));
-        String y = new String(keystoreUtil.pubToYpoint(keyPair.getPublic()));
-        String time = AuthUtil.getTimestamp();
-        String sigTarget = mergerNonce + signerNonce + x + y + time;
-
-        // Generate Signature
+        String x = new String(authHmacUtil.pubToXpoint(keyPair.getPublic()));
+        String y = new String(authHmacUtil.pubToYpoint(keyPair.getPublic()));
+        String time = AuthGeneralUtil.getTimestamp();
         String signature = null;
         try {
-            signature = keystoreUtil.signData(sigTarget.getBytes());
-        } catch (KeyStoreException | UnrecoverableEntryException | NoSuchAlgorithmException
-                | SignatureException | InvalidKeyException | CertificateException | IOException e) {
+            signature = authCertUtil.signMsgResponse1(mergerNonce, signerNonce, x, y, time);
+        } catch (Exception e) {
             throw new AuthUtilException(AuthUtilException.AuthErr.SIGNING_ERROR);
         }
 
         // Get Certificate issued by GA
         String cert = null;
         try {
-            cert = keystoreUtil.getCert(KeystoreUtil.SecurityConstants.Alias.GRUUT_AUTH);
+            cert = authCertUtil.getCert(SecurityConstants.Alias.GRUUT_AUTH);
         } catch (KeyStoreException | CertificateException | IOException | NoSuchAlgorithmException e) {
             throw new AuthUtilException(AuthUtilException.AuthErr.GET_CERT_ERROR);
         }
@@ -213,7 +210,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         }
 
         PackMsgResponse1 msgResponse1 = new PackMsgResponse1(
-                Base64.encodeToString(sender.getBytes(), Base64.NO_WRAP),
+                sender,
                 time,
                 cert,
                 signerNonce,
@@ -252,26 +249,21 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
      * @throws StatusRuntimeException on GRPC errorMerger1
      */
     private UnpackMsgAccept sendSuccess(ManagedChannel channel, UnpackMsgResponse2 messageResponse2) throws StatusRuntimeException {
-        // signature 검증
-        String input = mergerNonce + signerNonce + messageResponse2.getDhPubKeyX() +
-                messageResponse2.getDhPubKeyY() + messageResponse2.getTime();
 
-        boolean isSigValid = false;
         try {
-            isSigValid = keystoreUtil.verifyData(input, messageResponse2.getSig(), messageResponse2.getCert());
-        } catch (CertificateException | NoSuchAlgorithmException | InvalidKeyException |
-                SignatureException | NoSuchProviderException e) {
+            // 서명 검증
+            if (!authCertUtil.verifyMsgResponse2(messageResponse2.getSig(), messageResponse2.getCert(),
+                    mergerNonce, signerNonce, messageResponse2.getDhPubKeyX(), messageResponse2.getDhPubKeyY(), messageResponse2.getTime())) {
+                throw new AuthUtilException(AuthUtilException.AuthErr.INVALID_SIGNATURE);
+            }
+        } catch (Exception e) {
             throw new AuthUtilException(AuthUtilException.AuthErr.VERIFYING_ERROR);
-        }
-
-        if (!isSigValid) {
-            throw new AuthUtilException(AuthUtilException.AuthErr.INVALID_SIGNATURE);
         }
 
         // X,Y 좌표로부터 Pulbic key get
         PublicKey mergerPubKey = null;
         try {
-            mergerPubKey = keystoreUtil.pointToPub(messageResponse2.getDhPubKeyX(), messageResponse2.getDhPubKeyY());
+            mergerPubKey = authHmacUtil.pointToPub(messageResponse2.getDhPubKeyX(), messageResponse2.getDhPubKeyY());
         } catch (NoSuchProviderException | NoSuchAlgorithmException | InvalidKeySpecException e) {
             throw new AuthUtilException(AuthUtilException.AuthErr.KEY_GEN_ERROR);
         }
@@ -279,7 +271,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         // HMAC KEY 계산
         byte[] hmacKey;
         try {
-            hmacKey = keystoreUtil.getSharedSecreyKey(keyPair.getPrivate(), mergerPubKey);
+            hmacKey = authHmacUtil.getSharedSecreyKey(keyPair.getPrivate(), mergerPubKey);
         } catch (NoSuchProviderException | NoSuchAlgorithmException | InvalidKeyException e) {
             throw new AuthUtilException(AuthUtilException.AuthErr.HMAC_KEY_GEN_ERROR);
         }
@@ -288,8 +280,8 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         preferenceUtil.put(PreferenceUtil.Key.HMAC_STR, new String(hmacKey));
 
         PackMsgSuccess msgSuccess = new PackMsgSuccess(
-                Base64.encodeToString(sender.getBytes(), Base64.NO_WRAP),
-                AuthUtil.getTimestamp(),
+                sender,
+                AuthGeneralUtil.getTimestamp(),
                 true
         );
 
@@ -309,6 +301,8 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
             throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_NOT_FOUND);
         } else if (receivedMsg.getMessageType() == TypeMsg.MSG_ERROR) {
             throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_ERR_RECEIVED);
+        } else if (!receivedMsg.isMacValid()) {
+            throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_INVALID_HMAC);
         }
 
         logMerger1.postValue("[RECEIVED]" + "MSG_ACCEPT");
@@ -322,7 +316,15 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
             public void onNext(GrpcMsgReqSsig value) {
                 // Signature request from Merger
                 logMerger1.postValue("I've got MSG_REQ_SSIG!");
-                sendSignature(channel, value);
+                try {
+                    sendSignature(channel, value);
+                } catch (ErrorMsgException e) {
+                    logMerger1.postValue("[ERROR]" + e.getMessage());
+                    errorMerger1.postValue(true);
+                } catch (AuthUtilException e) {
+                    logMerger1.postValue("[CRYPTO_ERROR]" + e.getMessage());
+                    errorMerger1.postValue(true);
+                }
             }
 
             @Override
@@ -347,33 +349,22 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         UnpackMsgRequestSignature msgRequestSignature
                 = new UnpackMsgRequestSignature(grpcMsgReqSsig.getMessage().toByteArray());
 
-        String time = AuthUtil.getTimestamp();
+        if (!msgRequestSignature.isMacValid()) {
+            throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_INVALID_HMAC);
+        }
+
+        String time = AuthGeneralUtil.getTimestamp();
         String signature;
         try {
-            // TODO check this out later. format 맞추기
-            byte[] sigSender = ByteBuffer.allocate(8).putLong(Integer.parseInt(sender)).array();
-            byte[] sigTime = ByteBuffer.allocate(8).putLong(Integer.parseInt(time)).array();
-            byte[] sigHgt = ByteBuffer.allocate(8).putLong(Integer.parseInt(msgRequestSignature.getBlockHeight())).array();
-
-            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-            outputStream.write(sigSender);
-            outputStream.write(sigTime);
-            outputStream.write(Base64.decode(msgRequestSignature.getmID(), Base64.NO_WRAP));
-            outputStream.write(sigHgt);
-            outputStream.write(Base64.decode(msgRequestSignature.getTransaction(), Base64.NO_WRAP));
-
-            signature = keystoreUtil.signData(outputStream.toByteArray());
-            outputStream.close();
-
+            signature = authCertUtil.generateSupportSignature(sender, time, msgRequestSignature.getmID(), GruutConfigs.localChainId,
+                    msgRequestSignature.getBlockHeight(), msgRequestSignature.getTransaction());
             logMerger1.postValue("Signature generated!");
         } catch (Exception e) {
-            logMerger1.postValue("Error... signing...\n" + e.getMessage());
-            Log.e(TAG, "Error... signing...\n" + e.getMessage());
-            return;
+            throw new AuthUtilException(AuthUtilException.AuthErr.SIGNING_ERROR);
         }
 
         PackMsgSignature msgSignature = new PackMsgSignature(
-                Base64.encodeToString(sender.getBytes(), Base64.NO_WRAP),
+                sender,
                 time,
                 signature
         );
@@ -424,7 +415,6 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
 
     private static class GrpcTask extends AsyncTask<MsgPacker, Void, MsgUnpacker> {
 
-        private static final int TIME_OUT = 10;
         private long start;
         private ManagedChannel channel;
 
@@ -445,27 +435,25 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
                         GrpcMsgJoin grpcMsgJoin = GrpcMsgJoin.newBuilder()
                                 .setMessage(ByteString.copyFrom(msg.convertToByteArr()))
                                 .build();
-
-                        GrpcMsgChallenge grpcMsgChallenge = stub.withDeadlineAfter(TIME_OUT, TimeUnit.SECONDS).join(grpcMsgJoin);
+                        GrpcMsgChallenge grpcMsgChallenge = stub.withDeadlineAfter(GruutConfigs.GRPC_TIMEOUT, TimeUnit.SECONDS).join(grpcMsgJoin);
                         return new UnpackMsgChallenge(grpcMsgChallenge.getMessage().toByteArray());
                     case MSG_RESPONSE_1:
                         GrpcMsgResponse1 grpcMsgResponse1 = GrpcMsgResponse1.newBuilder()
                                 .setMessage(ByteString.copyFrom(msg.convertToByteArr()))
                                 .build();
-
-                        GrpcMsgResponse2 grpcMsgResponse2 = stub.withDeadlineAfter(TIME_OUT, TimeUnit.SECONDS).dhKeyEx(grpcMsgResponse1);
+                        GrpcMsgResponse2 grpcMsgResponse2 = stub.withDeadlineAfter(GruutConfigs.GRPC_TIMEOUT, TimeUnit.SECONDS).dhKeyEx(grpcMsgResponse1);
                         return new UnpackMsgResponse2(grpcMsgResponse2.getMessage().toByteArray());
                     case MSG_SUCCESS:
                         GrpcMsgSuccess grpcMsgSuccess = GrpcMsgSuccess.newBuilder()
                                 .setMessage(ByteString.copyFrom(msg.convertToByteArr()))
                                 .build();
-                        GrpcMsgAccept grpcMsgAccept = stub.withDeadlineAfter(TIME_OUT, TimeUnit.SECONDS).keyExFinished(grpcMsgSuccess);
+                        GrpcMsgAccept grpcMsgAccept = stub.withDeadlineAfter(GruutConfigs.GRPC_TIMEOUT, TimeUnit.SECONDS).keyExFinished(grpcMsgSuccess);
                         return new UnpackMsgAccept(grpcMsgAccept.getMessage().toByteArray());
                     case MSG_SSIG:
                         GrpcMsgSsig grpcMsgSsig = GrpcMsgSsig.newBuilder()
                                 .setMessage(ByteString.copyFrom(msg.convertToByteArr()))
                                 .build();
-                        stub.withDeadlineAfter(TIME_OUT, TimeUnit.SECONDS).sigSend(grpcMsgSsig);
+                        stub.withDeadlineAfter(GruutConfigs.GRPC_TIMEOUT, TimeUnit.SECONDS).sigSend(grpcMsgSsig);
                         return null;
                     default:
                         return null;

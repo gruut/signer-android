@@ -32,6 +32,10 @@ public class UnpackMsgChallenge extends MsgUnpacker {
         return mergerNonce;
     }
 
+    public String getTime() {
+        return time;
+    }
+
     @Override
     void bodyFromJson(byte[] bodyBytes) {
         // Super class는 제외하고 deserialize
