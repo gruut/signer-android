@@ -26,6 +26,7 @@ public class PackMsgSignatureTest extends RobolectricTest {
     @Before
     public void setUp() throws Exception {
         msgSignature = new PackMsgSignature("MDAwMDAwMDE=", AuthGeneralUtil.getTimestamp(), "signature!");
+        msgSignature.setDestinationId(mergerId);
 
         // preference init
         PreferenceUtil preferenceUtil = PreferenceUtil.getInstance(ApplicationProvider.getApplicationContext());
@@ -53,7 +54,7 @@ public class PackMsgSignatureTest extends RobolectricTest {
         PackMsgSignature decomp = gson.fromJson(new String(parsedBody), PackMsgSignature.class);
 
         assertThat(decomp.bodyToJson(), is(msgSignature.bodyToJson()));
-        assertThat(msgPackerTest.checkMacValidity(msgPackerTest.header, msgPackerTest.compressedMsg, msgPackerTest.mac),
+        assertThat(msgPackerTest.checkMacValidity(msgPackerTest.header, msgPackerTest.compressedMsg, msgPackerTest.mac, mergerId),
                 is(true));
     }
 }

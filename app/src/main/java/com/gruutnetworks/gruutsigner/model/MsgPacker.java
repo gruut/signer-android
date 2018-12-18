@@ -2,13 +2,13 @@ package com.gruutnetworks.gruutsigner.model;
 
 import com.gruutnetworks.gruutsigner.util.AuthHmacUtil;
 import com.gruutnetworks.gruutsigner.util.CompressionUtil;
-import com.gruutnetworks.gruutsigner.util.AuthCertUtil;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
 public abstract class MsgPacker {
     abstract void setHeader();
+
     abstract public void setDestinationId(String id);
 
     abstract byte[] bodyToJson();

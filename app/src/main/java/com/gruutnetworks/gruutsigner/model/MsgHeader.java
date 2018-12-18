@@ -70,8 +70,8 @@ public class MsgHeader {
         String str = "{";
         str += "gruutConstant: " + String.format("0x%02X", gruutConstant) + ", ";
         str += "Version: " + String.format("0x%02X", version) + ", ";
-        str += "mainVersion: " + String.format("0x%01X",mainVersion) + ", ";
-        str += "subVersion: " +String.format("0x%01X", subVersion) + ", ";
+        str += "mainVersion: " + String.format("0x%01X", mainVersion) + ", ";
+        str += "subVersion: " + String.format("0x%01X", subVersion) + ", ";
         str += "msgType: " + String.format("0x%02X", msgType) + ", ";
         str += "macType: " + String.format("0x%02X", macType) + ", ";
         str += "compressionType: " + String.format("0x%02X", compressionType) + ", ";

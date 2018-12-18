@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.security.*;
 import java.security.cert.CertificateException;
 import java.security.spec.InvalidKeySpecException;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -60,7 +61,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
 
     private String sender;
     private String signerNonce;
-    private Map<String, String> mergerNonceMap;
+    private Map<String, String> mergerNonceMap = new HashMap<>();
 
     private KeyPair keyPair;
 
@@ -84,16 +85,16 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
      */
     @OnLifecycleEvent(Lifecycle.Event.ON_RESUME)
     public void onResume() {
+        refreshMerger1();
+        refreshMerger2();
+    }
+
+    public void refreshMerger1() {
         refreshMerger1.call();
-        refreshMerger2.call();
         errorMerger1.setValue(false);
-        errorMerger2.setValue(false);
 
         ipMerger1.setValue(preferenceUtil.getString(PreferenceUtil.Key.IP1_STR));
         portMerger1.setValue(preferenceUtil.getString(PreferenceUtil.Key.PORT1_STR));
-
-        ipMerger2.setValue(preferenceUtil.getString(PreferenceUtil.Key.IP2_STR));
-        portMerger2.setValue(preferenceUtil.getString(PreferenceUtil.Key.PORT2_STR));
 
         if (ipMerger1.getValue() != null && portMerger1.getValue() != null &&
                 !ipMerger1.getValue().isEmpty() && !portMerger1.getValue().isEmpty()) {
@@ -107,6 +108,14 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         } else {
             logMerger1.postValue("Please set merger's ip address first.");
         }
+    }
+
+    public void refreshMerger2() {
+        refreshMerger2.call();
+        errorMerger2.setValue(false);
+
+        ipMerger2.setValue(preferenceUtil.getString(PreferenceUtil.Key.IP2_STR));
+        portMerger2.setValue(preferenceUtil.getString(PreferenceUtil.Key.PORT2_STR));
 
         if (ipMerger2.getValue() != null && portMerger2.getValue() != null &&
                 !ipMerger2.getValue().isEmpty() && !portMerger2.getValue().isEmpty()) {
@@ -417,6 +426,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
                 time,
                 signature
         );
+        msgSignature.setDestinationId(msgRequestSignature.getmID());
 
         log.postValue("[SEND]" + "MSG_SSIG");
         try {
