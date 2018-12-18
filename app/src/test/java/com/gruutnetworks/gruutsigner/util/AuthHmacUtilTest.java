@@ -22,6 +22,7 @@ public class AuthHmacUtilTest extends RobolectricTest {
     private AuthHmacUtil authHmacUtil;
     private PreferenceUtil preferenceUtil;
     private KeyPair keyPair;
+    private String mergerId = "TUVSR0VSLTE=";
 
     @Before
     public void setUp() {
@@ -70,7 +71,7 @@ public class AuthHmacUtilTest extends RobolectricTest {
             PublicKey othersPubKey = authHmacUtil.pointToPub(otherX, otherY);
 
             byte[] hmacKey = authHmacUtil.getSharedSecreyKey(keyPair.getPrivate(), othersPubKey);
-            preferenceUtil.put(PreferenceUtil.Key.HMAC_STR, new String(hmacKey));
+            preferenceUtil.put(mergerId, new String(hmacKey));
         } catch (Exception e){
             Assert.fail("Exception: " + e);
         }
@@ -80,9 +81,9 @@ public class AuthHmacUtilTest extends RobolectricTest {
     public void hmacTest() {
         // generate hmac
         byte[] hexConvertedData = ("471058f104000000005747454e54455354310000000000003132000000000000f0267b2273656e646572223a224d54495c7530303364222c2274696d65223a2231353434303634323132222c2276616c223a747275657d").getBytes();
-        byte[] hmac = AuthHmacUtil.getHmacSignature(Hex.decode(hexConvertedData));
+        byte[] hmac = AuthHmacUtil.getHmacSignature(mergerId, Hex.decode(hexConvertedData));
 
         // verify hmac
-        assertThat(AuthHmacUtil.verifyHmacSignature(Hex.decode(hexConvertedData), hmac), is(true));
+        assertThat(AuthHmacUtil.verifyHmacSignature(mergerId, Hex.decode(hexConvertedData), hmac), is(true));
     }
 }

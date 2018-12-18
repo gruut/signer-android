@@ -50,7 +50,7 @@ public class MsgPackerTest {
         }
     }
 
-    boolean checkMacValidity(MsgHeader header, byte[] compressedData, byte[] mac) {
+    boolean checkMacValidity(MsgHeader header, byte[] compressedData, byte[] mac, String id) {
         try {
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             outputStream.write(header.convertToByteArr());
@@ -59,7 +59,7 @@ public class MsgPackerTest {
             byte[] headerAndBody = outputStream.toByteArray();
             outputStream.close();
 
-            return AuthHmacUtil.verifyHmacSignature(headerAndBody, mac);
+            return AuthHmacUtil.verifyHmacSignature(id, headerAndBody, mac);
         } catch (IOException e) {
             return false;
         }

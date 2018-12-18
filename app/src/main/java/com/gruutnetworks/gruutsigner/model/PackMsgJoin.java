@@ -50,6 +50,11 @@ public class PackMsgJoin extends MsgPacker {
     }
 
     @Override
+    public void setDestinationId(String id) {
+        this.destinationId = id;
+    }
+
+    @Override
     public byte[] bodyToJson() {
         // Super class는 제외하고 serialize
         Gson gson = new GsonBuilder().addSerializationExclusionStrategy(new ExclusionStrategy() {
