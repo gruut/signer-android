@@ -1,7 +1,9 @@
 package com.gruutnetworks.gruutsigner.ui.dashboard;
 
 import android.app.Application;
-import android.arch.lifecycle.*;
+import android.arch.lifecycle.AndroidViewModel;
+import android.arch.lifecycle.LifecycleObserver;
+import android.arch.lifecycle.MutableLiveData;
 import android.support.annotation.NonNull;
 import com.gruutnetworks.gruutsigner.util.PreferenceUtil;
 
@@ -9,6 +11,7 @@ public class SettingViewModel extends AndroidViewModel implements LifecycleObser
 
     private PreferenceUtil preferenceUtil;
 
+    public MutableLiveData<DashboardViewModel.MergerNum> merger = new MutableLiveData<>();
     public MutableLiveData<String> ipAddress = new MutableLiveData<>();
     public MutableLiveData<String> portNumber = new MutableLiveData<>();
 
@@ -17,15 +20,46 @@ public class SettingViewModel extends AndroidViewModel implements LifecycleObser
         this.preferenceUtil = PreferenceUtil.getInstance(application.getApplicationContext());
     }
 
-    @OnLifecycleEvent(Lifecycle.Event.ON_RESUME)
     void fetchPreference() {
-        ipAddress.setValue(preferenceUtil.getString(PreferenceUtil.Key.IP_STR));
-        portNumber.setValue(preferenceUtil.getString(PreferenceUtil.Key.PORT_STR));
+        if (merger.getValue() != null) {
+            switch (merger.getValue()) {
+                case MERGER_1:
+                    ipAddress.setValue(preferenceUtil.getString(PreferenceUtil.Key.IP1_STR));
+                    portNumber.setValue(preferenceUtil.getString(PreferenceUtil.Key.PORT1_STR));
+                    break;
+                case MERGER_2:
+                    ipAddress.setValue(preferenceUtil.getString(PreferenceUtil.Key.IP2_STR));
+                    portNumber.setValue(preferenceUtil.getString(PreferenceUtil.Key.PORT2_STR));
+                    break;
+                default:
+                    break;
+            }
+        }
     }
 
     void pullPreference() {
-        preferenceUtil.put(PreferenceUtil.Key.IP_STR, ipAddress.getValue());
-        preferenceUtil.put(PreferenceUtil.Key.PORT_STR, portNumber.getValue());
+        if (merger.getValue() != null) {
+            switch (merger.getValue()) {
+                case MERGER_1:
+                    preferenceUtil.put(PreferenceUtil.Key.IP1_STR, ipAddress.getValue());
+                    preferenceUtil.put(PreferenceUtil.Key.PORT1_STR, portNumber.getValue());
+                    break;
+                case MERGER_2:
+                    preferenceUtil.put(PreferenceUtil.Key.IP2_STR, ipAddress.getValue());
+                    preferenceUtil.put(PreferenceUtil.Key.PORT2_STR, portNumber.getValue());
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+
+    public void setMerger(DashboardViewModel.MergerNum merger) {
+        this.merger.setValue(merger);
+    }
+
+    public MutableLiveData<DashboardViewModel.MergerNum> getMerger() {
+        return merger;
     }
 
     @Override

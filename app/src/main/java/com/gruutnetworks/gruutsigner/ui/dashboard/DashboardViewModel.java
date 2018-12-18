@@ -32,12 +32,22 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
 
     private static final String TAG = "DashboardViewModel";
 
+    public enum MergerNum {
+        MERGER_1, MERGER_2
+    }
+
     public MutableLiveData<String> logMerger1 = new MutableLiveData<>();
+    public MutableLiveData<String> logMerger2 = new MutableLiveData<>();
     public MutableLiveData<String> ipMerger1 = new MutableLiveData<>();
+    public MutableLiveData<String> ipMerger2 = new MutableLiveData<>();
     public MutableLiveData<String> portMerger1 = new MutableLiveData<>();
+    public MutableLiveData<String> portMerger2 = new MutableLiveData<>();
     public MutableLiveData<Boolean> errorMerger1 = new MutableLiveData<>();
+    public MutableLiveData<Boolean> errorMerger2 = new MutableLiveData<>();
     private final SingleLiveEvent refreshMerger1 = new SingleLiveEvent();
-    private final SingleLiveEvent openSettingDialog = new SingleLiveEvent();
+    private final SingleLiveEvent refreshMerger2 = new SingleLiveEvent();
+    private final SingleLiveEvent openSetting1Dialog = new SingleLiveEvent();
+    private final SingleLiveEvent openSetting2Dialog = new SingleLiveEvent();
 
     private AuthCertUtil authCertUtil;
     private AuthHmacUtil authHmacUtil;
@@ -74,10 +84,15 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
     @OnLifecycleEvent(Lifecycle.Event.ON_RESUME)
     public void onResume() {
         refreshMerger1.call();
+        refreshMerger2.call();
         errorMerger1.setValue(false);
+        errorMerger2.setValue(false);
 
-        ipMerger1.setValue(preferenceUtil.getString(PreferenceUtil.Key.IP_STR));
-        portMerger1.setValue(preferenceUtil.getString(PreferenceUtil.Key.PORT_STR));
+        ipMerger1.setValue(preferenceUtil.getString(PreferenceUtil.Key.IP1_STR));
+        portMerger1.setValue(preferenceUtil.getString(PreferenceUtil.Key.PORT1_STR));
+
+        ipMerger2.setValue(preferenceUtil.getString(PreferenceUtil.Key.IP2_STR));
+        portMerger2.setValue(preferenceUtil.getString(PreferenceUtil.Key.PORT2_STR));
 
         if (ipMerger1.getValue() != null && portMerger1.getValue() != null &&
                 !ipMerger1.getValue().isEmpty() && !portMerger1.getValue().isEmpty()) {
@@ -86,11 +101,22 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
                     .usePlaintext()
                     .build();
             logMerger1.postValue("[Channel Setting]" + ipMerger1.getValue() + ":" + portMerger1.getValue());
-
-            startJoining();
         } else {
             logMerger1.postValue("Please set merger's ip address first.");
         }
+
+        if (ipMerger2.getValue() != null && portMerger2.getValue() != null &&
+                !ipMerger2.getValue().isEmpty() && !portMerger2.getValue().isEmpty()) {
+            channel2 = ManagedChannelBuilder
+                    .forAddress(ipMerger2.getValue(), Integer.parseInt(portMerger2.getValue()))
+                    .usePlaintext()
+                    .build();
+            logMerger2.postValue("[Channel Setting]" + ipMerger2.getValue() + ":" + portMerger2.getValue());
+        } else {
+            logMerger2.postValue("Please set merger's ip address first.");
+        }
+
+        // startJoining();
     }
 
     void startJoining() {
@@ -116,8 +142,12 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         }.start();
     }
 
-    public void openAddressSetting() {
-        openSettingDialog.call();
+    public void openAddressSetting(int mergerNum) {
+        if (mergerNum == 1) {
+            openSetting1Dialog.call();
+        } else if (mergerNum == 2) {
+            openSetting2Dialog.call();
+        }
     }
 
     /**
@@ -394,20 +424,40 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         return logMerger1;
     }
 
+    public MutableLiveData<String> getLogMerger2() {
+        return logMerger2;
+    }
+
     public MutableLiveData<String> getIpMerger1() {
         return ipMerger1;
+    }
+
+    public MutableLiveData<String> getIpMerger2() {
+        return ipMerger2;
     }
 
     public MutableLiveData<String> getPortMerger1() {
         return portMerger1;
     }
 
+    public MutableLiveData<String> getPortMerger2() {
+        return portMerger2;
+    }
+
     public SingleLiveEvent getRefreshMerger1() {
         return refreshMerger1;
     }
 
-    public SingleLiveEvent getOpenSettingDialog() {
-        return openSettingDialog;
+    public SingleLiveEvent getRefreshMerger2() {
+        return refreshMerger2;
+    }
+
+    public SingleLiveEvent getOpenSetting1Dialog() {
+        return openSetting1Dialog;
+    }
+
+    public SingleLiveEvent getOpenSetting2Dialog() {
+        return openSetting2Dialog;
     }
 
     @Override

@@ -46,11 +46,23 @@ public class DashboardFragment extends Fragment implements SettingFragment.Setti
 
         viewModel.getLogMerger1().observe(this, text -> tvLogMerger1.append("\n" + text));
         viewModel.getRefreshMerger1().observe(this, o -> tvLogMerger1.setText(""));
-        viewModel.getOpenSettingDialog().observe(this, o -> {
-            SettingFragment settingFragment = SettingFragment.newInstance();
+        viewModel.getOpenSetting1Dialog().observe(this, o -> {
+            SettingFragment settingFragment = SettingFragment.newInstance(DashboardViewModel.MergerNum.MERGER_1);
             settingFragment.setTargetFragment(this, 0);
             settingFragment.show(getFragmentManager(), "fragment_address_setting");
         });
+
+        TextView tvLogMerger2 = binding.tvLogMerger2;
+        tvLogMerger2.setMovementMethod(new ScrollingMovementMethod());
+
+        viewModel.getLogMerger2().observe(this, text -> tvLogMerger2.append("\n" + text));
+        viewModel.getRefreshMerger2().observe(this, o -> tvLogMerger2.setText(""));
+        viewModel.getOpenSetting2Dialog().observe(this, o -> {
+            SettingFragment settingFragment = SettingFragment.newInstance(DashboardViewModel.MergerNum.MERGER_2);
+            settingFragment.setTargetFragment(this, 0);
+            settingFragment.show(getFragmentManager(), "fragment_address_setting");
+        });
+
     }
 
     @Override
