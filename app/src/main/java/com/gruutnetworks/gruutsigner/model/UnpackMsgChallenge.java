@@ -26,6 +26,7 @@ public class UnpackMsgChallenge extends MsgUnpacker {
     public UnpackMsgChallenge(byte[] bytes) {
         parse(bytes); // parse the whole message
         bodyFromJson(body);
+        setSenderValidity();
     }
 
     public String getmID() {
@@ -60,5 +61,10 @@ public class UnpackMsgChallenge extends MsgUnpacker {
         this.mID = msgChallenge.mID;
         this.time = msgChallenge.time;
         this.mergerNonce = msgChallenge.mergerNonce;
+    }
+
+    @Override
+    void setSenderValidity() {
+        this.senderValidity = header.getSender().equals(mID);
     }
 }

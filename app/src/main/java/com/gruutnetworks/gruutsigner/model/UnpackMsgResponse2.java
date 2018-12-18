@@ -35,6 +35,7 @@ public class UnpackMsgResponse2 extends MsgUnpacker {
     public UnpackMsgResponse2(byte[] bytes) {
         parse(bytes); // parse the whole message
         bodyFromJson(body);
+        setSenderValidity();
     }
 
     public String getmID() {
@@ -84,5 +85,10 @@ public class UnpackMsgResponse2 extends MsgUnpacker {
         this.dhPubKeyX = msgResponse2.dhPubKeyX;
         this.dhPubKeyY = msgResponse2.dhPubKeyY;
         this.sig = msgResponse2.sig;
+    }
+
+    @Override
+    void setSenderValidity() {
+        this.senderValidity = header.getSender().equals(mID);
     }
 }

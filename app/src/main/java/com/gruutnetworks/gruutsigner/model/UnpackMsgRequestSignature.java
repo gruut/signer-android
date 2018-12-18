@@ -32,6 +32,7 @@ public class UnpackMsgRequestSignature extends MsgUnpacker {
     public UnpackMsgRequestSignature(byte[] bytes) {
         parse(bytes); // parse the whole message
         bodyFromJson(body);
+        setSenderValidity();
     }
 
     public String getTime() {
@@ -76,5 +77,10 @@ public class UnpackMsgRequestSignature extends MsgUnpacker {
         this.chainId = msgRequestSignature.chainId;
         this.blockHeight = msgRequestSignature.blockHeight;
         this.transaction = msgRequestSignature.transaction;
+    }
+
+    @Override
+    void setSenderValidity() {
+        this.senderValidity = header.getSender().equals(mID);
     }
 }

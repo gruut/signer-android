@@ -12,8 +12,11 @@ import static com.gruutnetworks.gruutsigner.model.MsgHeader.*;
 public abstract class MsgUnpacker {
     abstract void bodyFromJson(byte[] bodyBytes);
 
+    abstract void setSenderValidity();
+
     MsgHeader header;
     byte[] body;
+    boolean senderValidity;
     private boolean macValidity;
 
     void parse(byte[] bytes) {
@@ -80,5 +83,9 @@ public abstract class MsgUnpacker {
 
     public boolean isMacValid() {
         return macValidity;
+    }
+
+    public boolean isSenderValid() {
+        return senderValidity;
     }
 }

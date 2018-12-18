@@ -26,6 +26,7 @@ public class UnpackMsgAccept extends MsgUnpacker {
     public UnpackMsgAccept(byte[] bytes) {
         parse(bytes);
         bodyFromJson(body);
+        setSenderValidity();
     }
 
     public boolean isVal() {
@@ -52,5 +53,10 @@ public class UnpackMsgAccept extends MsgUnpacker {
         this.mID = msgAccept.mID;
         this.time = msgAccept.time;
         this.val = msgAccept.val;
+    }
+
+    @Override
+    void setSenderValidity() {
+        this.senderValidity = header.getSender().equals(mID);
     }
 }
