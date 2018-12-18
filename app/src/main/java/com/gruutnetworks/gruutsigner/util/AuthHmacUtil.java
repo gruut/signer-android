@@ -143,7 +143,8 @@ public class AuthHmacUtil {
         try {
             PreferenceUtil preferenceUtil = PreferenceUtil.getInstance();
             // HMAC sign할 때 쓸 key(DH Key교환으로 생성한 shared secret key
-            String key = preferenceUtil.getString(PreferenceUtil.Key.HMAC_STR);
+            // TODO: merger id 가져오도록 해야 함
+            String key = preferenceUtil.getValue("merger id");
 
             if (key == null || key.isEmpty()) {
                 // Shared secret key not found.

@@ -28,6 +28,10 @@ public class UnpackMsgChallenge extends MsgUnpacker {
         bodyFromJson(body);
     }
 
+    public String getSender() {
+        return sender;
+    }
+
     public String getMergerNonce() {
         return mergerNonce;
     }
