@@ -83,6 +83,13 @@ public class MsgHeader {
         return str;
     }
 
+    /**
+     * @return 헤더의 sender byte array를 base 64로 인코딩하여 반환
+     */
+    String getSender() {
+        return Base64.encodeToString(sender, Base64.NO_WRAP);
+    }
+
     int getTotalLen() {
         return ByteBuffer.wrap(totalLen).getInt();
     }

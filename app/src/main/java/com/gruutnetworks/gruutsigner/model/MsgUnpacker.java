@@ -64,7 +64,7 @@ public abstract class MsgUnpacker {
                     byte[] headerAndBody = outputStream.toByteArray();
                     outputStream.close();
 
-                    return AuthHmacUtil.verifyHmacSignature(headerAndBody, mac);
+                    return AuthHmacUtil.verifyHmacSignature(header.getSender(), headerAndBody, mac);
                 case NONE:
                 default:
                     return true;

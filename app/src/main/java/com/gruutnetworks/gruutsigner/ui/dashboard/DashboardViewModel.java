@@ -323,6 +323,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
                 AuthGeneralUtil.getTimestamp(),
                 true
         );
+        msgSuccess.setDestinationId(messageResponse2.getSender());
 
         MsgUnpacker receivedMsg = null;
         try {
