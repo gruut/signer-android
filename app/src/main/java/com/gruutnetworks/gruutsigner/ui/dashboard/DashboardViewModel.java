@@ -32,6 +32,10 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
 
     private static final String TAG = "DashboardViewModel";
 
+    public enum MergerNum {
+        MERGER_1, MERGER_2
+    }
+
     public MutableLiveData<String> logMerger1 = new MutableLiveData<>();
     public MutableLiveData<String> logMerger2 = new MutableLiveData<>();
     public MutableLiveData<String> ipMerger1 = new MutableLiveData<>();
@@ -99,7 +103,6 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
             logMerger1.postValue("[Channel Setting]" + ipMerger1.getValue() + ":" + portMerger1.getValue());
         } else {
             logMerger1.postValue("Please set merger's ip address first.");
-            return;
         }
 
         if (ipMerger2.getValue() != null && portMerger2.getValue() != null &&
@@ -111,10 +114,9 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
             logMerger2.postValue("[Channel Setting]" + ipMerger2.getValue() + ":" + portMerger2.getValue());
         } else {
             logMerger2.postValue("Please set merger's ip address first.");
-            return;
         }
 
-        startJoining();
+        // startJoining();
     }
 
     void startJoining() {

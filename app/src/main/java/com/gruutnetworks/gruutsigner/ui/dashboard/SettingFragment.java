@@ -16,18 +16,15 @@ import com.gruutnetworks.gruutsigner.databinding.SettingFragmentBinding;
 
 public class SettingFragment extends DialogFragment {
 
-    public static final String MERGER_1 = "MERGER_1";
-    public static final String MERGER_2 = "MERGER_2";
-
     private SettingViewModel viewModel;
     private SettingFragmentBinding binding;
-    private String merger;
+    private DashboardViewModel.MergerNum merger;
 
-    public static SettingFragment newInstance(String merger) {
+    public static SettingFragment newInstance(DashboardViewModel.MergerNum merger) {
         SettingFragment fragment = new SettingFragment();
 
         Bundle args = new Bundle();
-        args.putString("MERGER", merger);
+        args.putString("MERGER", merger.name());
         fragment.setArguments(args);
 
         return fragment;
@@ -40,7 +37,8 @@ public class SettingFragment extends DialogFragment {
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         if (getArguments() != null) {
-            merger = getArguments().getString("MERGER");
+            String arg = getArguments().getString("MERGER");
+            this.merger = Enum.valueOf(DashboardViewModel.MergerNum.class, arg);
         }
     }
 
