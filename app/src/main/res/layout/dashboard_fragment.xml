@@ -23,8 +23,8 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
-            android:layout_marginTop="16dp"
-            android:text="Merger"
+            android:layout_marginTop="8dp"
+            android:text="Merger #1"
             android:textAppearance="@style/TextAppearance.AppCompat.Large"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
@@ -40,8 +40,8 @@
             android:scrollbars="vertical"
             android:padding="8dp"
             android:layout_marginTop="8dp"
-            android:layout_marginBottom="16dp"
-            app:layout_constraintBottom_toBottomOf="parent"
+            android:layout_marginBottom="8dp"
+            app:layout_constraintBottom_toTopOf="@+id/guideline"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/tv_address_merger1" />
@@ -57,9 +57,9 @@
             android:visibility="@{safeUnbox(model.errorMerger1) ? View.VISIBLE : View.GONE}"
             android:src="@drawable/ic_refresh"
             android:background="@color/background_transparent"
-            android:layout_marginTop="16dp"
-            android:layout_marginBottom="16dp"
-            app:layout_constraintBottom_toBottomOf="parent"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp"
+            app:layout_constraintBottom_toTopOf="@+id/guideline"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/tv_address_merger1" />
@@ -80,10 +80,95 @@
             android:layout_width="wrap_content"
             android:layout_height="0dp"
             android:layout_marginEnd="8dp"
-            android:onClick="@{() -> model.openAddressSetting()}"
+            android:onClick="@{() -> model.openAddressSetting(1)}"
             app:layout_constraintBottom_toBottomOf="@+id/tv_merger1"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="@+id/tv_merger1" />
+
+        <TextView
+            android:id="@+id/tv_merger2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="8dp"
+            android:text="Merger #2"
+            android:textAppearance="@style/TextAppearance.AppCompat.Large"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="@+id/guideline" />
+
+        <TextView
+            android:id="@+id/tv_log_merger2"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="8dp"
+            android:fontFamily="monospace"
+            android:gravity="bottom"
+            android:scrollbars="vertical"
+            android:padding="8dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/tv_address_merger2" />
+
+        <ImageButton
+            android:id="@+id/btn_refresh_merger2"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="8dp"
+            android:layout_gravity="center"
+            android:onClick="@{() -> model.onResume()}"
+            android:visibility="@{safeUnbox(model.errorMerger2) ? View.VISIBLE : View.GONE}"
+            android:src="@drawable/ic_refresh"
+            android:background="@color/background_transparent"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/tv_address_merger2" />
+
+        <TextView
+            android:id="@+id/tv_address_merger2"
+            android:text="@{model.ipMerger2 + `:` + model.portMerger2}"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="12sp"
+            app:layout_constraintStart_toStartOf="@+id/tv_merger2"
+            app:layout_constraintTop_toBottomOf="@+id/tv_merger2" />
+
+        <Button
+            android:id="@+id/btn_setting_merger2"
+            style="@style/AppTheme.RoundedCornerMaterialButton"
+            android:text="Setting"
+            android:layout_width="wrap_content"
+            android:layout_height="0dp"
+            android:layout_marginEnd="8dp"
+            android:onClick="@{() -> model.openAddressSetting(2)}"
+            app:layout_constraintBottom_toBottomOf="@+id/tv_merger2"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="@+id/tv_merger2"
+            app:layout_constraintVertical_bias="1.0" />
+
+        <android.support.constraint.Guideline
+            android:id="@+id/guideline"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            app:layout_constraintGuide_percent="0.5" />
+
+        <android.support.constraint.Group
+            android:id="@+id/merger1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+        <android.support.constraint.Group
+            android:id="@+id/merger2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
 
     </android.support.constraint.ConstraintLayout>
 

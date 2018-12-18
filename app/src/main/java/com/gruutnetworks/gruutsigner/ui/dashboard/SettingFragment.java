@@ -16,15 +16,32 @@ import com.gruutnetworks.gruutsigner.databinding.SettingFragmentBinding;
 
 public class SettingFragment extends DialogFragment {
 
+    public static final String MERGER_1 = "MERGER_1";
+    public static final String MERGER_2 = "MERGER_2";
+
     private SettingViewModel viewModel;
     private SettingFragmentBinding binding;
+    private String merger;
 
+    public static SettingFragment newInstance(String merger) {
+        SettingFragment fragment = new SettingFragment();
 
-    public static SettingFragment newInstance() {
-        return new SettingFragment();
+        Bundle args = new Bundle();
+        args.putString("MERGER", merger);
+        fragment.setArguments(args);
+
+        return fragment;
     }
 
     public SettingFragment() {
+    }
+
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        if (getArguments() != null) {
+            merger = getArguments().getString("MERGER");
+        }
     }
 
     @NonNull
@@ -36,7 +53,10 @@ public class SettingFragment extends DialogFragment {
                 R.layout.setting_fragment, null, false);
 
         viewModel = ViewModelProviders.of(this).get(SettingViewModel.class);
-        getLifecycle().addObserver(viewModel);
+        viewModel.setMerger(merger);
+        viewModel.getMerger().observe(this, o -> {
+            viewModel.fetchPreference();
+        });
 
         binding.setModel(viewModel);
 
