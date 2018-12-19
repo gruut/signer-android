@@ -1,7 +1,6 @@
 package com.gruutnetworks.gruutsigner.ui.dashboard;
 
 import android.arch.lifecycle.ViewModelProviders;
-import android.content.DialogInterface;
 import android.databinding.DataBindingUtil;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -15,7 +14,7 @@ import android.widget.TextView;
 import com.gruutnetworks.gruutsigner.R;
 import com.gruutnetworks.gruutsigner.databinding.DashboardFragmentBinding;
 
-public class DashboardFragment extends Fragment implements SettingFragment.SettingDialogInterface, DialogInterface.OnDismissListener {
+public class DashboardFragment extends Fragment implements SettingFragment.SettingDialogInterface {
 
     private DashboardViewModel viewModel;
     private DashboardFragmentBinding binding;
@@ -67,14 +66,7 @@ public class DashboardFragment extends Fragment implements SettingFragment.Setti
     }
 
     @Override
-    public void onOkBtnClicked(String ip, String port) {
-        viewModel.ipMerger1.setValue(ip);
-        viewModel.portMerger1.setValue(port);
-        viewModel.onResume();
-    }
-
-    @Override
-    public void onDismiss(DialogInterface dialog) {
+    public void onOkBtnClicked() {
         viewModel.refreshMerger1();
         viewModel.refreshMerger2();
     }
