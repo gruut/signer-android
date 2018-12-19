@@ -3,13 +3,11 @@ package com.gruutnetworks.gruutsigner.ui.dashboard;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.arch.lifecycle.ViewModelProviders;
-import android.content.DialogInterface;
 import android.databinding.DataBindingUtil;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.DialogFragment;
-import android.support.v4.app.Fragment;
 import android.text.InputFilter;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -63,11 +61,9 @@ public class SettingFragment extends DialogFragment {
         builder.setView(binding.getRoot())
                 .setTitle("Merger Address Setting")
                 .setPositiveButton(getString(R.string.ok), (dialog, which) -> {
-                    ((SettingDialogInterface) getTargetFragment()).onOkBtnClicked(
-                            binding.inputIp.getText().toString(),
-                            binding.inputPort.getText().toString());
-
                     viewModel.pullPreference();
+
+                    ((SettingDialogInterface) getTargetFragment()).onOkBtnClicked();
                     dialog.dismiss();
                 });
 
@@ -100,16 +96,6 @@ public class SettingFragment extends DialogFragment {
     }
 
     public interface SettingDialogInterface {
-        void onOkBtnClicked(String ip, String port);
-    }
-
-    @Override
-    public void onDismiss(DialogInterface dialog) {
-        super.onDismiss(dialog);
-
-        Fragment parentFragment = getParentFragment();
-        if (parentFragment instanceof DialogInterface.OnDismissListener) {
-            ((DialogInterface.OnDismissListener) parentFragment).onDismiss(dialog);
-        }
+        void onOkBtnClicked();
     }
 }
