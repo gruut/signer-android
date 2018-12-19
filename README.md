@@ -17,8 +17,11 @@ develop [![Build Status](https://travis-ci.com/gruut/signer-android.svg?branch=d
 
 1. Verifying
     - 메세지 헤더에 MacType이 HMAC_SHA256(0xF1)으로 설정되어 있을 경우, HMAC을 검증함
-    - MSG_CHALLENGE를 수신 시, 메세지 내의 Timestamp를 검증함(10s 이내)
-    - MSG_RESPONSE2를 수신 시, 메세지 내의 Signature를 메세지 내의 Certificate로 검증함
+    - 메세지 헤더와 메세지 내용이 일치하는지 검증함
+    - MSG_CHALLENGE 수신 시, 메세지 내의 Timestamp를 검증함(10s 이내)
+    - MSG_RESPONSE2 수신 시, 메세지 내의 Signature를 메세지 내의 Certificate로 검증함
+    - MSG_REQ_SSIG 수신 시, 블록의 시간 유효성을 검증함(10m 이내)
+    - MSG_REQ_SSIG 수신 시, 이미 서명한 블록인지 검증함
 
 2. Signing
     - MSG_RESPONSE1 송신 시, RSA키로 서명하여 Signature를 메세지에 포함시켜 보냄
