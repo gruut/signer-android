@@ -193,7 +193,10 @@ public class AuthCertUtil {
             // 저장 된 certificate 없을 경우 null 반환
             return null;
         }
-        return new String(Base64.encode(certificate.getEncoded(), Base64.NO_WRAP));
+
+        return "-----BEGIN CERTIFICATE-----\n" +
+                new String(Base64.encode(certificate.getEncoded(), Base64.NO_WRAP))
+                + "\n-----END CERTIFICATE-----";
     }
 
     /**
