@@ -90,6 +90,8 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
     }
 
     public void refreshMerger1() {
+        terminateChannel(channel1);
+
         refreshMerger1.call();
         errorMerger1.setValue(false);
 
@@ -104,13 +106,15 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
                     .build();
             logMerger1.postValue("[Channel Setting]" + ipMerger1.getValue() + ":" + portMerger1.getValue());
 
-            startJoining(logMerger1, errorMerger1);
+            startJoining(channel1, logMerger1, errorMerger1);
         } else {
             logMerger1.postValue("Please set merger's ip address first.");
         }
     }
 
     public void refreshMerger2() {
+        terminateChannel(channel2);
+
         refreshMerger2.call();
         errorMerger2.setValue(false);
 
@@ -125,23 +129,23 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
                     .build();
             logMerger2.postValue("[Channel Setting]" + ipMerger2.getValue() + ":" + portMerger2.getValue());
 
-            startJoining(logMerger2, errorMerger2);
+            startJoining(channel2, logMerger2, errorMerger2);
         } else {
             logMerger2.postValue("Please set merger's ip address first.");
         }
     }
 
-    void startJoining(MutableLiveData<String> log, MutableLiveData<Boolean> error) {
+    void startJoining(ManagedChannel channel, MutableLiveData<String> log, MutableLiveData<Boolean> error) {
         new Thread() {
             @Override
             public void run() {
                 SystemClock.sleep(1000);
                 try {
-                    UnpackMsgChallenge challenge = requestJoin(channel1, log);
-                    UnpackMsgResponse2 response2 = sendPublicKey(channel1, challenge, log);
-                    UnpackMsgAccept accept = sendSuccess(channel1, response2, log);
+                    UnpackMsgChallenge challenge = requestJoin(channel, log);
+                    UnpackMsgResponse2 response2 = sendPublicKey(channel, challenge, log);
+                    UnpackMsgAccept accept = sendSuccess(channel, response2, log);
                     if (accept.isVal()) {
-                        standBy(channel1, log, error);
+                        standBy(channel, log, error);
                     }
                 } catch (ErrorMsgException e) {
                     log.postValue("[ERROR]" + e.getMessage());
@@ -479,16 +483,13 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
 
     @Override
     protected void onCleared() {
-        try {
-            if (channel1 != null && !channel1.isShutdown()) {
-                channel1.shutdown().awaitTermination(1, TimeUnit.SECONDS);
-            }
+        terminateChannel(channel1);
+        terminateChannel(channel2);
+    }
 
-            if (channel2 != null && !channel2.isShutdown()) {
-                channel2.shutdown().awaitTermination(1, TimeUnit.SECONDS);
-            }
-        } catch (InterruptedException e) {
-            return;
+    private void terminateChannel(ManagedChannel channel) {
+        if (channel != null && !channel.isShutdown()) {
+            channel.shutdownNow();
         }
     }
 
