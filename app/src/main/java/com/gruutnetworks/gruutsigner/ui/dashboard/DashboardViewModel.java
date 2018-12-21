@@ -475,6 +475,14 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         return portMerger2;
     }
 
+    public MutableLiveData<Boolean> getErrorMerger1() {
+        return errorMerger1;
+    }
+
+    public MutableLiveData<Boolean> getErrorMerger2() {
+        return errorMerger2;
+    }
+
     public SingleLiveEvent getRefreshMerger1() {
         return refreshMerger1;
     }
