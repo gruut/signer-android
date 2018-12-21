@@ -6,7 +6,8 @@ public class ErrorMsgException extends RuntimeException {
         MSG_ERR_RECEIVED,
         MSG_NOT_FOUND,
         MSG_INVALID_HMAC,
-        MSG_EXPIRED
+        MSG_EXPIRED,
+        MSG_HEADER_NOT_MATCHED
     }
 
     public ErrorMsgException(MsgErr msgErr) {

@@ -198,6 +198,8 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
             throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_NOT_FOUND);
         } else if (receivedMsg.getMessageType() == TypeMsg.MSG_ERROR) {
             throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_ERR_RECEIVED);
+        } else if (!receivedMsg.isSenderValid()) {
+            throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_HEADER_NOT_MATCHED);
         }
 
         log.postValue("[RECEIVE]" + "MSG_CHALLENGE");
@@ -284,6 +286,8 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
             throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_NOT_FOUND);
         } else if (receivedMsg.getMessageType() == TypeMsg.MSG_ERROR) {
             throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_ERR_RECEIVED);
+        } else if (!receivedMsg.isSenderValid()) {
+            throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_HEADER_NOT_MATCHED);
         }
 
         log.postValue("[RECEIVED]" + "MSG_RESPONSE_2");
@@ -354,6 +358,8 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
             throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_NOT_FOUND);
         } else if (receivedMsg.getMessageType() == TypeMsg.MSG_ERROR) {
             throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_ERR_RECEIVED);
+        } else if (!receivedMsg.isSenderValid()) {
+            throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_HEADER_NOT_MATCHED);
         } else if (!receivedMsg.isMacValid()) {
             throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_INVALID_HMAC);
         }
@@ -401,6 +407,10 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
     private void sendSignature(ManagedChannel channel, GrpcMsgReqSsig grpcMsgReqSsig, MutableLiveData<String> log) throws StatusRuntimeException {
         UnpackMsgRequestSignature msgRequestSignature
                 = new UnpackMsgRequestSignature(grpcMsgReqSsig.getMessage().toByteArray());
+
+        if (!msgRequestSignature.isMacValid()) {
+            throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_HEADER_NOT_MATCHED);
+        }
 
         if (!msgRequestSignature.isMacValid()) {
             throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_INVALID_HMAC);
