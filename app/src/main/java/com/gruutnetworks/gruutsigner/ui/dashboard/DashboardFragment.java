@@ -66,8 +66,14 @@ public class DashboardFragment extends Fragment implements SettingFragment.Setti
     }
 
     @Override
-    public void onOkBtnClicked() {
-        viewModel.refreshMerger1();
-        viewModel.refreshMerger2();
+    public void onOkBtnClicked(DashboardViewModel.MergerNum merger) {
+        switch (merger) {
+            case MERGER_1:
+                viewModel.refreshMerger1();
+                break;
+            case MERGER_2:
+                viewModel.refreshMerger2();
+                break;
+        }
     }
 }

@@ -63,7 +63,7 @@ public class SettingFragment extends DialogFragment {
                 .setPositiveButton(getString(R.string.ok), (dialog, which) -> {
                     viewModel.pullPreference();
 
-                    ((SettingDialogInterface) getTargetFragment()).onOkBtnClicked();
+                    ((SettingDialogInterface) getTargetFragment()).onOkBtnClicked(merger);
                     dialog.dismiss();
                 });
 
@@ -96,6 +96,6 @@ public class SettingFragment extends DialogFragment {
     }
 
     public interface SettingDialogInterface {
-        void onOkBtnClicked();
+        void onOkBtnClicked(DashboardViewModel.MergerNum merger);
     }
 }
