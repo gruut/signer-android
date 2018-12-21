@@ -46,8 +46,8 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
     public MutableLiveData<String> portMerger2 = new MutableLiveData<>();
     public MutableLiveData<Boolean> errorMerger1 = new MutableLiveData<>();
     public MutableLiveData<Boolean> errorMerger2 = new MutableLiveData<>();
-    private final SingleLiveEvent refreshMerger1 = new SingleLiveEvent();
-    private final SingleLiveEvent refreshMerger2 = new SingleLiveEvent();
+    private final SingleLiveEvent refreshTriggerMerger1 = new SingleLiveEvent();
+    private final SingleLiveEvent refreshTriggerMerger2 = new SingleLiveEvent();
     private final SingleLiveEvent openSetting1Dialog = new SingleLiveEvent();
     private final SingleLiveEvent openSetting2Dialog = new SingleLiveEvent();
 
@@ -92,7 +92,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
     public void refreshMerger1() {
         terminateChannel(channel1);
 
-        refreshMerger1.call();
+        refreshTriggerMerger1.call();
         errorMerger1.setValue(false);
 
         ipMerger1.setValue(preferenceUtil.getString(PreferenceUtil.Key.IP1_STR));
@@ -115,7 +115,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
     public void refreshMerger2() {
         terminateChannel(channel2);
 
-        refreshMerger2.call();
+        refreshTriggerMerger2.call();
         errorMerger2.setValue(false);
 
         ipMerger2.setValue(preferenceUtil.getString(PreferenceUtil.Key.IP2_STR));
@@ -483,12 +483,12 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         return errorMerger2;
     }
 
-    public SingleLiveEvent getRefreshMerger1() {
-        return refreshMerger1;
+    public SingleLiveEvent getRefreshTriggerMerger1() {
+        return refreshTriggerMerger1;
     }
 
-    public SingleLiveEvent getRefreshMerger2() {
-        return refreshMerger2;
+    public SingleLiveEvent getRefreshTriggerMerger2() {
+        return refreshTriggerMerger2;
     }
 
     public SingleLiveEvent getOpenSetting1Dialog() {
