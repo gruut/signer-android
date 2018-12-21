@@ -14,8 +14,8 @@ import com.google.gson.annotations.SerializedName;
  */
 public class UnpackMsgAccept extends MsgUnpacker {
     @Expose
-    @SerializedName("sender")
-    private String sender;
+    @SerializedName("mID")
+    private String mID;
     @Expose
     @SerializedName("time")
     private String time;
@@ -49,7 +49,7 @@ public class UnpackMsgAccept extends MsgUnpacker {
 
         UnpackMsgAccept msgAccept = gson.fromJson(new String(bodyBytes), UnpackMsgAccept.class);
 
-        this.sender = msgAccept.sender;
+        this.mID = msgAccept.mID;
         this.time = msgAccept.time;
         this.val = msgAccept.val;
     }

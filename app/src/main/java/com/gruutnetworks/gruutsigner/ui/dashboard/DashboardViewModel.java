@@ -220,7 +220,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         signerNonce = AuthGeneralUtil.getNonce();
 
         // get merger nonce
-        mergerNonceMap.put(messageChallenge.getSender(), messageChallenge.getMergerNonce());
+        mergerNonceMap.put(messageChallenge.getmID(), messageChallenge.getMergerNonce());
 
         if (!AuthGeneralUtil.isMsgInTime(messageChallenge.getTime())) {
             throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_EXPIRED);
@@ -303,7 +303,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
 
         try {
             // 서명 검증
-            String mergerNonce = mergerNonceMap.get(messageResponse2.getSender());
+            String mergerNonce = mergerNonceMap.get(messageResponse2.getmID());
             if (!authCertUtil.verifyMsgResponse2(messageResponse2.getSig(), messageResponse2.getCert(),
                     mergerNonce, signerNonce, messageResponse2.getDhPubKeyX(), messageResponse2.getDhPubKeyY(), messageResponse2.getTime())) {
                 throw new AuthUtilException(AuthUtilException.AuthErr.INVALID_SIGNATURE);
@@ -329,14 +329,14 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         }
 
         // HMAC KEY 저장
-        preferenceUtil.put(messageResponse2.getSender(), new String(hmacKey));
+        preferenceUtil.put(messageResponse2.getmID(), new String(hmacKey));
 
         PackMsgSuccess msgSuccess = new PackMsgSuccess(
                 sender,
                 AuthGeneralUtil.getTimestamp(),
                 true
         );
-        msgSuccess.setDestinationId(messageResponse2.getSender());
+        msgSuccess.setDestinationId(messageResponse2.getmID());
 
         MsgUnpacker receivedMsg = null;
         try {

@@ -17,8 +17,8 @@ import static com.gruutnetworks.gruutsigner.model.MsgHeader.MSG_HEADER_LEN;
  */
 public class PackMsgJoin extends MsgPacker {
     @Expose
-    @SerializedName("sender")
-    private String sender;  // BASE64 encoded 8 byte data
+    @SerializedName("sID")
+    private String sID;  // BASE64 encoded 8 byte data
     @Expose
     @SerializedName("time")
     private String time;    // UNIX timestamp
@@ -29,8 +29,8 @@ public class PackMsgJoin extends MsgPacker {
     @SerializedName("cID")
     private String localChainId;  // BASE64 encoded 8 byte data
 
-    public PackMsgJoin(String sender, String time, String ver, String localChainId) {
-        this.sender = sender;
+    public PackMsgJoin(String sID, String time, String ver, String localChainId) {
+        this.sID = sID;
         this.time = time;
         this.ver = ver;
         this.localChainId = localChainId;
@@ -45,7 +45,7 @@ public class PackMsgJoin extends MsgPacker {
                 .setCompressionType(TypeComp.LZ4.getType())
                 .setTotalLen(MSG_HEADER_LEN + getCompressedJsonLen())
                 .setLocalChainId(Base64.decode(localChainId, Base64.NO_WRAP)) // Base64 decoding
-                .setSender(Base64.decode(sender, Base64.NO_WRAP)) // Base64 decoding
+                .setSender(Base64.decode(sID, Base64.NO_WRAP)) // Base64 decoding
                 .build();
     }
 
