@@ -12,4 +12,5 @@
     <string name="sign_up_error_dup_cert">ERROR: This user is already registered</string>
     <string name="sign_up_error_invalid">ERROR: Invalid input (Pem or Pubkey)</string>
     <string name="ok">OK</string>
+    <string name="refresh">REFRESH</string>
 </resources>
