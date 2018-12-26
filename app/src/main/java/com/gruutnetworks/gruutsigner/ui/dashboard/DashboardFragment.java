@@ -3,6 +3,7 @@ package com.gruutnetworks.gruutsigner.ui.dashboard;
 import android.arch.lifecycle.ViewModelProviders;
 import android.databinding.DataBindingUtil;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -14,10 +15,14 @@ import android.widget.TextView;
 import com.gruutnetworks.gruutsigner.R;
 import com.gruutnetworks.gruutsigner.databinding.DashboardFragmentBinding;
 
+import static com.gruutnetworks.gruutsigner.gruut.GruutConfigs.AUTO_REFRESH_TIMEOUT;
+
 public class DashboardFragment extends Fragment implements SettingFragment.SettingDialogInterface {
 
     private DashboardViewModel viewModel;
     private DashboardFragmentBinding binding;
+
+    private Handler waitForAutoRefresh = new Handler();
 
     public static DashboardFragment newInstance() {
         return new DashboardFragment();
@@ -45,29 +50,51 @@ public class DashboardFragment extends Fragment implements SettingFragment.Setti
         tvLogMerger1.setMovementMethod(new ScrollingMovementMethod());
 
         viewModel.getLogMerger1().observe(this, text -> tvLogMerger1.append("\n" + text));
-        viewModel.getRefreshMerger1().observe(this, o -> tvLogMerger1.setText(""));
+        viewModel.getRefreshTriggerMerger1().observe(this, o -> tvLogMerger1.setText(""));
         viewModel.getOpenSetting1Dialog().observe(this, o -> {
             SettingFragment settingFragment = SettingFragment.newInstance(DashboardViewModel.MergerNum.MERGER_1);
             settingFragment.setTargetFragment(this, 0);
             settingFragment.show(getFragmentManager(), "fragment_address_setting");
+        });
+        viewModel.getErrorMerger1().observe(this, err -> {
+            if (err) {
+                waitForAutoRefresh.postDelayed(() -> viewModel.refreshMerger1(), AUTO_REFRESH_TIMEOUT);
+            }
         });
 
         TextView tvLogMerger2 = binding.tvLogMerger2;
         tvLogMerger2.setMovementMethod(new ScrollingMovementMethod());
 
         viewModel.getLogMerger2().observe(this, text -> tvLogMerger2.append("\n" + text));
-        viewModel.getRefreshMerger2().observe(this, o -> tvLogMerger2.setText(""));
+        viewModel.getRefreshTriggerMerger2().observe(this, o -> tvLogMerger2.setText(""));
         viewModel.getOpenSetting2Dialog().observe(this, o -> {
             SettingFragment settingFragment = SettingFragment.newInstance(DashboardViewModel.MergerNum.MERGER_2);
             settingFragment.setTargetFragment(this, 0);
             settingFragment.show(getFragmentManager(), "fragment_address_setting");
         });
+        viewModel.getErrorMerger2().observe(this, err -> {
+            if (err) {
+                waitForAutoRefresh.postDelayed(() -> viewModel.refreshMerger2(), AUTO_REFRESH_TIMEOUT);
+            }
+        });
 
     }
 
     @Override
-    public void onOkBtnClicked() {
-        viewModel.refreshMerger1();
-        viewModel.refreshMerger2();
+    public void onDestroy() {
+        waitForAutoRefresh.removeCallbacksAndMessages(null);
+        super.onDestroy();
+    }
+
+    @Override
+    public void onOkBtnClicked(DashboardViewModel.MergerNum merger) {
+        switch (merger) {
+            case MERGER_1:
+                viewModel.refreshMerger1();
+                break;
+            case MERGER_2:
+                viewModel.refreshMerger2();
+                break;
+        }
     }
 }
