@@ -30,7 +30,7 @@ public class DashboardViewModelTest extends RobolectricTest {
     private AppDatabase mDb;
 
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         Context context = ApplicationProvider.getApplicationContext();
         mDb = Room.inMemoryDatabaseBuilder(context, AppDatabase.class)
                 .allowMainThreadQueries()
@@ -39,7 +39,7 @@ public class DashboardViewModelTest extends RobolectricTest {
     }
 
     @After
-    public void tearDown() throws Exception {
+    public void tearDown() {
         mDb.close();
     }
 
@@ -66,7 +66,7 @@ public class DashboardViewModelTest extends RobolectricTest {
     }
 
     @Test
-    public void writeBlockAndReadInList() throws Exception {
+    public void writeBlockAndReadInList() {
         SignedBlock block = new SignedBlock();
         block.setBlockHeight("1");
         block.setChainId("R0VOVEVTVDE=");

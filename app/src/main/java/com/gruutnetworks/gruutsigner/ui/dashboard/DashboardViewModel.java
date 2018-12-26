@@ -197,7 +197,8 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
             // This error message may be caused by a timeout.
             throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_NOT_FOUND);
         } else if (receivedMsg.getMessageType() == TypeMsg.MSG_ERROR) {
-            throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_ERR_RECEIVED);
+            UnpackMsgError msgError = (UnpackMsgError) receivedMsg;
+            throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_ERR_RECEIVED, TypeError.convert(msgError.getErrType()).name());
         } else if (!receivedMsg.isSenderValid()) {
             throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_HEADER_NOT_MATCHED);
         }
@@ -285,7 +286,8 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
             // This error message may be caused by a timeout.
             throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_NOT_FOUND);
         } else if (receivedMsg.getMessageType() == TypeMsg.MSG_ERROR) {
-            throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_ERR_RECEIVED);
+            UnpackMsgError msgError = (UnpackMsgError) receivedMsg;
+            throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_ERR_RECEIVED, TypeError.convert(msgError.getErrType()).name());
         } else if (!receivedMsg.isSenderValid()) {
             throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_HEADER_NOT_MATCHED);
         }
@@ -357,7 +359,8 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
             // This error message may be caused by a timeout.
             throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_NOT_FOUND);
         } else if (receivedMsg.getMessageType() == TypeMsg.MSG_ERROR) {
-            throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_ERR_RECEIVED);
+            UnpackMsgError msgError = (UnpackMsgError) receivedMsg;
+            throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_ERR_RECEIVED, TypeError.convert(msgError.getErrType()).name());
         } else if (!receivedMsg.isSenderValid()) {
             throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_HEADER_NOT_MATCHED);
         } else if (!receivedMsg.isMacValid()) {
@@ -520,6 +523,13 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
             this.channel = channel;
         }
 
+        boolean isErrorMsg(byte[] originalMsg) {
+            if (originalMsg != null && originalMsg.length > 3) {
+                return originalMsg[2] == TypeMsg.MSG_ERROR.getType();
+            }
+            return false;
+        }
+
         @Override
         protected MsgUnpacker doInBackground(MsgPacker... msgPackers) {
             MsgPacker msg = msgPackers[0];
@@ -534,18 +544,29 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
                                 .setMessage(ByteString.copyFrom(msg.convertToByteArr()))
                                 .build();
                         GrpcMsgChallenge grpcMsgChallenge = stub.withDeadlineAfter(GruutConfigs.GRPC_TIMEOUT, TimeUnit.SECONDS).join(grpcMsgJoin);
+
+                        if (isErrorMsg(grpcMsgChallenge.getMessage().toByteArray())) {
+                            return new UnpackMsgError(grpcMsgChallenge.getMessage().toByteArray());
+                        }
                         return new UnpackMsgChallenge(grpcMsgChallenge.getMessage().toByteArray());
                     case MSG_RESPONSE_1:
                         GrpcMsgResponse1 grpcMsgResponse1 = GrpcMsgResponse1.newBuilder()
                                 .setMessage(ByteString.copyFrom(msg.convertToByteArr()))
                                 .build();
                         GrpcMsgResponse2 grpcMsgResponse2 = stub.withDeadlineAfter(GruutConfigs.GRPC_TIMEOUT, TimeUnit.SECONDS).dhKeyEx(grpcMsgResponse1);
+
+                        if (isErrorMsg(grpcMsgResponse2.getMessage().toByteArray())) {
+                            return new UnpackMsgError(grpcMsgResponse2.getMessage().toByteArray());
+                        }
                         return new UnpackMsgResponse2(grpcMsgResponse2.getMessage().toByteArray());
                     case MSG_SUCCESS:
                         GrpcMsgSuccess grpcMsgSuccess = GrpcMsgSuccess.newBuilder()
                                 .setMessage(ByteString.copyFrom(msg.convertToByteArr()))
                                 .build();
                         GrpcMsgAccept grpcMsgAccept = stub.withDeadlineAfter(GruutConfigs.GRPC_TIMEOUT, TimeUnit.SECONDS).keyExFinished(grpcMsgSuccess);
+                        if (isErrorMsg(grpcMsgAccept.getMessage().toByteArray())) {
+                            return new UnpackMsgError(grpcMsgAccept.getMessage().toByteArray());
+                        }
                         return new UnpackMsgAccept(grpcMsgAccept.getMessage().toByteArray());
                     case MSG_SSIG:
                         GrpcMsgSsig grpcMsgSsig = GrpcMsgSsig.newBuilder()
@@ -564,8 +585,8 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
 
         @Override
         protected void onPostExecute(MsgUnpacker result) {
-            Log.d(TAG, "Result: " + result);
-            Log.d(TAG, "Response Time: " + (System.currentTimeMillis() - start));
+            Log.d(TAG, channel.toString() + "::Result: " + result);
+            Log.d(TAG, channel.toString() + "::Response Time: " + (System.currentTimeMillis() - start));
         }
     }
 }

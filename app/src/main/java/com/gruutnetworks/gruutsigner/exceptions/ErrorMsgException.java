@@ -14,5 +14,8 @@ public class ErrorMsgException extends RuntimeException {
         super(msgErr.name());
     }
 
+    public ErrorMsgException(MsgErr msgErr, String str) {
+        super(msgErr.name() + "::" + str);
+    }
 }
 
