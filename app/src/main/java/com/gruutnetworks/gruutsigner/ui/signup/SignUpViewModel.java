@@ -72,22 +72,31 @@ public class SignUpViewModel extends AndroidViewModel implements LifecycleObserv
         signUpCall = GaApi.getInstance().signUp(sourceData);
         signUpCall.enqueue(new Callback<SignUpResponse>() {
             @Override
-            public void onResponse(Call<SignUpResponse> call, Response<SignUpResponse> response) {
+            public void onResponse(@NonNull Call<SignUpResponse> call, @NonNull Response<SignUpResponse> response) {
                 if (response.body() != null) {
                     switch (response.body().getCode()) {
                         case 200:
-                            if (response.body().getPem().isEmpty()) {
-                                snackbarMessage.setValue(R.string.sign_up_error_cert);
+                            try {
+                                if (response.body().getPem() == null && response.body().getNid() != null) {
+                                    // 이미 등록되어있는 유저
+                                    snackbarMessage.setValue(R.string.sign_up_error_dup_cert);
+                                    break;
+                                }
+
+                                if (storeCertificate(response.body().getPem())) {
+                                    canJoin.postValue(true);
+                                    preferenceUtil.put(PreferenceUtil.Key.SID_STR, response.body().getNid());
+                                    navigateToDashboard.call();
+                                } else {
+                                    snackbarMessage.setValue(R.string.sign_up_error_cert);
+                                }
+                                break;
+                            } catch (NullPointerException npe) {
+                                snackbarMessage.setValue(R.string.sign_up_error_unknown);
                                 break;
                             }
-
-                            if (storeCertificate(response.body().getPem())) {
-                                canJoin.postValue(true);
-                                preferenceUtil.put(PreferenceUtil.Key.SID_STR, response.body().getNid());
-                                navigateToDashboard.call();
-                            } else {
-                                snackbarMessage.setValue(R.string.sign_up_error_cert);
-                            }
+                        case 404:
+                            snackbarMessage.setValue(R.string.sign_up_error_invalid);
                             break;
                         case 500:
                             snackbarMessage.setValue(R.string.sign_up_error_internal);
@@ -102,7 +111,7 @@ public class SignUpViewModel extends AndroidViewModel implements LifecycleObserv
             }
 
             @Override
-            public void onFailure(Call<SignUpResponse> call, Throwable t) {
+            public void onFailure(@NonNull Call<SignUpResponse> call, @NonNull Throwable t) {
                 Log.e(TAG, "API Failed... " + t.getMessage());
                 snackbarMessage.setValue(R.string.sign_up_error_network);
 

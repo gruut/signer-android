@@ -9,5 +9,7 @@
     <string name="sign_up_error_pid">ERROR: Mobile number is not valid</string>
     <string name="sign_up_error_pubkey">ERROR: Public key is not valid</string>
     <string name="sign_up_error_cert">ERROR: Failed to save certificate</string>
+    <string name="sign_up_error_dup_cert">ERROR: This user is already registered</string>
+    <string name="sign_up_error_invalid">ERROR: Invalid input (Pem or Pubkey)</string>
     <string name="ok">OK</string>
 </resources>
