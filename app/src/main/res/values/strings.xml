@@ -11,5 +11,7 @@
     <string name="sign_up_error_cert">ERROR: Failed to save certificate</string>
     <string name="sign_up_error_dup_cert">ERROR: This user is already registered</string>
     <string name="sign_up_error_invalid">ERROR: Invalid input (Pem or Pubkey)</string>
+    <string name="join_error_key_gen">ERROR: Failed to generate ECDH key</string>
     <string name="ok">OK</string>
+    <string name="refresh">REFRESH</string>
 </resources>

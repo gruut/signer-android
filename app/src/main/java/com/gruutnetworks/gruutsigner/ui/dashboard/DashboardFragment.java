@@ -83,6 +83,7 @@ public class DashboardFragment extends Fragment implements SettingFragment.Setti
     @Override
     public void onDestroy() {
         waitForAutoRefresh.removeCallbacksAndMessages(null);
+        viewModel.onCleared();
         super.onDestroy();
     }
 
