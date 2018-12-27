@@ -74,9 +74,17 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
 
         blockDao = AppDatabase.getDatabase(application).blockDao();
 
+        SnackbarMessage snackbarMessage = new SnackbarMessage();
+
         if (!NetworkUtil.isConnected(application.getApplicationContext())) {
-            SnackbarMessage snackbarMessage = new SnackbarMessage();
             snackbarMessage.postValue(R.string.sign_up_error_network);
+        }
+
+        try {
+            keyPair = authHmacUtil.generateEcdhKeys();
+        } catch (NoSuchProviderException | NoSuchAlgorithmException | InvalidAlgorithmParameterException e) {
+            snackbarMessage.postValue(R.string.join_error_key_gen);
+            throw new AuthUtilException(AuthUtilException.AuthErr.KEY_GEN_ERROR);
         }
     }
 
@@ -230,15 +238,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         }
 
         if (keyPair == null) {
-            // generate ecdh key
-            log.postValue("Generate ECDH key pair");
-            try {
-                keyPair = authHmacUtil.generateEcdhKeys();
-            } catch (NoSuchProviderException | NoSuchAlgorithmException | InvalidAlgorithmParameterException e) {
-                throw new AuthUtilException(AuthUtilException.AuthErr.KEY_GEN_ERROR);
-            }
-        } else {
-            log.postValue("Already have an ECDH key");
+            throw new AuthUtilException(AuthUtilException.AuthErr.NO_KEY_ERROR);
         }
 
         String x = new String(authHmacUtil.pubToXpoint(keyPair.getPublic()));
