@@ -59,8 +59,8 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
     private ManagedChannel channel1;
     private ManagedChannel channel2;
 
-    private String sender;
-    private String signerNonce;
+    private String sId;
+    private Map<String, String> signerNonceMap = new HashMap<>();
     private Map<String, String> mergerNonceMap = new HashMap<>();
 
     private KeyPair keyPair;
@@ -70,7 +70,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         this.authCertUtil = AuthCertUtil.getInstance();
         this.authHmacUtil = AuthHmacUtil.getInstance();
         this.preferenceUtil = PreferenceUtil.getInstance(application.getApplicationContext());
-        this.sender = preferenceUtil.getString(PreferenceUtil.Key.SID_STR);
+        this.sId = preferenceUtil.getString(PreferenceUtil.Key.SID_STR);
 
         blockDao = AppDatabase.getDatabase(application).blockDao();
 
@@ -91,9 +91,9 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
 
     public void refreshMerger1() {
         terminateChannel(channel1);
+        errorMerger1.setValue(false);
 
         refreshTriggerMerger1.call();
-        errorMerger1.setValue(false);
 
         ipMerger1.setValue(preferenceUtil.getString(PreferenceUtil.Key.IP1_STR));
         portMerger1.setValue(preferenceUtil.getString(PreferenceUtil.Key.PORT1_STR));
@@ -114,9 +114,9 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
 
     public void refreshMerger2() {
         terminateChannel(channel2);
+        errorMerger2.setValue(false);
 
         refreshTriggerMerger2.call();
-        errorMerger2.setValue(false);
 
         ipMerger2.setValue(preferenceUtil.getString(PreferenceUtil.Key.IP2_STR));
         portMerger2.setValue(preferenceUtil.getString(PreferenceUtil.Key.PORT2_STR));
@@ -178,7 +178,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         log.postValue("START requestJoin...");
 
         PackMsgJoin packMsgJoin = new PackMsgJoin(
-                sender,
+                sId,
                 AuthGeneralUtil.getTimestamp(),
                 GruutConfigs.ver,
                 GruutConfigs.localChainId
@@ -220,7 +220,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         log.postValue("START sendPublicKey...");
 
         // generate signer nonce
-        signerNonce = AuthGeneralUtil.getNonce();
+        signerNonceMap.put(messageChallenge.getmID(), AuthGeneralUtil.getNonce());
 
         // get merger nonce
         mergerNonceMap.put(messageChallenge.getmID(), messageChallenge.getMergerNonce());
@@ -245,8 +245,9 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         String y = new String(authHmacUtil.pubToYpoint(keyPair.getPublic()));
         String time = AuthGeneralUtil.getTimestamp();
         String signature = null;
+        String sn = signerNonceMap.get(messageChallenge.getmID());
         try {
-            signature = authCertUtil.signMsgResponse1(messageChallenge.getMergerNonce(), signerNonce, x, y, time);
+            signature = authCertUtil.signMsgResponse1(messageChallenge.getMergerNonce(), sn, x, y, time);
         } catch (Exception e) {
             throw new AuthUtilException(AuthUtilException.AuthErr.SIGNING_ERROR);
         }
@@ -264,10 +265,10 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         }
 
         PackMsgResponse1 msgResponse1 = new PackMsgResponse1(
-                sender,
+                sId,
                 time,
                 cert,
-                signerNonce,
+                sn,
                 x,  /* HEX */
                 y,  /* HEX */
                 signature /* BASE64 */
@@ -310,6 +311,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         try {
             // 서명 검증
             String mergerNonce = mergerNonceMap.get(messageResponse2.getmID());
+            String signerNonce = signerNonceMap.get(messageResponse2.getmID());
             if (!authCertUtil.verifyMsgResponse2(messageResponse2.getSig(), messageResponse2.getCert(),
                     mergerNonce, signerNonce, messageResponse2.getDhPubKeyX(), messageResponse2.getDhPubKeyY(), messageResponse2.getTime())) {
                 throw new AuthUtilException(AuthUtilException.AuthErr.INVALID_SIGNATURE);
@@ -338,7 +340,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         preferenceUtil.put(messageResponse2.getmID(), new String(hmacKey));
 
         PackMsgSuccess msgSuccess = new PackMsgSuccess(
-                sender,
+                sId,
                 AuthGeneralUtil.getTimestamp(),
                 true
         );
@@ -402,7 +404,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
             }
         });
 
-        standBy.onNext(Identity.newBuilder().setSender(ByteString.copyFrom(sender.getBytes())).build());
+        standBy.onNext(Identity.newBuilder().setSender(ByteString.copyFrom(sId.getBytes())).build());
         log.postValue("Streaming channel opened...standby for signature request");
         Log.d(TAG, "Streaming channel opened...standby for signature request");
     }
@@ -431,7 +433,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
             block.setBlockHeight(msgRequestSignature.getBlockHeight());
             blockDao.insertAll();
 
-            signature = authCertUtil.generateSupportSignature(sender, time, msgRequestSignature.getmID(), GruutConfigs.localChainId,
+            signature = authCertUtil.generateSupportSignature(sId, time, msgRequestSignature.getmID(), GruutConfigs.localChainId,
                     msgRequestSignature.getBlockHeight(), msgRequestSignature.getTransaction());
             log.postValue("Signature generated!");
         } catch (Exception e) {
@@ -439,7 +441,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         }
 
         PackMsgSignature msgSignature = new PackMsgSignature(
-                sender,
+                sId,
                 time,
                 signature
         );
