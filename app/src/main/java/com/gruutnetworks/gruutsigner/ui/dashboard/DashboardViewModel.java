@@ -101,7 +101,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         terminateChannel(channel1);
 
         refreshTriggerMerger1.call();
-        errorMerger1.setValue(false);
+        errorMerger1.postValue(false);
 
         ipMerger1.setValue(preferenceUtil.getString(PreferenceUtil.Key.IP1_STR));
         portMerger1.setValue(preferenceUtil.getString(PreferenceUtil.Key.PORT1_STR));
@@ -124,7 +124,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         terminateChannel(channel2);
 
         refreshTriggerMerger2.call();
-        errorMerger2.setValue(false);
+        errorMerger2.postValue(false);
 
         ipMerger2.setValue(preferenceUtil.getString(PreferenceUtil.Key.IP2_STR));
         portMerger2.setValue(preferenceUtil.getString(PreferenceUtil.Key.PORT2_STR));
@@ -156,13 +156,17 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
                         standBy(channel, log, error);
                     }
                 } catch (ErrorMsgException e) {
-                    log.postValue("[ERROR]" + e.getMessage());
-                    Log.e(TAG, channel.toString()+"::[ERROR]" + e.getMessage());
-                    error.postValue(true);
+                    if (!channel.isShutdown()) {
+                        log.postValue("[ERROR]" + e.getMessage());
+                        Log.e(TAG, channel.toString() + "::[ERROR]" + e.getMessage());
+                        error.postValue(true);
+                    }
                 } catch (AuthUtilException e) {
-                    log.postValue("[CRYPTO_ERROR]" + e.getMessage());
-                    Log.e(TAG, channel.toString()+"::[CRYPTO_ERROR]" + e.getMessage());
-                    error.postValue(true);
+                    if (!channel.isShutdown()) {
+                        log.postValue("[CRYPTO_ERROR]" + e.getMessage());
+                        Log.e(TAG, channel.toString() + "::[CRYPTO_ERROR]" + e.getMessage());
+                        error.postValue(true);
+                    }
                 }
             }
         }.start();
@@ -386,10 +390,10 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
                     sendSignature(channel, value, log);
                 } catch (ErrorMsgException e) {
                     log.postValue("[ERROR]" + e.getMessage());
-                    Log.e(TAG, channel.toString()+"::[ERROR]" + e.getMessage());
+                    Log.e(TAG, channel.toString() + "::[ERROR]" + e.getMessage());
                     error.postValue(true);
                 } catch (AuthUtilException e) {
-                    log.postValue(channel.toString()+"::[CRYPTO_ERROR]" + e.getMessage());
+                    log.postValue(channel.toString() + "::[CRYPTO_ERROR]" + e.getMessage());
                     Log.e(TAG, "[CRYPTO_ERROR]" + e.getMessage());
                     error.postValue(true);
                 }
@@ -397,22 +401,26 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
 
             @Override
             public void onError(Throwable t) {
-                log.postValue("This Merger is DEAD... Now Dobby is free!");
-                Log.e(TAG, channel.toString()+"::This Merger is DEAD... Now Dobby is free!");
-                error.postValue(true);
+                if (channel.isShutdown()) {
+                    Log.e(TAG, channel.toString() + "::shutDowned");
+                } else {
+                    log.postValue("This Merger is DEAD... Now Dobby is free!");
+                    Log.e(TAG, channel.toString() + "::ChannelClosed: " + t.getMessage());
+                    error.postValue(true);
+                }
             }
 
             @Override
             public void onCompleted() {
                 log.postValue("GRPC stream onComplete()");
-                Log.e(TAG, channel.toString()+"::GRPC stream onComplete()");
+                Log.e(TAG, channel.toString() + "::GRPC stream onComplete()");
                 error.postValue(true);
             }
         });
 
         standBy.onNext(Identity.newBuilder().setSender(ByteString.copyFrom(sId.getBytes())).build());
         log.postValue("Streaming channel opened...standby for signature request");
-        Log.d(TAG, "Streaming channel opened...standby for signature request");
+        Log.d(TAG, channel.toString() + "::Streaming channel opened...standby for signature request");
     }
 
     private void sendSignature(ManagedChannel channel, GrpcMsgReqSsig grpcMsgReqSsig, MutableLiveData<String> log) throws StatusRuntimeException {
@@ -514,11 +522,15 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
     protected void onCleared() {
         terminateChannel(channel1);
         terminateChannel(channel2);
+
+        channel1 = null;
+        channel2 = null;
     }
 
     private void terminateChannel(ManagedChannel channel) {
         if (channel != null && !channel.isShutdown()) {
-            channel.shutdown();
+            Log.e(TAG, channel + "::terminateChannel::ShutdownNow()");
+            channel.shutdownNow();
         }
     }
 

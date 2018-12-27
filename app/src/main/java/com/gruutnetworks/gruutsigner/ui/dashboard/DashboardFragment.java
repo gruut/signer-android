@@ -55,6 +55,7 @@ public class DashboardFragment extends Fragment implements SettingFragment.Setti
             SettingFragment settingFragment = SettingFragment.newInstance(DashboardViewModel.MergerNum.MERGER_1);
             settingFragment.setTargetFragment(this, 0);
             settingFragment.show(getFragmentManager(), "fragment_address_setting");
+            waitForAutoRefresh.removeCallbacksAndMessages(null);
         });
         viewModel.getErrorMerger1().observe(this, err -> {
             if (err) {
@@ -71,6 +72,7 @@ public class DashboardFragment extends Fragment implements SettingFragment.Setti
             SettingFragment settingFragment = SettingFragment.newInstance(DashboardViewModel.MergerNum.MERGER_2);
             settingFragment.setTargetFragment(this, 0);
             settingFragment.show(getFragmentManager(), "fragment_address_setting");
+            waitForAutoRefresh.removeCallbacksAndMessages(null);
         });
         viewModel.getErrorMerger2().observe(this, err -> {
             if (err) {
@@ -81,9 +83,14 @@ public class DashboardFragment extends Fragment implements SettingFragment.Setti
     }
 
     @Override
-    public void onDestroy() {
+    public void onPause() {
         waitForAutoRefresh.removeCallbacksAndMessages(null);
         viewModel.onCleared();
+        super.onPause();
+    }
+
+    @Override
+    public void onDestroy() {
         super.onDestroy();
     }
 
