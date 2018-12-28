@@ -1,3 +1,9 @@
+branches:
+    only:
+        - master
+        - develop
+        - /^v\..*$/
+
 notifications:
     slack:
         secure: AY1Csy3LpbknfakX6RAMBDnufgdIzCre73SaDbGmZ5uI2UT/gGaSaw3TXvzAoJLChWASVdze656pdx4E/R3ioU3kIQZwnCtOBDHhU3XGZDy6GVV0g4d8+URI8G8BM0rPl4y4PcSGiu661nsQLQM2V5KT48ik4kjeOAyu8MAbmItKt8WfAYvwBZIsJyzam/3BhtcPwPmY5461GW6NC2aRK24L4B59Cv4K9VKt8h1Mfp/EJ9hC2racWv9QgYnKkwAXc2ogYo42taMk1Iva87P7jTBLlrVCLk41P4HOy2mCrBmtb55bOl9CTNhtf6AGdFxM4bTAj3sUSk/cpQQBl16PdtClIlbbQXae5xMmoCiFW9kpPMwncWZKzQNUU/rOuCon6IudqPcFJ/bNdB7l4IQxID9/+uR+6wWxxUJDMrovZ0bJzndaboJ0yoNAZZWTTeShaMqW1sqwpc2mhgoaPrfLQHNMTGjqUns3/UeBPXGPpkULok3gYvKinaD+GalPaH17dqSTpxikwW8/z5qfYXhLsYgKUIg2VEHYbz++ltoC95+PZGcmuLvNtVbV2eUv05hkMKY665JNmXmNR2QO4oZp/HIVphgZUPsbkUlgIwCp4HeOjM1+2fcWIgwD+cKAKoReQXq7mB/HLmukRSbGsMEUDm9s+CUKSPlvpO8yxvCyYcI=
@@ -35,23 +41,24 @@ before_install:
     - chmod +x script/deploy.sh
     - ./gradlew dependencies || true
 
-android :
-    components :
+android:
+    components:
         - tools
         - platform-tools
         - build-tools-$ANDROID_BUILD_TOOLS_VERSION
         - android-$ANDROID_API_LEVEL
         - extra-google-google_play_services
         - extra-google-m2repository
-    licences :
+    licences:
         - 'android-sdk-preview-license-.+'
         - 'android-sdk-license-.+'
         - 'google-gdk-license-.+'
-script :
+script:
     - ./gradlew --no-daemon --parallel assembleDebug lintDebug test
-deploy :
-    provider : script
-    skip_cleanup : true
-    script : "sh script/deploy.sh"
-    on :
-        branch: master
+deploy:
+    provider: script
+    skip_cleanup: true
+    script: "sh script/deploy.sh"
+    on:
+        all_branches: true
+        tags: true
