@@ -121,15 +121,7 @@ public class AuthCertUtil {
                 = new CertificationRequest(requestInfo, signatureAi, new DERBitString(attribute));
 
         // CSR pem 형식으로 생성
-        String type = "CERTIFICATE REQUEST";
-        PemObject pemObject = new PemObject(type, certificationRequest.getEncoded());
-        StringWriter str = new StringWriter();
-        PemWriter pemWriter = new PemWriter(str);
-        pemWriter.writeObject(pemObject);
-        pemWriter.close();
-        str.close();
-
-        return str.toString();
+        return bytesToPemString("CERTIFICATE REQUEST", certificationRequest.getEncoded());
     }
 
     /**
@@ -153,24 +145,42 @@ public class AuthCertUtil {
         X509Certificate certificate = null;
         CertificateFactory cf;
         if (certificateString != null && !certificateString.trim().isEmpty()) {
-            certificateString = certificateString.replace("-----BEGIN CERTIFICATE-----", "")
-                    .replace("-----END CERTIFICATE-----", ""); // NEED FOR PEM FORMAT CERT STRING
-            byte[] certificateData = Base64.decode(certificateString, Base64.NO_WRAP);
+
+            PemObject pemObject = new PemObject("CERTIFICATE", certificateString.getBytes());
             cf = CertificateFactory.getInstance("X509", "BC");
-            certificate = (X509Certificate) cf.generateCertificate(new ByteArrayInputStream(certificateData));
+            certificate = (X509Certificate) cf.generateCertificate(new ByteArrayInputStream(pemObject.getContent()));
         }
         return certificate;
     }
 
     /**
+     * Byte Array를 Pem String으로 변환
+     *
+     * @param pemType 출력할 Pem 형식
+     * @param bytes   original data
+     * @return PEM String
+     */
+    private String bytesToPemString(String pemType, byte[] bytes) throws IOException {
+        PemObject pemObject = new PemObject(pemType, bytes);
+        StringWriter stringWriter = new StringWriter();
+        PemWriter pemWriter = new PemWriter(stringWriter);
+        pemWriter.writeObject(pemObject);
+        pemWriter.close();
+        stringWriter.close();
+
+        return stringWriter.toString();
+    }
+
+    /**
      * Pem 형식으로 받은 인증서를 Android Keystore에 alias로 저장.
      *
-     * @param pem   certificate
-     * @param alias 인증서를 저장 할 alias
+     * @param certificateString certificate
+     * @param alias             인증서를 저장 할 alias
      */
-    public void storeCert(String pem, SecurityConstants.Alias alias)
+    public void storeCert(String certificateString, SecurityConstants.Alias alias)
             throws CertificateException, NoSuchProviderException, KeyStoreException, IOException, NoSuchAlgorithmException {
-        X509Certificate certificate = stringToCertificate(pem);
+        X509Certificate certificate = stringToCertificate(certificateString);
+
         KeyStore ks = KeyStore.getInstance(KEYSTORE_PROVIDER_ANDROID_KEYSTORE);
         ks.load(null);
 
@@ -195,9 +205,7 @@ public class AuthCertUtil {
             return null;
         }
 
-        return "-----BEGIN CERTIFICATE-----\n" +
-                new String(Base64.encode(certificate.getEncoded(), Base64.NO_WRAP))
-                + "\n-----END CERTIFICATE-----";
+        return bytesToPemString("CERTIFICATE", certificate.getEncoded());
     }
 
     /**
