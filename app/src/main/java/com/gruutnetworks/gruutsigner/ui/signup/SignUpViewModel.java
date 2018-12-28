@@ -134,7 +134,7 @@ public class SignUpViewModel extends AndroidViewModel implements LifecycleObserv
     private String generateCsr() {
         try {
             if (!authCertUtil.isKeyPairExist()) {
-                authCertUtil.generateRsaKeys();
+                authCertUtil.generateKeyPair();
             }
             return authCertUtil.generateCsr();
         } catch (Exception e) {

@@ -8,6 +8,7 @@ public interface SecurityConstants {
     String TYPE_HMAC = "HmacSHA256";
 
     String SIGNATURE_SHA256withRSA = "SHA256withRSA";
+    String SHA256withECDSA = "SHA256withECDSA";
 
     String CURVE_SECP256R1 = "secp256r1";
 

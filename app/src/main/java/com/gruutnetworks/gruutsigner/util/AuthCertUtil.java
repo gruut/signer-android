@@ -10,6 +10,7 @@ import org.spongycastle.asn1.pkcs.Attribute;
 import org.spongycastle.asn1.pkcs.CertificationRequest;
 import org.spongycastle.asn1.pkcs.CertificationRequestInfo;
 import org.spongycastle.asn1.pkcs.PKCSObjectIdentifiers;
+import org.spongycastle.asn1.sec.SECObjectIdentifiers;
 import org.spongycastle.asn1.x500.X500Name;
 import org.spongycastle.asn1.x500.X500NameBuilder;
 import org.spongycastle.asn1.x500.style.BCStyle;
@@ -34,12 +35,12 @@ import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.security.spec.AlgorithmParameterSpec;
+import java.security.spec.ECGenParameterSpec;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 
 import static com.gruutnetworks.gruutsigner.util.SecurityConstants.Alias.GRUUT_AUTH;
-import static com.gruutnetworks.gruutsigner.util.SecurityConstants.KEYSTORE_PROVIDER_ANDROID_KEYSTORE;
-import static com.gruutnetworks.gruutsigner.util.SecurityConstants.SIGNATURE_SHA256withRSA;
+import static com.gruutnetworks.gruutsigner.util.SecurityConstants.*;
 
 public class AuthCertUtil {
 
@@ -67,7 +68,7 @@ public class AuthCertUtil {
      *
      * @return generated Key pair's public key
      */
-    public PublicKey generateRsaKeys()
+    public PublicKey generateKeyPair()
             throws NoSuchProviderException, NoSuchAlgorithmException, InvalidAlgorithmParameterException {
         // Create a start and end time, for the validity range of the key pair that's about to be generated.
         Calendar start = new GregorianCalendar();
@@ -75,13 +76,13 @@ public class AuthCertUtil {
         end.add(Calendar.YEAR, 30);
 
         KeyPairGenerator kpGenerator = KeyPairGenerator
-                .getInstance(KeyProperties.KEY_ALGORITHM_RSA, KEYSTORE_PROVIDER_ANDROID_KEYSTORE);
+                .getInstance(KeyProperties.KEY_ALGORITHM_EC, KEYSTORE_PROVIDER_ANDROID_KEYSTORE);
 
         AlgorithmParameterSpec spec = new KeyGenParameterSpec
                 .Builder(mAlias, KeyProperties.PURPOSE_SIGN | KeyProperties.PURPOSE_VERIFY)
+                .setAlgorithmParameterSpec(new ECGenParameterSpec(CURVE_SECP256R1))
                 .setCertificateSubject(new X500Principal("CN=" + mAlias))
                 .setDigests(KeyProperties.DIGEST_SHA256)
-                .setSignaturePaddings(KeyProperties.SIGNATURE_PADDING_RSA_PKCS1)
                 .setCertificateSerialNumber(BigInteger.valueOf(1337))
                 .setCertificateNotBefore(start.getTime())
                 .setCertificateNotAfter(end.getTime())
@@ -113,7 +114,7 @@ public class AuthCertUtil {
         CertificationRequestInfo requestInfo =
                 new CertificationRequestInfo(nameBuilder.build(), publicKeyInfo, null);
 
-        AlgorithmIdentifier signatureAi = new AlgorithmIdentifier(PKCSObjectIdentifiers.sha256WithRSAEncryption);
+        AlgorithmIdentifier signatureAi = new AlgorithmIdentifier(SECObjectIdentifiers.secp256r1);
         Attribute attribute = new Attribute(PKCSObjectIdentifiers.pkcs_9_at_extensionRequest, new DERSet());
 
         CertificationRequest certificationRequest
@@ -328,7 +329,7 @@ public class AuthCertUtil {
         // This class doesn't actually represent the signature,
         // just the engine for creating/verifying signatures, using
         // the specified algorithm.
-        Signature s = Signature.getInstance(SIGNATURE_SHA256withRSA);
+        Signature s = Signature.getInstance(SHA256withECDSA);
 
         // Initialize Signature using specified private key
         s.initSign(((KeyStore.PrivateKeyEntry) entry).getPrivateKey());
@@ -376,7 +377,7 @@ public class AuthCertUtil {
         // This class doesn't actually represent the signature,
         // just the engine for creating/verifying signatures, using
         // the specified algorithm.
-        Signature s = Signature.getInstance(SIGNATURE_SHA256withRSA);
+        Signature s = Signature.getInstance(SHA256withECDSA);
 
         // Verify the data.
         s.initVerify(certificate.getPublicKey());
@@ -435,7 +436,7 @@ public class AuthCertUtil {
         // This class doesn't actually represent the signature,
         // just the engine for creating/verifying signatures, using
         // the specified algorithm.
-        Signature s = Signature.getInstance(SIGNATURE_SHA256withRSA);
+        Signature s = Signature.getInstance(SHA256withECDSA);
 
         // Verify the data.
         s.initVerify(ks.getCertificate(mAlias).getPublicKey());
