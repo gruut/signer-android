@@ -439,7 +439,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
             throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_EXPIRED);
         }
 
-        String time = AuthGeneralUtil.getTimestamp();
+        String time = msgRequestSignature.getTime();
         String signature;
         try {
             SignedBlock block = new SignedBlock();
