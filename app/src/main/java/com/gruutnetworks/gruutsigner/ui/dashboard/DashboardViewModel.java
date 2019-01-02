@@ -38,14 +38,14 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         MERGER_1, MERGER_2
     }
 
-    public MutableLiveData<String> logMerger1 = new MutableLiveData<>();
-    public MutableLiveData<String> logMerger2 = new MutableLiveData<>();
-    public MutableLiveData<String> ipMerger1 = new MutableLiveData<>();
-    public MutableLiveData<String> ipMerger2 = new MutableLiveData<>();
-    public MutableLiveData<String> portMerger1 = new MutableLiveData<>();
-    public MutableLiveData<String> portMerger2 = new MutableLiveData<>();
-    public MutableLiveData<Boolean> errorMerger1 = new MutableLiveData<>();
-    public MutableLiveData<Boolean> errorMerger2 = new MutableLiveData<>();
+    private MutableLiveData<String> logMerger1 = new MutableLiveData<>();
+    private MutableLiveData<String> logMerger2 = new MutableLiveData<>();
+    private MutableLiveData<String> ipMerger1 = new MutableLiveData<>();
+    private MutableLiveData<String> ipMerger2 = new MutableLiveData<>();
+    private MutableLiveData<String> portMerger1 = new MutableLiveData<>();
+    private MutableLiveData<String> portMerger2 = new MutableLiveData<>();
+    private MutableLiveData<Boolean> errorMerger1 = new MutableLiveData<>();
+    private MutableLiveData<Boolean> errorMerger2 = new MutableLiveData<>();
     private final SingleLiveEvent refreshTriggerMerger1 = new SingleLiveEvent();
     private final SingleLiveEvent refreshTriggerMerger2 = new SingleLiveEvent();
     private final SingleLiveEvent openSetting1Dialog = new SingleLiveEvent();
@@ -143,7 +143,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         }
     }
 
-    void startJoining(ManagedChannel channel, MutableLiveData<String> log, MutableLiveData<Boolean> error) {
+    private void startJoining(ManagedChannel channel, MutableLiveData<String> log, MutableLiveData<Boolean> error) {
         new Thread() {
             @Override
             public void run() {
@@ -198,7 +198,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
                 GruutConfigs.localChainId
         );
 
-        MsgUnpacker receivedMsg = null;
+        MsgUnpacker receivedMsg;
         try {
             log.postValue("[SEND]" + "MSG_JOIN");
             receivedMsg = new GrpcTask(channel).execute(packMsgJoin).get();
@@ -250,7 +250,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         String x = new String(authHmacUtil.pubToXpoint(keyPair.getPublic()));
         String y = new String(authHmacUtil.pubToYpoint(keyPair.getPublic()));
         String time = AuthGeneralUtil.getTimestamp();
-        String signature = null;
+        String signature;
         String sn = signerNonceMap.get(messageChallenge.getmID());
         try {
             signature = authCertUtil.signMsgResponse1(messageChallenge.getMergerNonce(), sn, x, y, time);
@@ -259,7 +259,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         }
 
         // Get Certificate issued by GA
-        String cert = null;
+        String cert;
         try {
             cert = authCertUtil.getCert(SecurityConstants.Alias.GRUUT_AUTH);
         } catch (KeyStoreException | CertificateException | IOException | NoSuchAlgorithmException e) {
@@ -280,7 +280,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
                 signature /* BASE64 */
         );
 
-        MsgUnpacker receivedMsg = null;
+        MsgUnpacker receivedMsg;
         try {
             log.postValue("[SEND]" + "MSG_RESPONSE_1");
             receivedMsg = new GrpcTask(channel).execute(msgResponse1).get();
@@ -327,7 +327,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         }
 
         // X,Y 좌표로부터 Pulbic key get
-        PublicKey mergerPubKey = null;
+        PublicKey mergerPubKey;
         try {
             mergerPubKey = authHmacUtil.pointToPub(messageResponse2.getDhPubKeyX(), messageResponse2.getDhPubKeyY());
         } catch (NoSuchProviderException | NoSuchAlgorithmException | InvalidKeySpecException e) {
@@ -352,14 +352,12 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         );
         msgSuccess.setDestinationId(messageResponse2.getmID());
 
-        MsgUnpacker receivedMsg = null;
+        MsgUnpacker receivedMsg;
         try {
             log.postValue("[SEND]" + "MSG_SUCCESS");
             receivedMsg = new GrpcTask(channel).execute(msgSuccess).get();
         } catch (InterruptedException | ExecutionException e) {
             throw new AsyncException();
-        } catch (StatusRuntimeException e) {
-            throw e;
         }
 
         // Check received message's type
@@ -439,7 +437,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
             throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_EXPIRED);
         }
 
-        String time = AuthGeneralUtil.getTimestamp();
+        String time = msgRequestSignature.getTime();
         String signature;
         try {
             SignedBlock block = new SignedBlock();
@@ -462,19 +460,15 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         msgSignature.setDestinationId(msgRequestSignature.getmID());
 
         log.postValue("[SEND]" + "MSG_SSIG");
-        try {
-            new GrpcTask(channel).execute(msgSignature);
-        } catch (StatusRuntimeException e) {
-            throw e;
-        }
+        new GrpcTask(channel).execute(msgSignature);
 
     }
 
-    public MutableLiveData<String> getLogMerger1() {
+    MutableLiveData<String> getLogMerger1() {
         return logMerger1;
     }
 
-    public MutableLiveData<String> getLogMerger2() {
+    MutableLiveData<String> getLogMerger2() {
         return logMerger2;
     }
 
@@ -502,19 +496,19 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         return errorMerger2;
     }
 
-    public SingleLiveEvent getRefreshTriggerMerger1() {
+    SingleLiveEvent getRefreshTriggerMerger1() {
         return refreshTriggerMerger1;
     }
 
-    public SingleLiveEvent getRefreshTriggerMerger2() {
+    SingleLiveEvent getRefreshTriggerMerger2() {
         return refreshTriggerMerger2;
     }
 
-    public SingleLiveEvent getOpenSetting1Dialog() {
+    SingleLiveEvent getOpenSetting1Dialog() {
         return openSetting1Dialog;
     }
 
-    public SingleLiveEvent getOpenSetting2Dialog() {
+    SingleLiveEvent getOpenSetting2Dialog() {
         return openSetting2Dialog;
     }
 
@@ -592,6 +586,8 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
                         GrpcMsgSsig grpcMsgSsig = GrpcMsgSsig.newBuilder()
                                 .setMessage(ByteString.copyFrom(msg.convertToByteArr()))
                                 .build();
+
+                        //noinspection ResultOfMethodCallIgnored
                         stub.withDeadlineAfter(GruutConfigs.GRPC_TIMEOUT, TimeUnit.SECONDS).sigSend(grpcMsgSsig);
                         return null;
                     default:
