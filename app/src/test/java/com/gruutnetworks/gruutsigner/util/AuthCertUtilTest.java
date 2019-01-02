@@ -46,13 +46,15 @@ public class AuthCertUtilTest extends RobolectricTest {
 
     @Test
     public void stringToCertificate() {
-        String certPem = "-----BEGIN CERTIFICATE-----\r\n" +
-                "MIIBFTCBvKADAgECAgIFOTAKBggqhkjOPQQDAjAUMRIwEAYDVQQDDAlTRUxGX0NF\r\n" +
-                "UlQwHhcNMTgxMjI4MDIwOTM3WhcNNDgxMjI4MDIwOTM3WjAUMRIwEAYDVQQDDAlT\r\n" +
-                "RUxGX0NFUlQwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAAT/+CWhnJTsFS/1h8o+\r\n" +
-                "ZUbfBcoRhIGXPXJhFJ/0JyWWb/7kDiINzTjkKX+phoB3gCnKiArypjFNZTvshJq7\r\n" +
-                "/Mm8MAoGCCqGSM49BAMCA0gAMEUCIFzbJoTGBKDsPQ7v3gmqGe1aKNUwlHahO12U\r\n" +
-                "OeliOGZoAiEA7D3OQiscVKonr1eLli6tgyeXJqQH3x6iUgtrNJcTHb8=\r\n-----END CERTIFICATE-----\r\n";
+        String certPem = "-----BEGIN CERTIFICATE-----\n" +
+                "MIIBFTCBvKADAgECAgIFOTAKBggqhkjOPQQDAjAUMRIwEAYDVQQDDAlTRUxGX0NF\n" +
+                "UlQwHhcNMTgxMjI4MDIwOTM3WhcNNDgxMjI4MDIwOTM3WjAUMRIwEAYDVQQDDAlT\n" +
+                "RUxGX0NFUlQwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAAT/+CWhnJTsFS/1h8o+\n" +
+                "ZUbfBcoRhIGXPXJhFJ/0JyWWb/7kDiINzTjkKX+phoB3gCnKiArypjFNZTvshJq7\n" +
+                "/Mm8MAoGCCqGSM49BAMCA0gAMEUCIFzbJoTGBKDsPQ7v3gmqGe1aKNUwlHahO12U\n" +
+                "OeliOGZoAiEA7D3OQiscVKonr1eLli6tgyeXJqQH3x6iUgtrNJcTHb8=\n-----END CERTIFICATE-----\n";
+
+        String expected = certPem.replaceAll("\\n|\\r\\n", System.getProperty("line.separator"));
 
         X509Certificate cert = AuthCertUtilTest.invokeMethod(AuthCertUtil.class,
                 "stringToCertificate",
@@ -62,7 +64,7 @@ public class AuthCertUtilTest extends RobolectricTest {
             String pemStr = AuthCertUtilTest.invokeMethod(AuthCertUtil.class,
                     "bytesToPemString", String.class, "CERTIFICATE", cert.getEncoded());
 
-            assertThat(pemStr, is(certPem));
+            assertThat(pemStr, is(expected));
         } catch (Exception e) {
             Assert.fail("Exception: " + e);
         }
