@@ -22,6 +22,7 @@ import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 
 import java.io.IOException;
+import java.lang.ref.WeakReference;
 import java.security.*;
 import java.security.cert.CertificateException;
 import java.security.spec.InvalidKeySpecException;
@@ -201,7 +202,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         MsgUnpacker receivedMsg;
         try {
             log.postValue("[SEND]" + "MSG_JOIN");
-            receivedMsg = new GrpcTask(channel).execute(packMsgJoin).get();
+            receivedMsg = new GrpcTask(this, channel).execute(packMsgJoin).get();
         } catch (InterruptedException | ExecutionException | StatusRuntimeException e) {
             throw new AsyncException();
         }
@@ -283,7 +284,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         MsgUnpacker receivedMsg;
         try {
             log.postValue("[SEND]" + "MSG_RESPONSE_1");
-            receivedMsg = new GrpcTask(channel).execute(msgResponse1).get();
+            receivedMsg = new GrpcTask(this, channel).execute(msgResponse1).get();
         } catch (InterruptedException | ExecutionException | StatusRuntimeException e) {
             throw new AsyncException();
         }
@@ -355,7 +356,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         MsgUnpacker receivedMsg;
         try {
             log.postValue("[SEND]" + "MSG_SUCCESS");
-            receivedMsg = new GrpcTask(channel).execute(msgSuccess).get();
+            receivedMsg = new GrpcTask(this, channel).execute(msgSuccess).get();
         } catch (InterruptedException | ExecutionException e) {
             throw new AsyncException();
         }
@@ -460,7 +461,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         msgSignature.setDestinationId(msgRequestSignature.getmID());
 
         log.postValue("[SEND]" + "MSG_SSIG");
-        new GrpcTask(channel).execute(msgSignature);
+        new GrpcTask(this, channel).execute(msgSignature);
 
     }
 
@@ -531,9 +532,12 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
     private static class GrpcTask extends AsyncTask<MsgPacker, Void, MsgUnpacker> {
 
         private long start;
-        private ManagedChannel channel;
 
-        private GrpcTask(ManagedChannel channel) {
+        private final WeakReference<DashboardViewModel> viewModel;
+        private final ManagedChannel channel;
+
+        private GrpcTask(DashboardViewModel viewModel, ManagedChannel channel) {
+            this.viewModel = new WeakReference<>(viewModel);
             this.channel = channel;
         }
 
@@ -601,6 +605,10 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
 
         @Override
         protected void onPostExecute(MsgUnpacker result) {
+            if (viewModel.get() == null) {
+                return;
+            }
+            
             Log.d(TAG, channel.toString() + "::Result: " + result);
             Log.d(TAG, channel.toString() + "::Response Time: " + (System.currentTimeMillis() - start));
         }
