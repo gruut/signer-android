@@ -511,11 +511,9 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
                     } catch (ErrorMsgException e) {
                         log.postValue("[ERROR]" + e.getMessage());
                         Log.e(TAG, channel.toString() + "::[ERROR]" + e.getMessage());
-                        error.postValue(true);
                     } catch (AuthUtilException e) {
                         log.postValue(channel.toString() + "::[CRYPTO_ERROR]" + e.getMessage());
                         Log.e(TAG, "[CRYPTO_ERROR]" + e.getMessage());
-                        error.postValue(true);
                     }
                 }
 
