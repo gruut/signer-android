@@ -50,14 +50,14 @@ public class SignUpViewModel extends AndroidViewModel implements LifecycleObserv
         }
     }
 
-    public void onSignUpClickButton() {
+    public void onClickSignUpButton() {
         loading.setValue(true);
 
-        String pubKey = generateCsr();
+        String csr = generateCsr();
         String pid = phoneNum.get();
 
-        if (pubKey == null || pubKey.isEmpty()) {
-            snackbarMessage.setValue(R.string.sign_up_error_pubkey);
+        if (csr == null || csr.isEmpty()) {
+            snackbarMessage.setValue(R.string.sign_up_error_csr);
             loading.setValue(false);
             return;
         }
@@ -68,7 +68,7 @@ public class SignUpViewModel extends AndroidViewModel implements LifecycleObserv
             return;
         }
 
-        SignUpSourceData sourceData = new SignUpSourceData(pid, pubKey);
+        SignUpSourceData sourceData = new SignUpSourceData(pid, csr);
         signUpCall = GaApi.getInstance().signUp(sourceData);
         signUpCall.enqueue(new Callback<SignUpResponse>() {
             @Override
@@ -121,8 +121,18 @@ public class SignUpViewModel extends AndroidViewModel implements LifecycleObserv
         });
     }
 
-    public void joiningTest() {
+    public void onClickJoinButton() {
         navigateToDashboard.call();
+    }
+
+    public void onClickLeaveButton() {
+        try {
+            authCertUtil.deleteKeyPair();
+            canJoin.postValue(false);
+            snackbarMessage.setValue(R.string.sign_up_success_leave);
+        } catch (KeyStoreException | CertificateException | NoSuchAlgorithmException | IOException e) {
+            snackbarMessage.setValue(R.string.sign_up_error_leave);
+        }
     }
 
     /**

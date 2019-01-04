@@ -65,10 +65,8 @@ public class AuthCertUtil {
 
     /**
      * Generates a public and private key and stores it using the Android Key Store
-     *
-     * @return generated Key pair's public key
      */
-    public PublicKey generateKeyPair()
+    public void generateKeyPair()
             throws NoSuchProviderException, NoSuchAlgorithmException, InvalidAlgorithmParameterException {
         // Create a start and end time, for the validity range of the key pair that's about to be generated.
         Calendar start = new GregorianCalendar();
@@ -91,7 +89,18 @@ public class AuthCertUtil {
         kpGenerator.initialize(spec);
 
         KeyPair kp = kpGenerator.generateKeyPair();
-        return kp.getPublic();
+        kp.getPublic();
+    }
+
+    /**
+     * Delete key pair from Android Key Store
+     */
+    public void deleteKeyPair() throws KeyStoreException, CertificateException, NoSuchAlgorithmException, IOException {
+        KeyStore ks = KeyStore.getInstance(KEYSTORE_PROVIDER_ANDROID_KEYSTORE);
+        ks.load(null);
+
+        ks.deleteEntry(mAlias);
+        ks.deleteEntry(GRUUT_AUTH.name());
     }
 
     /**
