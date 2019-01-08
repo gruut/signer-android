@@ -11,7 +11,8 @@ public interface SignedBlockDao {
     @Query("SELECT * FROM signedblock WHERE chain_id = (:chainId) AND block_hgt = (:blockHeight)")
     SignedBlock findByPrimaryKey(String chainId, String blockHeight);
 
-    @Insert(onConflict = OnConflictStrategy.FAIL)
+    // TODO: 테스트가 끝난 후에는 중복 된 값에 대해서 Fail 처리 하도록 바꿔야 함
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     void insertAll(SignedBlock... blocks);
 
 }
