@@ -79,7 +79,6 @@ public class DashboardViewModelTest extends RobolectricTest {
 
         try {
             blockDao.insertAll(block);
-            Assert.fail("SQLiteConstraintException");
         } catch (SQLiteConstraintException e) {
             // expected
         }
