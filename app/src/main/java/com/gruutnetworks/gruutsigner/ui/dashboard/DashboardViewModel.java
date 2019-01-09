@@ -303,48 +303,53 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
                     TypeMsg msgType = MsgUnpacker.classifyMsg(receivedMsg);
                     log.postValue("[RECEIVE] " + msgType);
 
-                    switch (msgType) {
-                        case MSG_CHALLENGE:
-                            UnpackMsgChallenge msgChallenge = new UnpackMsgChallenge(receivedMsg);
-                            if (!msgChallenge.isSenderValid()) {
-                                throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_HEADER_NOT_MATCHED);
-                            }
+                    try {
+                        switch (msgType) {
+                            case MSG_CHALLENGE:
+                                UnpackMsgChallenge msgChallenge = new UnpackMsgChallenge(receivedMsg);
+                                if (!msgChallenge.isSenderValid()) {
+                                    throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_HEADER_NOT_MATCHED);
+                                }
 
-                            sendPublicKey(channel, msgChallenge, log);
-                            return;
-                        case MSG_RESPONSE_2:
-                            UnpackMsgResponse2 msgResponse2 = new UnpackMsgResponse2(receivedMsg);
-                            if (!msgResponse2.isSenderValid()) {
-                                throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_HEADER_NOT_MATCHED);
-                            }
-                            sendSuccess(channel, msgResponse2, log);
-                            return;
-                        case MSG_ACCEPT:
-                            UnpackMsgAccept msgAccept = new UnpackMsgAccept(receivedMsg);
-                            if (!msgAccept.isSenderValid()) {
-                                throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_HEADER_NOT_MATCHED);
-                            }
-                            if (!msgAccept.isMacValid()) {
-                                throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_INVALID_HMAC);
-                            }
-                            if (!msgAccept.isVal()) {
-                                throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_INVALID_RECEIVED);
-                            }
-                            log.postValue("[SYSTEM ] Ready for signing...");
+                                sendPublicKey(channel, msgChallenge, log);
+                                return;
+                            case MSG_RESPONSE_2:
+                                UnpackMsgResponse2 msgResponse2 = new UnpackMsgResponse2(receivedMsg);
+                                if (!msgResponse2.isSenderValid()) {
+                                    throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_HEADER_NOT_MATCHED);
+                                }
+                                sendSuccess(channel, msgResponse2, log);
+                                return;
+                            case MSG_ACCEPT:
+                                UnpackMsgAccept msgAccept = new UnpackMsgAccept(receivedMsg);
+                                if (!msgAccept.isSenderValid()) {
+                                    throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_HEADER_NOT_MATCHED);
+                                }
+                                if (!msgAccept.isMacValid()) {
+                                    throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_INVALID_HMAC);
+                                }
+                                if (!msgAccept.isVal()) {
+                                    throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_INVALID_RECEIVED);
+                                }
+                                log.postValue("[SYSTEM ] Ready for signing...");
 
-                            return;
-                        case MSG_REQ_SSIG:
-                            UnpackMsgRequestSignature msgRequestSignature = new UnpackMsgRequestSignature(receivedMsg);
-                            sendSignature(channel, msgRequestSignature, log);
+                                return;
+                            case MSG_REQ_SSIG:
+                                UnpackMsgRequestSignature msgRequestSignature = new UnpackMsgRequestSignature(receivedMsg);
+                                sendSignature(channel, msgRequestSignature, log);
 
-                            return;
-                        case MSG_ERROR:
-                            UnpackMsgError msgError = new UnpackMsgError(receivedMsg);
-                            throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_ERR_RECEIVED,
-                                    TypeError.convert(msgError.getErrType()).name());
-                        default:
-                            throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_NOT_FOUND);
+                                return;
+                            case MSG_ERROR:
+                                UnpackMsgError msgError = new UnpackMsgError(receivedMsg);
+                                throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_ERR_RECEIVED,
+                                        TypeError.convert(msgError.getErrType()).name());
+                            default:
+                                throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_NOT_FOUND);
+                        }
+                    } catch (InterruptedException | ExecutionException ignored) {
+                        // AsyncTask was dead
                     }
+
                 }
 
                 @Override
@@ -371,8 +376,12 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
             log.postValue("[SYSTEM ] Open streaming channel...");
             Log.d(TAG, channel.toString() + "::Streaming channel opened...");
 
-            // request Join
-            sendJoinMsg(channel, log);
+            try {
+                // request Join
+                sendJoinMsg(channel, log);
+            } catch (InterruptedException | ExecutionException ignored) {
+                // AsyncTask was dead
+            }
         }
 
 
@@ -383,7 +392,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
          * @param channel target merger
          * @throws StatusRuntimeException on GRPC error
          */
-        private void sendJoinMsg(ManagedChannel channel, MutableLiveData<String> log) throws StatusRuntimeException {
+        private void sendJoinMsg(ManagedChannel channel, MutableLiveData<String> log) throws ExecutionException, InterruptedException {
             PackMsgJoin packMsgJoin = new PackMsgJoin(
                     sId,
                     AuthGeneralUtil.getTimestamp(),
@@ -391,12 +400,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
                     GruutConfigs.localChainId
             );
 
-            MsgStatus receivedStatus;
-            try {
-                receivedStatus = new GrpcTask(viewModel.get(), channel, log).execute(packMsgJoin).get();
-            } catch (InterruptedException | ExecutionException | StatusRuntimeException e) {
-                throw new AsyncException();
-            }
+            MsgStatus receivedStatus = new GrpcTask(viewModel.get(), channel, log).execute(packMsgJoin).get();
 
             // Check received status
             if (receivedStatus == null) {
@@ -414,7 +418,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
          * @param channel          target merger
          * @param messageChallenge received MSG_CHALLENGE
          */
-        private void sendPublicKey(ManagedChannel channel, UnpackMsgChallenge messageChallenge, MutableLiveData<String> log) throws StatusRuntimeException {
+        private void sendPublicKey(ManagedChannel channel, UnpackMsgChallenge messageChallenge, MutableLiveData<String> log) throws ExecutionException, InterruptedException {
             // generate signer nonce
             signerNonce = AuthGeneralUtil.getNonce();
 
@@ -461,12 +465,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
                     signature /* BASE64 */
             );
 
-            MsgStatus receivedStatus;
-            try {
-                receivedStatus = new GrpcTask(viewModel.get(), channel, log).execute(msgResponse1).get();
-            } catch (InterruptedException | ExecutionException | StatusRuntimeException e) {
-                throw new AsyncException();
-            }
+            MsgStatus receivedStatus = new GrpcTask(viewModel.get(), channel, log).execute(msgResponse1).get();
 
             // Check received status
             if (receivedStatus == null) {
@@ -485,7 +484,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
          * @param channel          target merger
          * @param messageResponse2 received MSG_RESPONSE_2
          */
-        private void sendSuccess(ManagedChannel channel, UnpackMsgResponse2 messageResponse2, MutableLiveData<String> log) throws StatusRuntimeException {
+        private void sendSuccess(ManagedChannel channel, UnpackMsgResponse2 messageResponse2, MutableLiveData<String> log) throws ExecutionException, InterruptedException {
             try {
                 // 서명 검증
                 if (!authCertUtil.verifyMsgResponse2(messageResponse2.getSig(), messageResponse2.getCert(),
@@ -522,12 +521,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
             );
             msgSuccess.setDestinationId(messageResponse2.getmID());
 
-            MsgStatus receivedStatus;
-            try {
-                receivedStatus = new GrpcTask(viewModel.get(), channel, log).execute(msgSuccess).get();
-            } catch (InterruptedException | ExecutionException e) {
-                throw new AsyncException();
-            }
+            MsgStatus receivedStatus = new GrpcTask(viewModel.get(), channel, log).execute(msgSuccess).get();
 
             // Check received status
             if (receivedStatus == null) {
@@ -545,7 +539,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
          * @param msgRequestSignature received MSG_REQ_SSIG
          * @param log                 log live data
          */
-        private void sendSignature(ManagedChannel channel, UnpackMsgRequestSignature msgRequestSignature, MutableLiveData<String> log) {
+        private void sendSignature(ManagedChannel channel, UnpackMsgRequestSignature msgRequestSignature, MutableLiveData<String> log) throws ExecutionException, InterruptedException {
             if (!msgRequestSignature.isMacValid()) {
                 throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_HEADER_NOT_MATCHED);
             }
@@ -580,12 +574,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
             );
             msgSignature.setDestinationId(msgRequestSignature.getmID());
 
-            MsgStatus receivedStatus;
-            try {
-                receivedStatus = new GrpcTask(viewModel.get(), channel, log).execute(msgSignature).get();
-            } catch (InterruptedException | ExecutionException e) {
-                throw new AsyncException();
-            }
+            MsgStatus receivedStatus = new GrpcTask(viewModel.get(), channel, log).execute(msgSignature).get();
 
             // Check received status
             if (receivedStatus == null) {
