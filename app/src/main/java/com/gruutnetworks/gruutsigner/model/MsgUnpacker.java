@@ -19,6 +19,13 @@ public abstract class MsgUnpacker {
     boolean senderValidity;
     private boolean macValidity;
 
+    public static TypeMsg classifyMsg(byte[] bytes) {
+        if (bytes != null && bytes.length > 3) {
+            return TypeMsg.convert(bytes[2]);
+        }
+        return TypeMsg.MSG_ERROR;
+    }
+
     void parse(byte[] bytes) {
         int offset = 0;
 
