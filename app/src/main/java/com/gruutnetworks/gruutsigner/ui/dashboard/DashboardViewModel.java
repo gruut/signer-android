@@ -13,6 +13,8 @@ import com.gruutnetworks.gruutsigner.exceptions.AsyncException;
 import com.gruutnetworks.gruutsigner.exceptions.AuthUtilException;
 import com.gruutnetworks.gruutsigner.exceptions.ErrorMsgException;
 import com.gruutnetworks.gruutsigner.gruut.GruutConfigs;
+import com.gruutnetworks.gruutsigner.gruut.Merger;
+import com.gruutnetworks.gruutsigner.gruut.MergerList;
 import com.gruutnetworks.gruutsigner.model.*;
 import com.gruutnetworks.gruutsigner.util.*;
 import io.grpc.ManagedChannel;
@@ -25,6 +27,7 @@ import java.lang.ref.WeakReference;
 import java.security.*;
 import java.security.cert.CertificateException;
 import java.security.spec.InvalidKeySpecException;
+import java.util.Random;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
@@ -95,6 +98,13 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
     private JoiningThread thread1;
     private JoiningThread thread2;
 
+    private Merger getRandomMerger() {
+        Random rand = new Random(System.currentTimeMillis());
+        int index = rand.nextInt(3);
+
+        return MergerList.MERGER_LIST.get(index);
+    }
+
     public void refreshMerger1() {
         if (thread1 != null) {
             thread1.interrupt();
@@ -123,7 +133,14 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
                     errorMerger1);
             thread1.start();
         } else {
-            logMerger1.postValue("Please set merger's ip address first.");
+            Merger merger = getRandomMerger();
+            ipMerger1.setValue(merger.getUri());
+            portMerger1.setValue(Integer.toString(merger.getPort()));
+
+            preferenceUtil.put(PreferenceUtil.Key.IP1_STR, merger.getUri());
+            preferenceUtil.put(PreferenceUtil.Key.PORT1_STR, Integer.toString(merger.getPort()));
+
+            refreshMerger1();
         }
     }
 
@@ -155,7 +172,14 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
                     errorMerger2);
             thread2.start();
         } else {
-            logMerger2.postValue("Please set merger's ip address first.");
+            Merger merger = getRandomMerger();
+            ipMerger2.setValue(merger.getUri());
+            portMerger2.setValue(Integer.toString(merger.getPort()));
+
+            preferenceUtil.put(PreferenceUtil.Key.IP2_STR, merger.getUri());
+            preferenceUtil.put(PreferenceUtil.Key.PORT2_STR, Integer.toString(merger.getPort()));
+
+            refreshMerger2();
         }
     }
 
