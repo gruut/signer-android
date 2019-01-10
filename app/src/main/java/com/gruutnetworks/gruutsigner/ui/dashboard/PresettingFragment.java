@@ -11,22 +11,18 @@ import android.support.v4.app.DialogFragment;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.GridLayoutManager;
-import android.support.v7.widget.LinearLayoutManager;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.widget.Toast;
 import com.gruutnetworks.gruutsigner.R;
 import com.gruutnetworks.gruutsigner.databinding.PresettingFragmentBinding;
 import com.gruutnetworks.gruutsigner.gruut.Merger;
 
 import static com.gruutnetworks.gruutsigner.gruut.MergerList.MERGER_LIST;
 
-public class PresettingFragment extends DialogFragment implements PresetSelectedListner {
+public class PresettingFragment extends DialogFragment implements PresetSelectedListener {
 
     private PresettingViewModel viewModel;
-    private PresettingFragmentBinding binding;
     private DashboardViewModel.MergerNum mergerNum;
-    private PresetListAdapter adapter;
 
     public static PresettingFragment newInstance(DashboardViewModel.MergerNum merger) {
         PresettingFragment fragment = new PresettingFragment();
@@ -55,7 +51,7 @@ public class PresettingFragment extends DialogFragment implements PresetSelected
     public Dialog onCreateDialog(Bundle savedInstanceState) {
         AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
 
-        binding = DataBindingUtil.inflate(LayoutInflater.from(getContext()),
+        PresettingFragmentBinding binding = DataBindingUtil.inflate(LayoutInflater.from(getContext()),
                 R.layout.presetting_fragment, null, false);
 
         viewModel = ViewModelProviders.of(this).get(PresettingViewModel.class);
@@ -73,12 +69,12 @@ public class PresettingFragment extends DialogFragment implements PresetSelected
         binding.recyclerView.addItemDecoration(
                 new DividerItemDecoration(getContext(), DividerItemDecoration.VERTICAL));
 
-        adapter = new PresetListAdapter(MERGER_LIST, this);
+        PresetListAdapter adapter = new PresetListAdapter(MERGER_LIST, this, viewModel.getMerger());
 
         binding.recyclerView.setAdapter(adapter);
 
         builder.setView(binding.getRoot())
-                .setTitle("Merger Address Setting")
+                .setTitle("Merger Setting")
                 .setPositiveButton(getString(R.string.ok), (dialog, which) -> {
                     viewModel.pullPreference();
 
@@ -97,7 +93,6 @@ public class PresettingFragment extends DialogFragment implements PresetSelected
     @Override
     public void onPresetSelected(Merger merger) {
         viewModel.setMerger(merger);
-        Toast.makeText(getContext(), "yay", Toast.LENGTH_SHORT).show();
     }
 
     public interface PresettingDialogInterface {

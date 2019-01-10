@@ -12,9 +12,9 @@ public class PresettingViewModel extends AndroidViewModel implements LifecycleOb
 
     private PreferenceUtil preferenceUtil;
 
-    public MutableLiveData<DashboardViewModel.MergerNum> mergerNum = new MutableLiveData<>();
-    public MutableLiveData<String> ipAddress = new MutableLiveData<>();
-    public MutableLiveData<String> portNumber = new MutableLiveData<>();
+    private MutableLiveData<DashboardViewModel.MergerNum> mergerNum = new MutableLiveData<>();
+    private MutableLiveData<String> ipAddress = new MutableLiveData<>();
+    private MutableLiveData<String> portNumber = new MutableLiveData<>();
 
     public PresettingViewModel(@NonNull Application application) {
         super(application);
@@ -55,8 +55,12 @@ public class PresettingViewModel extends AndroidViewModel implements LifecycleOb
         }
     }
 
-    public void setMergerNum(DashboardViewModel.MergerNum mergerNum) {
+    void setMergerNum(DashboardViewModel.MergerNum mergerNum) {
         this.mergerNum.setValue(mergerNum);
+    }
+
+    MutableLiveData<DashboardViewModel.MergerNum> getMergerNum() {
+        return mergerNum;
     }
 
     public void setMerger(Merger merger) {
@@ -64,8 +68,20 @@ public class PresettingViewModel extends AndroidViewModel implements LifecycleOb
         this.portNumber.setValue(Integer.toString(merger.getPort()));
     }
 
-    public MutableLiveData<DashboardViewModel.MergerNum> getMergerNum() {
-        return mergerNum;
+    public Merger getMerger() {
+        if (mergerNum.getValue() != null) {
+            switch (mergerNum.getValue()) {
+                case MERGER_1:
+                    return new Merger(preferenceUtil.getString(PreferenceUtil.Key.IP1_STR),
+                            Integer.parseInt(preferenceUtil.getString(PreferenceUtil.Key.PORT1_STR)));
+                case MERGER_2:
+                    return new Merger(preferenceUtil.getString(PreferenceUtil.Key.IP2_STR),
+                            Integer.parseInt(preferenceUtil.getString(PreferenceUtil.Key.PORT2_STR)));
+                default:
+                    return null;
+            }
+        }
+        return null;
     }
 
     @Override

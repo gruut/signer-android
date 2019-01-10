@@ -6,6 +6,10 @@
     <color name="textPrimary">#323D2F</color>
     <color name="textSecondary">#008f77</color>
 
+    <color name="pressed_color">#008f77</color>
+    <color name="selected_color">#8bc541</color>
+    <color name="focused_color">#FFC843</color>
+
     <color name="background_transparent">#99000000</color>
     <color name="transparent">#00ffffff</color>
     <color name="white">#FFFFFF</color>

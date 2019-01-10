@@ -9,7 +9,6 @@ import com.google.protobuf.ByteString;
 import com.gruutnetworks.gruutsigner.*;
 import com.gruutnetworks.gruutsigner.Identity;
 import com.gruutnetworks.gruutsigner.R;
-import com.gruutnetworks.gruutsigner.exceptions.AsyncException;
 import com.gruutnetworks.gruutsigner.exceptions.AuthUtilException;
 import com.gruutnetworks.gruutsigner.exceptions.ErrorMsgException;
 import com.gruutnetworks.gruutsigner.gruut.GruutConfigs;

@@ -17,7 +17,7 @@ import com.gruutnetworks.gruutsigner.databinding.DashboardFragmentBinding;
 
 import static com.gruutnetworks.gruutsigner.gruut.GruutConfigs.AUTO_REFRESH_TIMEOUT;
 
-public class DashboardFragment extends Fragment implements SettingFragment.SettingDialogInterface, PresettingFragment.PresettingDialogInterface {
+public class DashboardFragment extends Fragment implements PresettingFragment.PresettingDialogInterface {
 
     private DashboardViewModel viewModel;
     private DashboardFragmentBinding binding;
@@ -69,7 +69,7 @@ public class DashboardFragment extends Fragment implements SettingFragment.Setti
         viewModel.getLogMerger2().observe(this, text -> tvLogMerger2.append("\n" + text));
         viewModel.getRefreshTriggerMerger2().observe(this, o -> tvLogMerger2.setText(""));
         viewModel.getOpenSetting2Dialog().observe(this, o -> {
-            SettingFragment settingFragment = SettingFragment.newInstance(DashboardViewModel.MergerNum.MERGER_2);
+            PresettingFragment settingFragment = PresettingFragment.newInstance(DashboardViewModel.MergerNum.MERGER_1);
             settingFragment.setTargetFragment(this, 0);
             settingFragment.show(getFragmentManager(), "fragment_address_setting");
             waitForAutoRefresh.removeCallbacksAndMessages(null);

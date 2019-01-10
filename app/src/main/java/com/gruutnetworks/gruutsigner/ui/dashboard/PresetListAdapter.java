@@ -12,11 +12,15 @@ import java.util.List;
 public class PresetListAdapter extends RecyclerView.Adapter<PresetListAdapter.PresetViewHolder> {
 
     private List<Merger> mergerList;
-    private final PresetSelectedListner selectedListner;
+    private final PresetSelectedListener selectedListener;
 
-    public PresetListAdapter(List<Merger> mergerList, PresetSelectedListner selectedListner) {
+    private int selectedPosition;
+    private Merger selectedMerger;
+
+    PresetListAdapter(List<Merger> mergerList, PresetSelectedListener selectedListener, Merger selectedMerger) {
         this.mergerList = mergerList;
-        this.selectedListner = selectedListner;
+        this.selectedListener = selectedListener;
+        this.selectedMerger = selectedMerger;
     }
 
     @NonNull
@@ -24,13 +28,28 @@ public class PresetListAdapter extends RecyclerView.Adapter<PresetListAdapter.Pr
     public PresetViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         LayoutInflater layoutInflater = LayoutInflater.from(parent.getContext());
         PresetItemBinding itemBinding = PresetItemBinding.inflate(layoutInflater, parent, false);
-        return new PresetViewHolder(itemBinding, selectedListner);
+        return new PresetViewHolder(itemBinding);
     }
 
     @Override
     public void onBindViewHolder(@NonNull PresetViewHolder holder, int position) {
         Merger merger = mergerList.get(position);
         holder.bind(merger);
+
+        if (merger.getUri().equals(selectedMerger.getUri()) && merger.getPort() == selectedMerger.getPort()) {
+            selectedPosition = holder.getAdapterPosition();
+        } else {
+            selectedPosition = RecyclerView.NO_POSITION;
+        }
+
+        holder.itemView.setSelected(position == selectedPosition);
+
+        holder.itemView.setOnClickListener(v -> {
+            selectedListener.onPresetSelected(merger);
+            selectedPosition = holder.getAdapterPosition();
+            selectedMerger = merger;
+            notifyDataSetChanged();
+        });
     }
 
     @Override
@@ -45,12 +64,9 @@ public class PresetListAdapter extends RecyclerView.Adapter<PresetListAdapter.Pr
     static final class PresetViewHolder extends RecyclerView.ViewHolder {
         private final PresetItemBinding binding;
 
-        PresetViewHolder(PresetItemBinding binding, PresetSelectedListner selectedListner) {
+        PresetViewHolder(PresetItemBinding binding) {
             super(binding.getRoot());
             this.binding = binding;
-            binding.getRoot().setOnClickListener(v -> {
-                selectedListner.onPresetSelected(binding.getMerger());
-            });
         }
 
         void bind(Merger merger) {
