@@ -3,6 +3,7 @@ package com.gruutnetworks.gruutsigner.ui.dashboard;
 import android.app.Application;
 import android.arch.lifecycle.*;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.support.annotation.NonNull;
 import android.util.Log;
 import com.google.protobuf.ByteString;
@@ -13,7 +14,6 @@ import com.gruutnetworks.gruutsigner.exceptions.AuthUtilException;
 import com.gruutnetworks.gruutsigner.exceptions.ErrorMsgException;
 import com.gruutnetworks.gruutsigner.gruut.GruutConfigs;
 import com.gruutnetworks.gruutsigner.gruut.Merger;
-import com.gruutnetworks.gruutsigner.gruut.MergerList;
 import com.gruutnetworks.gruutsigner.model.*;
 import com.gruutnetworks.gruutsigner.util.*;
 import io.grpc.ManagedChannel;
@@ -26,10 +26,11 @@ import java.lang.ref.WeakReference;
 import java.security.*;
 import java.security.cert.CertificateException;
 import java.security.spec.InvalidKeySpecException;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
+import static com.gruutnetworks.gruutsigner.gruut.MergerList.MERGER_LIST;
 import static com.gruutnetworks.gruutsigner.gruut.MergerList.findPresetMergerList;
 
 public class DashboardViewModel extends AndroidViewModel implements LifecycleObserver {
@@ -90,6 +91,23 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
      */
     @OnLifecycleEvent(Lifecycle.Event.ON_RESUME)
     public void onResume() {
+
+        if (preferenceUtil.getString(PreferenceUtil.Key.IP1_STR) == null
+                && preferenceUtil.getString(PreferenceUtil.Key.PORT1_STR) == null
+                && preferenceUtil.getString(PreferenceUtil.Key.IP2_STR) == null
+                && preferenceUtil.getString(PreferenceUtil.Key.PORT2_STR) == null) {
+
+            List<Merger> targetMergers = getRandomMergers();
+
+            merger1.setValue(targetMergers.get(0));
+            merger2.setValue(targetMergers.get(1));
+
+            preferenceUtil.put(PreferenceUtil.Key.IP1_STR, targetMergers.get(0).getUri());
+            preferenceUtil.put(PreferenceUtil.Key.PORT1_STR, Integer.toString(targetMergers.get(0).getPort()));
+            preferenceUtil.put(PreferenceUtil.Key.IP2_STR, targetMergers.get(1).getUri());
+            preferenceUtil.put(PreferenceUtil.Key.PORT2_STR, Integer.toString(targetMergers.get(1).getPort()));
+        }
+
         refreshMerger1();
         refreshMerger2();
     }
@@ -97,11 +115,28 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
     private JoiningThread thread1;
     private JoiningThread thread2;
 
-    private Merger getRandomMerger() {
+    private List<Merger> getRandomMergers() {
         Random rand = new Random(System.currentTimeMillis());
-        int index = rand.nextInt(3);
+        List<Merger> targetMergers = new ArrayList<>();
+        final int[] ints;
 
-        return MergerList.MERGER_LIST.get(index);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            ints = rand.ints(0, 3).distinct().limit(2).toArray();
+        } else {
+            final Set<Integer> intSet = new HashSet<>();
+            while (intSet.size() < 2) {
+                intSet.add(rand.nextInt(3));
+            }
+            ints = new int[intSet.size()];
+            final Iterator<Integer> iterator = intSet.iterator();
+            for (int i = 0; iterator.hasNext(); ++i) {
+                ints[i] = iterator.next();
+            }
+        }
+        for (int i : ints) {
+            targetMergers.add(MERGER_LIST.get(i));
+        }
+        return targetMergers;
     }
 
     public void refreshMerger1() {
@@ -132,14 +167,6 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
                     logMerger1,
                     errorMerger1);
             thread1.start();
-        } else {
-            Merger merger = getRandomMerger();
-            merger1.setValue(merger);
-
-            preferenceUtil.put(PreferenceUtil.Key.IP1_STR, merger.getUri());
-            preferenceUtil.put(PreferenceUtil.Key.PORT1_STR, Integer.toString(merger.getPort()));
-
-            refreshMerger1();
         }
     }
 
@@ -171,14 +198,6 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
                     logMerger2,
                     errorMerger2);
             thread2.start();
-        } else {
-            Merger merger = getRandomMerger();
-            merger2.setValue(merger);
-
-            preferenceUtil.put(PreferenceUtil.Key.IP2_STR, merger.getUri());
-            preferenceUtil.put(PreferenceUtil.Key.PORT2_STR, Integer.toString(merger.getPort()));
-
-            refreshMerger2();
         }
     }
 
