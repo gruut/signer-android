@@ -14,7 +14,7 @@ public class PreferenceUtil {
      * Enum representing your setting names or key for your setting.
      */
     public enum Key {
-        SID_STR, IP1_STR, PORT1_STR, IP2_STR, PORT2_STR
+        SID_STR, IP1_STR, PORT1_STR, IP2_STR, PORT2_STR, INIT_EXEC_BOOL
     }
 
     private PreferenceUtil(Context context) {
