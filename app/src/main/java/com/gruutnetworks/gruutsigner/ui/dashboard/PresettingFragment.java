@@ -74,7 +74,7 @@ public class PresettingFragment extends DialogFragment implements PresetSelected
         binding.recyclerView.setAdapter(adapter);
 
         builder.setView(binding.getRoot())
-                .setTitle("Merger Setting")
+                .setTitle(R.string.setting_title)
                 .setPositiveButton(getString(R.string.ok), (dialog, which) -> {
                     viewModel.pullPreference();
 

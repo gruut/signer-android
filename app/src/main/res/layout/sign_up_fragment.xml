@@ -47,7 +47,7 @@
                 android:ems="10"
                 android:hint="@string/sign_up_mobile_number"
                 android:inputType="phone"
-                android:maxLength="13"
+                android:maxLength="20"
                 android:singleLine="true"
                 android:text="@={model.phoneNum}"
                 android:textAlignment="center"

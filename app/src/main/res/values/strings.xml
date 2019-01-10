@@ -18,4 +18,5 @@
     <string name="refresh">REFRESH</string>
     <string name="join">Join</string>
     <string name="leave">Leave</string>
+    <string name="setting_title">Select a merger to connect</string>
 </resources>
