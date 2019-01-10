@@ -295,6 +295,9 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
                     Log.e(TAG, channel.toString() + "::[CRYPTO_ERROR]" + e.getMessage());
                     error.postValue(true);
                 }
+            } catch (InterruptedException | ExecutionException e) {
+                // AsyncTask error
+                // Ignore it
             }
 
         }
@@ -307,7 +310,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
          * @return received MSG_CHALLENGE
          * @throws StatusRuntimeException on GRPC error
          */
-        private UnpackMsgChallenge requestJoin(ManagedChannel channel, MutableLiveData<String> log) throws StatusRuntimeException {
+        private UnpackMsgChallenge requestJoin(ManagedChannel channel, MutableLiveData<String> log) throws StatusRuntimeException, ExecutionException, InterruptedException {
             log.postValue("START requestJoin...");
 
             PackMsgJoin packMsgJoin = new PackMsgJoin(
@@ -317,13 +320,8 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
                     GruutConfigs.localChainId
             );
 
-            MsgUnpacker receivedMsg;
-            try {
-                log.postValue("[SEND]" + "MSG_JOIN");
-                receivedMsg = new GrpcTask(viewModel.get(), channel).execute(packMsgJoin).get();
-            } catch (InterruptedException | ExecutionException | StatusRuntimeException e) {
-                throw new AsyncException();
-            }
+            log.postValue("[SEND]" + "MSG_JOIN");
+            MsgUnpacker receivedMsg = new GrpcTask(viewModel.get(), channel).execute(packMsgJoin).get();
 
             // Check received message's type
             if (receivedMsg == null) {
@@ -348,7 +346,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
          * @param messageChallenge received MSG_CHALLENGE
          * @return received MSG_RESPONSE_2
          */
-        private UnpackMsgResponse2 sendPublicKey(ManagedChannel channel, UnpackMsgChallenge messageChallenge, MutableLiveData<String> log) throws StatusRuntimeException {
+        private UnpackMsgResponse2 sendPublicKey(ManagedChannel channel, UnpackMsgChallenge messageChallenge, MutableLiveData<String> log) throws ExecutionException, InterruptedException {
             log.postValue("START sendPublicKey...");
 
             // generate signer nonce
@@ -397,13 +395,8 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
                     signature /* BASE64 */
             );
 
-            MsgUnpacker receivedMsg;
-            try {
-                log.postValue("[SEND]" + "MSG_RESPONSE_1");
-                receivedMsg = new GrpcTask(viewModel.get(), channel).execute(msgResponse1).get();
-            } catch (InterruptedException | ExecutionException | StatusRuntimeException e) {
-                throw new AsyncException();
-            }
+            log.postValue("[SEND]" + "MSG_RESPONSE_1");
+            MsgUnpacker receivedMsg = new GrpcTask(viewModel.get(), channel).execute(msgResponse1).get();
 
             // Check received message's type
             if (receivedMsg == null) {
@@ -429,7 +422,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
          * @param messageResponse2 received MSG_RESPONSE_2
          * @return received MSG_ACCEPT
          */
-        private UnpackMsgAccept sendSuccess(ManagedChannel channel, UnpackMsgResponse2 messageResponse2, MutableLiveData<String> log) throws StatusRuntimeException {
+        private UnpackMsgAccept sendSuccess(ManagedChannel channel, UnpackMsgResponse2 messageResponse2, MutableLiveData<String> log) throws ExecutionException, InterruptedException {
 
             try {
                 // 서명 검증
@@ -467,13 +460,8 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
             );
             msgSuccess.setDestinationId(messageResponse2.getmID());
 
-            MsgUnpacker receivedMsg;
-            try {
-                log.postValue("[SEND]" + "MSG_SUCCESS");
-                receivedMsg = new GrpcTask(viewModel.get(), channel).execute(msgSuccess).get();
-            } catch (InterruptedException | ExecutionException e) {
-                throw new AsyncException();
-            }
+            log.postValue("[SEND]" + "MSG_SUCCESS");
+            MsgUnpacker receivedMsg = new GrpcTask(viewModel.get(), channel).execute(msgSuccess).get();
 
             // Check received message's type
             if (receivedMsg == null) {
