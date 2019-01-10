@@ -8,6 +8,9 @@ import android.support.annotation.NonNull;
 import com.gruutnetworks.gruutsigner.gruut.Merger;
 import com.gruutnetworks.gruutsigner.util.PreferenceUtil;
 
+import static com.gruutnetworks.gruutsigner.gruut.MergerList.MERGER_LIST;
+import static com.gruutnetworks.gruutsigner.gruut.MergerList.findPresetMergerList;
+
 public class PresettingViewModel extends AndroidViewModel implements LifecycleObserver {
 
     private PreferenceUtil preferenceUtil;
@@ -72,10 +75,10 @@ public class PresettingViewModel extends AndroidViewModel implements LifecycleOb
         if (mergerNum.getValue() != null) {
             switch (mergerNum.getValue()) {
                 case MERGER_1:
-                    return new Merger(preferenceUtil.getString(PreferenceUtil.Key.IP1_STR),
+                    return findPresetMergerList(preferenceUtil.getString(PreferenceUtil.Key.IP1_STR),
                             Integer.parseInt(preferenceUtil.getString(PreferenceUtil.Key.PORT1_STR)));
                 case MERGER_2:
-                    return new Merger(preferenceUtil.getString(PreferenceUtil.Key.IP2_STR),
+                    return findPresetMergerList(preferenceUtil.getString(PreferenceUtil.Key.IP2_STR),
                             Integer.parseInt(preferenceUtil.getString(PreferenceUtil.Key.PORT2_STR)));
                 default:
                     return null;

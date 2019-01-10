@@ -69,7 +69,7 @@ public class DashboardFragment extends Fragment implements PresettingFragment.Pr
         viewModel.getLogMerger2().observe(this, text -> tvLogMerger2.append("\n" + text));
         viewModel.getRefreshTriggerMerger2().observe(this, o -> tvLogMerger2.setText(""));
         viewModel.getOpenSetting2Dialog().observe(this, o -> {
-            PresettingFragment settingFragment = PresettingFragment.newInstance(DashboardViewModel.MergerNum.MERGER_1);
+            PresettingFragment settingFragment = PresettingFragment.newInstance(DashboardViewModel.MergerNum.MERGER_2);
             settingFragment.setTargetFragment(this, 0);
             settingFragment.show(getFragmentManager(), "fragment_address_setting");
             waitForAutoRefresh.removeCallbacksAndMessages(null);

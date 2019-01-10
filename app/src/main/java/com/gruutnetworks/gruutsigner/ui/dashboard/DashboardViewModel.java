@@ -30,6 +30,8 @@ import java.util.Random;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
+import static com.gruutnetworks.gruutsigner.gruut.MergerList.findPresetMergerList;
+
 public class DashboardViewModel extends AndroidViewModel implements LifecycleObserver {
 
     private static final String TAG = "DashboardViewModel";
@@ -38,12 +40,10 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         MERGER_1, MERGER_2
     }
 
+    private MutableLiveData<Merger> merger1 = new MutableLiveData<>();
+    private MutableLiveData<Merger> merger2 = new MutableLiveData<>();
     private MutableLiveData<String> logMerger1 = new MutableLiveData<>();
     private MutableLiveData<String> logMerger2 = new MutableLiveData<>();
-    private MutableLiveData<String> ipMerger1 = new MutableLiveData<>();
-    private MutableLiveData<String> ipMerger2 = new MutableLiveData<>();
-    private MutableLiveData<String> portMerger1 = new MutableLiveData<>();
-    private MutableLiveData<String> portMerger2 = new MutableLiveData<>();
     private MutableLiveData<Boolean> errorMerger1 = new MutableLiveData<>();
     private MutableLiveData<Boolean> errorMerger2 = new MutableLiveData<>();
     private final SingleLiveEvent refreshTriggerMerger1 = new SingleLiveEvent();
@@ -115,16 +115,17 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         refreshTriggerMerger1.call();
         errorMerger1.postValue(false);
 
-        ipMerger1.setValue(preferenceUtil.getString(PreferenceUtil.Key.IP1_STR));
-        portMerger1.setValue(preferenceUtil.getString(PreferenceUtil.Key.PORT1_STR));
+        if (preferenceUtil.getString(PreferenceUtil.Key.IP1_STR) != null && preferenceUtil.getString(PreferenceUtil.Key.PORT1_STR) != null) {
+            merger1.setValue(findPresetMergerList(preferenceUtil.getString(PreferenceUtil.Key.IP1_STR),
+                    Integer.parseInt(preferenceUtil.getString(PreferenceUtil.Key.PORT1_STR))));
+        }
 
-        if (ipMerger1.getValue() != null && portMerger1.getValue() != null &&
-                !ipMerger1.getValue().isEmpty() && !portMerger1.getValue().isEmpty()) {
+        if (merger1.getValue() != null) {
             channel1 = ManagedChannelBuilder
-                    .forAddress(ipMerger1.getValue(), Integer.parseInt(portMerger1.getValue()))
+                    .forAddress(merger1.getValue().getUri(), merger1.getValue().getPort())
                     .usePlaintext()
                     .build();
-            logMerger1.postValue("[Channel Setting]" + ipMerger1.getValue() + ":" + portMerger1.getValue());
+            logMerger1.postValue("[Channel Setting]" + merger1.getValue().getUri() + ":" + merger1.getValue().getPort());
 
             thread1 = new JoiningThread(this,
                     channel1,
@@ -133,8 +134,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
             thread1.start();
         } else {
             Merger merger = getRandomMerger();
-            ipMerger1.setValue(merger.getUri());
-            portMerger1.setValue(Integer.toString(merger.getPort()));
+            merger1.setValue(merger);
 
             preferenceUtil.put(PreferenceUtil.Key.IP1_STR, merger.getUri());
             preferenceUtil.put(PreferenceUtil.Key.PORT1_STR, Integer.toString(merger.getPort()));
@@ -154,16 +154,17 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         refreshTriggerMerger2.call();
         errorMerger2.postValue(false);
 
-        ipMerger2.setValue(preferenceUtil.getString(PreferenceUtil.Key.IP2_STR));
-        portMerger2.setValue(preferenceUtil.getString(PreferenceUtil.Key.PORT2_STR));
+        if (preferenceUtil.getString(PreferenceUtil.Key.IP2_STR) != null && preferenceUtil.getString(PreferenceUtil.Key.PORT2_STR) != null) {
+            merger2.setValue(findPresetMergerList(preferenceUtil.getString(PreferenceUtil.Key.IP2_STR),
+                    Integer.parseInt(preferenceUtil.getString(PreferenceUtil.Key.PORT2_STR))));
+        }
 
-        if (ipMerger2.getValue() != null && portMerger2.getValue() != null &&
-                !ipMerger2.getValue().isEmpty() && !portMerger2.getValue().isEmpty()) {
+        if (merger2.getValue() != null) {
             channel2 = ManagedChannelBuilder
-                    .forAddress(ipMerger2.getValue(), Integer.parseInt(portMerger2.getValue()))
+                    .forAddress(merger2.getValue().getUri(), merger2.getValue().getPort())
                     .usePlaintext()
                     .build();
-            logMerger2.postValue("[Channel Setting]" + ipMerger2.getValue() + ":" + portMerger2.getValue());
+            logMerger2.postValue("[Channel Setting]" + merger2.getValue().getUri() + ":" + merger2.getValue().getPort());
 
             thread2 = new JoiningThread(this,
                     channel2,
@@ -172,8 +173,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
             thread2.start();
         } else {
             Merger merger = getRandomMerger();
-            ipMerger2.setValue(merger.getUri());
-            portMerger2.setValue(Integer.toString(merger.getPort()));
+            merger2.setValue(merger);
 
             preferenceUtil.put(PreferenceUtil.Key.IP2_STR, merger.getUri());
             preferenceUtil.put(PreferenceUtil.Key.PORT2_STR, Integer.toString(merger.getPort()));
@@ -198,20 +198,12 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         return logMerger2;
     }
 
-    public MutableLiveData<String> getIpMerger1() {
-        return ipMerger1;
+    public MutableLiveData<Merger> getMerger1() {
+        return merger1;
     }
 
-    public MutableLiveData<String> getIpMerger2() {
-        return ipMerger2;
-    }
-
-    public MutableLiveData<String> getPortMerger1() {
-        return portMerger1;
-    }
-
-    public MutableLiveData<String> getPortMerger2() {
-        return portMerger2;
+    public MutableLiveData<Merger> getMerger2() {
+        return merger2;
     }
 
     public MutableLiveData<Boolean> getErrorMerger1() {
