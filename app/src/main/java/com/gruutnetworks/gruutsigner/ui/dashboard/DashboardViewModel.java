@@ -51,6 +51,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
     private final SingleLiveEvent refreshTriggerMerger2 = new SingleLiveEvent();
     private final SingleLiveEvent openSetting1Dialog = new SingleLiveEvent();
     private final SingleLiveEvent openSetting2Dialog = new SingleLiveEvent();
+    private final SingleLiveEvent openHistoryDialog = new SingleLiveEvent();
 
     private static AuthCertUtil authCertUtil;
     private static AuthHmacUtil authHmacUtil;
@@ -209,6 +210,10 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         }
     }
 
+    public void onClickHistoryBtn() {
+        openHistoryDialog.call();
+    }
+
     MutableLiveData<String> getLogMerger1() {
         return logMerger1;
     }
@@ -247,6 +252,10 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
 
     SingleLiveEvent getOpenSetting2Dialog() {
         return openSetting2Dialog;
+    }
+
+    public SingleLiveEvent getOpenHistoryDialog() {
+        return openHistoryDialog;
     }
 
     @Override
