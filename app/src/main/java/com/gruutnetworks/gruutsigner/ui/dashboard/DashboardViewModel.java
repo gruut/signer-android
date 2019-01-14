@@ -399,7 +399,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
                     GruutConfigs.ver,
                     GruutConfigs.localChainId
             );
-
+          
             MsgStatus receivedStatus = new GrpcTask(viewModel.get(), channel, log).execute(packMsgJoin).get();
 
             // Check received status
@@ -419,6 +419,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
          * @param messageChallenge received MSG_CHALLENGE
          */
         private void sendPublicKey(ManagedChannel channel, UnpackMsgChallenge messageChallenge, MutableLiveData<String> log) throws ExecutionException, InterruptedException {
+
             // generate signer nonce
             signerNonce = AuthGeneralUtil.getNonce();
 
@@ -466,7 +467,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
             );
 
             MsgStatus receivedStatus = new GrpcTask(viewModel.get(), channel, log).execute(msgResponse1).get();
-
+          
             // Check received status
             if (receivedStatus == null) {
                 // This error message may be caused by a timeout.
@@ -485,6 +486,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
          * @param messageResponse2 received MSG_RESPONSE_2
          */
         private void sendSuccess(ManagedChannel channel, UnpackMsgResponse2 messageResponse2, MutableLiveData<String> log) throws ExecutionException, InterruptedException {
+
             try {
                 // 서명 검증
                 if (!authCertUtil.verifyMsgResponse2(messageResponse2.getSig(), messageResponse2.getCert(),
