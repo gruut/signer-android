@@ -21,7 +21,7 @@
         <Button
             android:id="@+id/btn_history"
             android:backgroundTint="@color/colorPrimary"
-            android:text="Signature History"
+            android:text="@string/signature_history"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:onClick="@{() -> model.onClickHistoryBtn()}"
@@ -194,7 +194,7 @@
         <Button
             android:id="@+id/btn_setting_merger2"
             style="@style/AppTheme.RoundedCornerMaterialButton"
-            android:text="Setting"
+            android:text="@string/setting"
             android:layout_width="wrap_content"
             android:layout_height="0dp"
             android:layout_marginEnd="16dp"

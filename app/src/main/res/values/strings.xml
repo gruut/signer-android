@@ -21,4 +21,8 @@
     <string name="setting_title">Select a merger to connect</string>
     <string name="join_guide_msg">\nInitially, we will set up a random Merger.\n\nYou can change the Merger to connect by pressing the SETTING button.\n\n\nNow, please enjoy signing!</string>
     <string name="join_guide_title">Welcome!</string>
+    <string name="signature_empty_string">There\'s no signature history</string>
+    <string name="setting">Setting</string>
+    <string name="signature_history">Signature History</string>
+    <string name="signature_title">Your signature history</string>
 </resources>

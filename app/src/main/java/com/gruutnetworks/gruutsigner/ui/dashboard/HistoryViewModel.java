@@ -4,6 +4,8 @@ import android.app.Application;
 import android.arch.lifecycle.AndroidViewModel;
 import android.arch.lifecycle.LifecycleObserver;
 import android.arch.lifecycle.LiveData;
+import android.arch.lifecycle.MutableLiveData;
+import android.databinding.ObservableBoolean;
 import android.support.annotation.NonNull;
 import com.gruutnetworks.gruutsigner.model.SignedBlock;
 import com.gruutnetworks.gruutsigner.model.SignedBlockRepo;
@@ -15,6 +17,8 @@ public class HistoryViewModel extends AndroidViewModel implements LifecycleObser
     private SignedBlockRepo blockRepo;
 
     private LiveData<List<SignedBlock>> allBlocks;
+    private MutableLiveData<Boolean> isEmpty = new MutableLiveData<>();
+    private ObservableBoolean emptyVisible = new ObservableBoolean();
 
     public HistoryViewModel(@NonNull Application application) {
         super(application);
@@ -29,6 +33,14 @@ public class HistoryViewModel extends AndroidViewModel implements LifecycleObser
 
     public LiveData<List<SignedBlock>> getAllBlocks() {
         return allBlocks;
+    }
+
+    public ObservableBoolean getEmptyVisible() {
+        return emptyVisible;
+    }
+
+    public void setEmptyVisible(boolean isEmpty) {
+        this.emptyVisible.set(isEmpty);
     }
 
     @Override

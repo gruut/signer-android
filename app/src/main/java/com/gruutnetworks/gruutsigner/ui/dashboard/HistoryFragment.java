@@ -42,6 +42,7 @@ public class HistoryFragment extends DialogFragment {
                 R.layout.history_fragment, null, false);
 
         viewModel = ViewModelProviders.of(this).get(HistoryViewModel.class);
+        binding.setModel(viewModel);
 
         binding.recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         binding.recyclerView.setHasFixedSize(true);
@@ -50,8 +51,12 @@ public class HistoryFragment extends DialogFragment {
         binding.recyclerView.addItemDecoration(
                 new DividerItemDecoration(getContext(), DividerItemDecoration.VERTICAL));
 
-
         viewModel.getAllBlocks().observe(this, signedBlocks -> {
+            if (signedBlocks == null || signedBlocks.isEmpty()) {
+                viewModel.setEmptyVisible(true);
+            } else {
+                viewModel.setEmptyVisible(false);
+            }
             HistoryListAdapter adapter = new HistoryListAdapter(signedBlocks);
             binding.recyclerView.setAdapter(adapter);
             adapter.notifyDataSetChanged();
@@ -60,7 +65,7 @@ public class HistoryFragment extends DialogFragment {
         });
 
         builder.setView(binding.getRoot())
-                .setTitle("Your signature history")
+                .setTitle(R.string.signature_title)
                 .setPositiveButton(getString(R.string.ok), (dialog, which) -> dialog.dismiss());
 
         return builder.create();
