@@ -10,7 +10,7 @@ import android.support.annotation.Nullable;
 import android.support.v4.app.DialogFragment;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.DividerItemDecoration;
-import android.support.v7.widget.GridLayoutManager;
+import android.support.v7.widget.LinearLayoutManager;
 import android.view.LayoutInflater;
 import com.gruutnetworks.gruutsigner.R;
 import com.gruutnetworks.gruutsigner.databinding.HistoryFragmentBinding;
@@ -43,7 +43,7 @@ public class HistoryFragment extends DialogFragment {
 
         viewModel = ViewModelProviders.of(this).get(HistoryViewModel.class);
 
-        binding.recyclerView.setLayoutManager(new GridLayoutManager(getContext(), 1));
+        binding.recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         binding.recyclerView.setHasFixedSize(true);
         binding.recyclerView.setItemAnimator(new DefaultItemAnimator());
         binding.recyclerView.setFocusable(false);
@@ -55,6 +55,8 @@ public class HistoryFragment extends DialogFragment {
             HistoryListAdapter adapter = new HistoryListAdapter(signedBlocks);
             binding.recyclerView.setAdapter(adapter);
             adapter.notifyDataSetChanged();
+
+            binding.recyclerView.scrollToPosition(adapter.getItemCount() - 1);
         });
 
         builder.setView(binding.getRoot())
