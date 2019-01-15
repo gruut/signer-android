@@ -56,7 +56,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
     private static AuthCertUtil authCertUtil;
     private static AuthHmacUtil authHmacUtil;
     private static PreferenceUtil preferenceUtil;
-    private static SignedBlockDao blockDao;
+    private static SignedBlockRepo blockRepo;
 
     private ManagedChannel channel1;
     private ManagedChannel channel2;
@@ -70,8 +70,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         authHmacUtil = AuthHmacUtil.getInstance();
         preferenceUtil = PreferenceUtil.getInstance(application.getApplicationContext());
         sId = preferenceUtil.getString(PreferenceUtil.Key.SID_STR);
-
-        blockDao = AppDatabase.getDatabase(application).blockDao();
+        blockRepo = new SignedBlockRepo(application);
 
         SnackbarMessage snackbarMessage = new SnackbarMessage();
 
@@ -601,7 +600,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
                 SignedBlock block = new SignedBlock();
                 block.setChainId(msgRequestSignature.getChainId());
                 block.setBlockHeight(msgRequestSignature.getBlockHeight());
-                blockDao.insertAll();
+                blockRepo.insert(block);
 
                 signature = authCertUtil.generateSupportSignature(sId, time, msgRequestSignature.getmID(), GruutConfigs.localChainId,
                         msgRequestSignature.getBlockHeight(), msgRequestSignature.getTransaction());

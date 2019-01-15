@@ -50,8 +50,12 @@ public class HistoryFragment extends DialogFragment {
         binding.recyclerView.addItemDecoration(
                 new DividerItemDecoration(getContext(), DividerItemDecoration.VERTICAL));
 
-        HistoryListAdapter adapter = new HistoryListAdapter(viewModel.getAllBlocks().getValue());
-        binding.recyclerView.setAdapter(adapter);
+
+        viewModel.getAllBlocks().observe(this, signedBlocks -> {
+            HistoryListAdapter adapter = new HistoryListAdapter(signedBlocks);
+            binding.recyclerView.setAdapter(adapter);
+            adapter.notifyDataSetChanged();
+        });
 
         builder.setView(binding.getRoot())
                 .setTitle("Your signature history")
