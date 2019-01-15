@@ -25,4 +25,5 @@
     <string name="setting">Setting</string>
     <string name="signature_history">Signature History</string>
     <string name="signature_title">Your signature history</string>
+    <string name="gruut_enterprise_web_url">https://gruut.biz/</string>
 </resources>

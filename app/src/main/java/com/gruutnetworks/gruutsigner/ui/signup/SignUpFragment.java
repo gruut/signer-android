@@ -6,6 +6,7 @@ import android.arch.lifecycle.ViewModelProviders;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.databinding.DataBindingUtil;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -77,6 +78,12 @@ public class SignUpFragment extends Fragment {
             } else {
                 startActivity(new Intent(getActivity(), DashboardActivity.class));
             }
+        });
+
+        viewModel.getOpenWebBrowser().observe(this, o -> {
+            String url = getString(R.string.gruut_enterprise_web_url);
+            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+            startActivity(intent);
         });
     }
 

@@ -29,6 +29,7 @@ public class SignUpViewModel extends AndroidViewModel implements LifecycleObserv
     private final MutableLiveData<Boolean> loading = new MutableLiveData<>();
     private final MutableLiveData<Boolean> canJoin = new MutableLiveData<>();
     private final SnackbarMessage snackbarMessage = new SnackbarMessage();
+    private final SingleLiveEvent openWebBrowser = new SingleLiveEvent();
     private final SingleLiveEvent navigateToDashboard = new SingleLiveEvent();
     private Call<SignUpResponse> signUpCall;
 
@@ -135,6 +136,10 @@ public class SignUpViewModel extends AndroidViewModel implements LifecycleObserv
         }
     }
 
+    public void onClickLogo() {
+        openWebBrowser.call();
+    }
+
     /**
      * Get CSR if key pair exists
      * and generate key pair if none exists.
@@ -169,6 +174,10 @@ public class SignUpViewModel extends AndroidViewModel implements LifecycleObserv
 
     SingleLiveEvent getNavigateToDashboard() {
         return navigateToDashboard;
+    }
+
+    public SingleLiveEvent getOpenWebBrowser() {
+        return openWebBrowser;
     }
 
     public MutableLiveData<Boolean> getLoading() {
