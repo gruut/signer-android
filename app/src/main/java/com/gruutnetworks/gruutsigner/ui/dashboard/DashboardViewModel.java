@@ -353,8 +353,6 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
          * @throws StatusRuntimeException on GRPC error
          */
         private UnpackMsgChallenge requestJoin(ManagedChannel channel, MutableLiveData<String> log) throws StatusRuntimeException, ExecutionException, InterruptedException {
-            log.postValue("START requestJoin...");
-
             PackMsgJoin packMsgJoin = new PackMsgJoin(
                     sId,
                     AuthGeneralUtil.getTimestamp(),
@@ -362,7 +360,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
                     GruutConfigs.localChainId
             );
 
-            log.postValue("[SEND]" + "MSG_JOIN");
+            log.postValue("[SEND]" + "Join to a network as a signer");
             MsgUnpacker receivedMsg = new GrpcTask(viewModel.get(), channel).execute(packMsgJoin).get();
 
             // Check received message's type
@@ -376,7 +374,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
                 throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_HEADER_NOT_MATCHED);
             }
 
-            log.postValue("[RECEIVE]" + "MSG_CHALLENGE");
+            log.postValue("[RECV]" + "DH Key Ex: A puzzle challenge");
             return (UnpackMsgChallenge) receivedMsg;
         }
 
@@ -389,8 +387,6 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
          * @return received MSG_RESPONSE_2
          */
         private UnpackMsgResponse2 sendPublicKey(ManagedChannel channel, UnpackMsgChallenge messageChallenge, MutableLiveData<String> log) throws ExecutionException, InterruptedException {
-            log.postValue("START sendPublicKey...");
-
             // generate signer nonce
             signerNonce = AuthGeneralUtil.getNonce();
 
@@ -437,7 +433,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
                     signature /* BASE64 */
             );
 
-            log.postValue("[SEND]" + "MSG_RESPONSE_1");
+            log.postValue("[SEND]" + "DH Key Ex: Puzzle `A`");
             MsgUnpacker receivedMsg = new GrpcTask(viewModel.get(), channel).execute(msgResponse1).get();
 
             // Check received message's type
@@ -451,7 +447,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
                 throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_HEADER_NOT_MATCHED);
             }
 
-            log.postValue("[RECEIVED]" + "MSG_RESPONSE_2");
+            log.postValue("[RECV]" + "DH Key Ex: Puzzle `B`");
             return (UnpackMsgResponse2) receivedMsg;
         }
 
@@ -502,7 +498,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
             );
             msgSuccess.setDestinationId(messageResponse2.getmID());
 
-            log.postValue("[SEND]" + "MSG_SUCCESS");
+            log.postValue("[SEND]" + "DH Key Ex: MAC with common secret");
             MsgUnpacker receivedMsg = new GrpcTask(viewModel.get(), channel).execute(msgSuccess).get();
 
             // Check received message's type
@@ -518,7 +514,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
                 throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_INVALID_HMAC);
             }
 
-            log.postValue("[RECEIVED]" + "MSG_ACCEPT");
+            log.postValue("[RECV]" + "DH Key Ex: MAC verified");
             return (UnpackMsgAccept) receivedMsg;
         }
 
@@ -535,7 +531,9 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
                 @Override
                 public void onNext(GrpcMsgReqSsig value) {
                     // Signature request from Merger
-                    log.postValue("I've got MSG_REQ_SSIG!");
+                    UnpackMsgRequestSignature u = new UnpackMsgRequestSignature(value.getMessage().toByteArray());
+
+                    log.postValue("[RECV] Block #" + u.getBlockHeight());
                     try {
                         sendSignature(channel, value, log);
                     } catch (ErrorMsgException e) {
@@ -552,7 +550,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
                     if (channel.isShutdown()) {
                         Log.e(TAG, channel.toString() + "::shutDowned");
                     } else {
-                        log.postValue("This Merger is DEAD... Now Dobby is free!");
+                        log.postValue("This Merger has DEAD...");
                         Log.e(TAG, channel.toString() + "::ChannelClosed: " + t.getMessage());
                         error.postValue(true);
                     }
@@ -567,7 +565,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
             });
 
             standBy.onNext(Identity.newBuilder().setSender(ByteString.copyFrom(sId.getBytes())).build());
-            log.postValue("Streaming channel opened...standby for signature request");
+            log.postValue("* Ready to sign");
             Log.d(TAG, channel.toString() + "::Streaming channel opened...standby for signature request");
         }
 
@@ -605,7 +603,6 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
 
                 signature = authCertUtil.generateSupportSignature(sId, time, msgRequestSignature.getmID(), GruutConfigs.localChainId,
                         msgRequestSignature.getBlockHeight(), msgRequestSignature.getTransaction());
-                log.postValue("Signature generated!");
             } catch (Exception e) {
                 throw new AuthUtilException(AuthUtilException.AuthErr.SIGNING_ERROR);
             }
@@ -617,7 +614,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
             );
             msgSignature.setDestinationId(msgRequestSignature.getmID());
 
-            log.postValue("[SEND]" + "MSG_SSIG");
+            log.postValue("[SEND]" + "Signed on block #" + msgRequestSignature.getBlockHeight());
             new GrpcTask(viewModel.get(), channel).execute(msgSignature);
         }
     }
