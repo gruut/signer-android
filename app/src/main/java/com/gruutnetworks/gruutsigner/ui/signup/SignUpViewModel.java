@@ -11,6 +11,7 @@ import com.gruutnetworks.gruutsigner.R;
 import com.gruutnetworks.gruutsigner.exceptions.AuthUtilException;
 import com.gruutnetworks.gruutsigner.model.SignUpResponse;
 import com.gruutnetworks.gruutsigner.model.SignUpSourceData;
+import com.gruutnetworks.gruutsigner.model.SignedBlockRepo;
 import com.gruutnetworks.gruutsigner.restApi.GaApi;
 import com.gruutnetworks.gruutsigner.util.*;
 import retrofit2.Call;
@@ -36,11 +37,13 @@ public class SignUpViewModel extends AndroidViewModel implements LifecycleObserv
     public ObservableField<String> phoneNum = new ObservableField<>();
     private AuthCertUtil authCertUtil;
     private PreferenceUtil preferenceUtil;
+    private SignedBlockRepo blockRepo;
 
     public SignUpViewModel(@NonNull Application application) {
         super(application);
         this.authCertUtil = AuthCertUtil.getInstance();
         this.preferenceUtil = PreferenceUtil.getInstance(application.getApplicationContext());
+        blockRepo = new SignedBlockRepo(application);
 
         // Get Certificate issued by GA
         try {
@@ -130,6 +133,7 @@ public class SignUpViewModel extends AndroidViewModel implements LifecycleObserv
         try {
             authCertUtil.deleteKeyPair();
             canJoin.postValue(false);
+            blockRepo.deleteAll();
             snackbarMessage.setValue(R.string.sign_up_success_leave);
         } catch (KeyStoreException | CertificateException | NoSuchAlgorithmException | IOException e) {
             snackbarMessage.setValue(R.string.sign_up_error_leave);

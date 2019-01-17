@@ -34,6 +34,7 @@ public class SignedBlockRepo {
     public void insert(SignedBlock block) {
         new InsertAsyncTask(blockDao).execute(block);
     }
+    public void deleteAll() { new DeleteAsyncTask(blockDao).execute(); }
 
     private static class RetrieveAsyncTask extends AsyncTask<Void, Void, SignedBlock> {
 
@@ -64,6 +65,21 @@ public class SignedBlockRepo {
         @Override
         protected Void doInBackground(SignedBlock... blocks) {
             asyncTaskDao.get().insertAll(blocks);
+            return null;
+        }
+    }
+
+    private static class DeleteAsyncTask extends AsyncTask<Void, Void, Void> {
+
+        private WeakReference<SignedBlockDao> asyncTaskDao;
+
+        public DeleteAsyncTask(SignedBlockDao asyncTaskDao) {
+            this.asyncTaskDao = new WeakReference<>(asyncTaskDao);
+        }
+
+        @Override
+        protected Void doInBackground(Void... voids) {
+            asyncTaskDao.get().deleteAll();
             return null;
         }
     }
