@@ -4,6 +4,8 @@ public class ErrorMsgException extends RuntimeException {
 
     public enum MsgErr {
         MSG_ERR_RECEIVED,
+        MSG_INVALID_RECEIVED,
+        MSG_MERGER_ERR,
         MSG_NOT_FOUND,
         MSG_INVALID_HMAC,
         MSG_EXPIRED,
