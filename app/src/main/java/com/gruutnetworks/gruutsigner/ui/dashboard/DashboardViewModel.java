@@ -51,11 +51,12 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
     private final SingleLiveEvent refreshTriggerMerger2 = new SingleLiveEvent();
     private final SingleLiveEvent openSetting1Dialog = new SingleLiveEvent();
     private final SingleLiveEvent openSetting2Dialog = new SingleLiveEvent();
+    private final SingleLiveEvent openHistoryDialog = new SingleLiveEvent();
 
     private static AuthCertUtil authCertUtil;
     private static AuthHmacUtil authHmacUtil;
     private static PreferenceUtil preferenceUtil;
-    private static SignedBlockDao blockDao;
+    private static SignedBlockRepo blockRepo;
 
     private ManagedChannel channel1;
     private ManagedChannel channel2;
@@ -69,8 +70,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         authHmacUtil = AuthHmacUtil.getInstance();
         preferenceUtil = PreferenceUtil.getInstance(application.getApplicationContext());
         sId = preferenceUtil.getString(PreferenceUtil.Key.SID_STR);
-
-        blockDao = AppDatabase.getDatabase(application).blockDao();
+        blockRepo = new SignedBlockRepo(application);
 
         SnackbarMessage snackbarMessage = new SnackbarMessage();
 
@@ -160,7 +160,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
                     .forAddress(merger1.getValue().getUri(), merger1.getValue().getPort())
                     .usePlaintext()
                     .build();
-            logMerger1.postValue("[SYSTEM ] " + ipMerger1.getValue() + ":" + portMerger1.getValue());
+            logMerger1.postValue("[Channel Setting]" + merger1.getValue().getUri() + ":" + merger1.getValue().getPort());
 
             thread1 = new JoiningThread(this,
                     channel1,
@@ -191,7 +191,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
                     .forAddress(merger2.getValue().getUri(), merger2.getValue().getPort())
                     .usePlaintext()
                     .build();
-            logMerger2.postValue("[SYSTEM ] " + ipMerger2.getValue() + ":" + portMerger2.getValue());
+            logMerger2.postValue("[Channel Setting]" + merger2.getValue().getUri() + ":" + merger2.getValue().getPort());
 
             thread2 = new JoiningThread(this,
                     channel2,
@@ -207,6 +207,10 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         } else if (mergerNum == 2) {
             openSetting2Dialog.call();
         }
+    }
+
+    public void onClickHistoryBtn() {
+        openHistoryDialog.call();
     }
 
     MutableLiveData<String> getLogMerger1() {
@@ -247,6 +251,10 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
 
     SingleLiveEvent getOpenSetting2Dialog() {
         return openSetting2Dialog;
+    }
+
+    public SingleLiveEvent getOpenHistoryDialog() {
+        return openHistoryDialog;
     }
 
     @Override
@@ -335,11 +343,11 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
                 public void onNext(ReplyMsg value) {
                     byte[] receivedMsg = value.getMessage().toByteArray();
                     TypeMsg msgType = MsgUnpacker.classifyMsg(receivedMsg);
-                    log.postValue("[RECEIVE] " + msgType);
 
                     try {
                         switch (msgType) {
                             case MSG_CHALLENGE:
+                                log.postValue("[RECV]" + "DH Key Ex: A puzzle challenge");
                                 UnpackMsgChallenge msgChallenge = new UnpackMsgChallenge(receivedMsg);
                                 if (!msgChallenge.isSenderValid()) {
                                     throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_HEADER_NOT_MATCHED);
@@ -348,6 +356,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
                                 sendPublicKey(channel, msgChallenge, log);
                                 return;
                             case MSG_RESPONSE_2:
+                                log.postValue("[RECV]" + "DH Key Ex: Puzzle `B`");
                                 UnpackMsgResponse2 msgResponse2 = new UnpackMsgResponse2(receivedMsg);
                                 if (!msgResponse2.isSenderValid()) {
                                     throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_HEADER_NOT_MATCHED);
@@ -355,6 +364,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
                                 sendSuccess(channel, msgResponse2, log);
                                 return;
                             case MSG_ACCEPT:
+                                log.postValue("[RECV]" + "DH Key Ex: MAC verified");
                                 UnpackMsgAccept msgAccept = new UnpackMsgAccept(receivedMsg);
                                 if (!msgAccept.isSenderValid()) {
                                     throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_HEADER_NOT_MATCHED);
@@ -365,11 +375,10 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
                                 if (!msgAccept.isVal()) {
                                     throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_INVALID_RECEIVED);
                                 }
-                                log.postValue("[SYSTEM ] Ready for signing...");
-
                                 return;
                             case MSG_REQ_SSIG:
                                 UnpackMsgRequestSignature msgRequestSignature = new UnpackMsgRequestSignature(receivedMsg);
+                                log.postValue("[RECV] Block #" + msgRequestSignature.getBlockHeight());
                                 sendSignature(channel, msgRequestSignature, log);
 
                                 return;
@@ -391,7 +400,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
                     if (channel.isShutdown()) {
                         Log.e(TAG, channel.toString() + "::shutDowned");
                     } else {
-                        log.postValue("[ERROR]Merger is DEAD... Now Dobby is free!");
+                        log.postValue("This Merger has DEAD...");
                         Log.e(TAG, channel.toString() + "::ChannelClosed: " + t.getMessage());
                         error.postValue(true);
                     }
@@ -407,7 +416,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
 
             Identity signerIdentity = Identity.newBuilder().setSender(ByteString.copyFrom(sId.getBytes())).build();
             grpcStream.onNext(signerIdentity);
-            log.postValue("[SYSTEM ] Open streaming channel...");
+            log.postValue("* Ready to sign");
             Log.d(TAG, channel.toString() + "::Streaming channel opened...");
 
             try {
@@ -453,7 +462,6 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
          * @param messageChallenge received MSG_CHALLENGE
          */
         private void sendPublicKey(ManagedChannel channel, UnpackMsgChallenge messageChallenge, MutableLiveData<String> log) throws ExecutionException, InterruptedException {
-
             // generate signer nonce
             signerNonce = AuthGeneralUtil.getNonce();
 
@@ -576,7 +584,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
          * @param log                 log live data
          */
         private void sendSignature(ManagedChannel channel, UnpackMsgRequestSignature msgRequestSignature, MutableLiveData<String> log) throws ExecutionException, InterruptedException {
-            if (!msgRequestSignature.isMacValid()) {
+            if (!msgRequestSignature.isSenderValid()) {
                 throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_HEADER_NOT_MATCHED);
             }
 
@@ -594,11 +602,11 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
                 SignedBlock block = new SignedBlock();
                 block.setChainId(msgRequestSignature.getChainId());
                 block.setBlockHeight(msgRequestSignature.getBlockHeight());
-                blockDao.insertAll();
+                block.setTimestamp(Calendar.getInstance().getTimeInMillis());
+                blockRepo.insert(block);
 
                 signature = authCertUtil.generateSupportSignature(sId, time, msgRequestSignature.getmID(), GruutConfigs.localChainId,
                         msgRequestSignature.getBlockHeight(), msgRequestSignature.getTransaction());
-                log.postValue("[SYSTEM ]Signature generated!");
             } catch (Exception e) {
                 throw new AuthUtilException(AuthUtilException.AuthErr.SIGNING_ERROR);
             }
@@ -643,9 +651,22 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
             GruutSignerServiceGrpc.GruutSignerServiceBlockingStub stub = GruutSignerServiceGrpc.newBlockingStub(channel);
             start = System.currentTimeMillis();
 
-            try {
-                log.postValue("[SEND   ] " + msg.getMessageType());
+            switch (msg.getMessageType()) {
+                case MSG_JOIN:
+                    log.postValue("[SEND]" + "Join to a network as a signer");
+                    break;
+                case MSG_RESPONSE_1:
+                    log.postValue("[SEND]" + "DH Key Ex: Puzzle `A`");
+                    break;
+                case MSG_SUCCESS:
+                    log.postValue("[SEND]" + "DH Key Ex: MAC with common secret");
+                    break;
+                case MSG_SSIG:
+                    log.postValue("[SEND]" + "Signed on block");
+                    break;
+            }
 
+            try {
                 RequestMsg requestMsg = RequestMsg.newBuilder()
                         .setMessage(ByteString.copyFrom(msg.convertToByteArr()))
                         .build();

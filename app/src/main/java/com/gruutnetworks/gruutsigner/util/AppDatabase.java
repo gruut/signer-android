@@ -7,7 +7,7 @@ import android.content.Context;
 import com.gruutnetworks.gruutsigner.model.SignedBlock;
 import com.gruutnetworks.gruutsigner.model.SignedBlockDao;
 
-@Database(entities = {SignedBlock.class}, version = 1, exportSchema = false)
+@Database(entities = {SignedBlock.class}, version = 2, exportSchema = false)
 public abstract class AppDatabase extends RoomDatabase {
 
     private static AppDatabase INSTANCE;

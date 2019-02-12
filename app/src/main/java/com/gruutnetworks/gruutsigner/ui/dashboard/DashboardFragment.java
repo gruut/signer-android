@@ -80,6 +80,11 @@ public class DashboardFragment extends Fragment implements PresettingFragment.Pr
             }
         });
 
+        viewModel.getOpenHistoryDialog().observe(this, o -> {
+            HistoryFragment historyFragment = HistoryFragment.newInstance();
+            historyFragment.setTargetFragment(this, 0);
+            historyFragment.show(getFragmentManager(), "fragment_block_history");
+        });
     }
 
     @Override
