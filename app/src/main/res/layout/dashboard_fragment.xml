@@ -24,7 +24,7 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
             android:layout_marginTop="8dp"
-            android:text="Merger #1"
+            android:text="@{model.merger1.name}"
             android:textAppearance="@style/TextAppearance.AppCompat.Large"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
@@ -84,7 +84,7 @@
 
         <TextView
             android:id="@+id/tv_address_merger1"
-            android:text="@{model.ipMerger1 + `:` + model.portMerger1}"
+            android:text="@{model.merger1.uri + `:` + model.merger1.port}"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textSize="12sp"
@@ -110,7 +110,7 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
             android:layout_marginTop="8dp"
-            android:text="Merger #2"
+            android:text="@{model.merger2.name}"
             android:textAppearance="@style/TextAppearance.AppCompat.Large"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="@+id/guideline" />
@@ -170,7 +170,7 @@
 
         <TextView
             android:id="@+id/tv_address_merger2"
-            android:text="@{model.ipMerger2 + `:` + model.portMerger2}"
+            android:text="@{model.merger2.uri + `:` + model.merger2.port}"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textSize="12sp"
