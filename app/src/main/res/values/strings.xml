@@ -18,4 +18,7 @@
     <string name="refresh">REFRESH</string>
     <string name="join">Join</string>
     <string name="leave">Leave</string>
+    <string name="setting_title">Select a merger to connect</string>
+    <string name="join_guide_msg">\nInitially, we will set up a random Merger.\n\nYou can change the Merger to connect by pressing the SETTING button.\n\n\nNow, please enjoy signing!</string>
+    <string name="join_guide_title">Welcome!</string>
 </resources>
