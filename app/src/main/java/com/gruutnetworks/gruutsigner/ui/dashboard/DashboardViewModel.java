@@ -365,6 +365,8 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
                                 return;
                             case MSG_ACCEPT:
                                 log.postValue("[RECV]" + "DH Key Ex: MAC verified");
+                                log.postValue("* Ready to sign");
+
                                 UnpackMsgAccept msgAccept = new UnpackMsgAccept(receivedMsg);
                                 if (!msgAccept.isSenderValid()) {
                                     throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_HEADER_NOT_MATCHED);
@@ -378,7 +380,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
                                 return;
                             case MSG_REQ_SSIG:
                                 UnpackMsgRequestSignature msgRequestSignature = new UnpackMsgRequestSignature(receivedMsg);
-                                log.postValue("[RECV] Block #" + msgRequestSignature.getBlockHeight());
+                                log.postValue("[RECV]" + "Block #" + msgRequestSignature.getBlockHeight());
                                 sendSignature(channel, msgRequestSignature, log);
 
                                 return;
@@ -416,7 +418,6 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
 
             Identity signerIdentity = Identity.newBuilder().setSender(ByteString.copyFrom(sId.getBytes())).build();
             grpcStream.onNext(signerIdentity);
-            log.postValue("* Ready to sign");
             Log.d(TAG, channel.toString() + "::Streaming channel opened...");
 
             try {
