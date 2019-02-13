@@ -8,4 +8,5 @@ public interface GruutConfigs {
     String localChainId = "R0VOVEVTVDE="; // GENTEST1
 
     int GRPC_TIMEOUT = 10;
+    int AUTO_REFRESH_TIMEOUT = 10 * 1000;
 }

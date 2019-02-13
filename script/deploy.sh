@@ -1,8 +1,10 @@
 export DEPLOY_BRANCH="$TRAVIS_BRANCH"
-export DEPLOY_COMMIT="$TRAVIS_COMMIT"
 
+NEWLINE="%0A"
 SLACK_KEY="$SLACK_BOT_TOKEN"
-SLACK_TEXT="[ \`$DEPLOY_BRANCH\` | \`$DEPLOY_COMMIT\` ] ${TRAVIS_COMMIT_MESSAGE:-none} "
+SLACK_TEXT=":socks: 테스트 실행 파일을 가져왔어요[\`$DEPLOY_BRANCH\`] :socks:
+\`https://github.com/${TRAVIS_REPO_SLUG}/tree/$DEPLOY_BRANCH\`
+${TRAVIS_COMMIT_MESSAGE:-none}"
 
 curl https://slack.com/api/files.upload \
   -F "token=$SLACK_KEY" \

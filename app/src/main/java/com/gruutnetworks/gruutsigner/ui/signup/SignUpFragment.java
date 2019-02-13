@@ -1,9 +1,12 @@
 package com.gruutnetworks.gruutsigner.ui.signup;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.arch.lifecycle.ViewModelProviders;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.databinding.DataBindingUtil;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -17,6 +20,7 @@ import android.widget.EditText;
 import com.gruutnetworks.gruutsigner.R;
 import com.gruutnetworks.gruutsigner.databinding.SignUpFragmentBinding;
 import com.gruutnetworks.gruutsigner.ui.dashboard.DashboardActivity;
+import com.gruutnetworks.gruutsigner.util.PreferenceUtil;
 import com.gruutnetworks.gruutsigner.util.SnackbarMessage;
 import com.gruutnetworks.gruutsigner.util.SnackbarUtil;
 
@@ -24,6 +28,7 @@ public class SignUpFragment extends Fragment {
 
     private SignUpViewModel viewModel;
     private SignUpFragmentBinding binding;
+    private PreferenceUtil preferenceUtil;
 
     private EditText editPhone;
 
@@ -35,6 +40,7 @@ public class SignUpFragment extends Fragment {
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
         binding = DataBindingUtil.inflate(inflater, R.layout.sign_up_fragment, container, false);
+        preferenceUtil = PreferenceUtil.getInstance(getContext());
 
         editPhone = binding.editPhone;
         editPhone.addTextChangedListener(new PhoneNumberFormattingTextWatcher());
@@ -58,7 +64,26 @@ public class SignUpFragment extends Fragment {
 
         viewModel.getNavigateToDashboard().observe(this, o -> {
             hideKeyboard();
-            startActivity(new Intent(getActivity(), DashboardActivity.class));
+
+            if (preferenceUtil.getBoolean(PreferenceUtil.Key.INIT_EXEC_BOOL, true)) {
+                AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(getContext());
+                dialogBuilder.setTitle(R.string.join_guide_title)
+                        .setMessage(R.string.join_guide_msg)
+                        .setPositiveButton(android.R.string.ok, (dialog, which) -> {
+                            startActivity(new Intent(getActivity(), DashboardActivity.class));
+                            preferenceUtil.put(PreferenceUtil.Key.INIT_EXEC_BOOL, false);
+                        });
+                AlertDialog dialog = dialogBuilder.create();
+                dialog.show();
+            } else {
+                startActivity(new Intent(getActivity(), DashboardActivity.class));
+            }
+        });
+
+        viewModel.getOpenWebBrowser().observe(this, o -> {
+            String url = getString(R.string.gruut_enterprise_web_url);
+            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+            startActivity(intent);
         });
     }
 

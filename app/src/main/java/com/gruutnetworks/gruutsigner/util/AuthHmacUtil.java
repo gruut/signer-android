@@ -136,14 +136,15 @@ public class AuthHmacUtil {
     /**
      * Generates HMAC signature
      *
+     * @param id    merger`s id (Base64)
      * @param data 인증 할 Data
      * @return HMAC signature
      */
-    public static byte[] getHmacSignature(byte[] data) {
+    public static byte[] getHmacSignature(String id, byte[] data) {
         try {
             PreferenceUtil preferenceUtil = PreferenceUtil.getInstance();
             // HMAC sign할 때 쓸 key(DH Key교환으로 생성한 shared secret key
-            String key = preferenceUtil.getString(PreferenceUtil.Key.HMAC_STR);
+            String key = preferenceUtil.getValue(id);
 
             if (key == null || key.isEmpty()) {
                 // Shared secret key not found.
@@ -164,12 +165,14 @@ public class AuthHmacUtil {
 
     /**
      * Verify HMAC signature
+     *
+     * @param id    merger`s id (Base64)
      * @param data verify 할 Data
      * @param mac 전송 받은 Message Auth Code
      * @return mac 검증 결과 반환
      */
-    public static boolean verifyHmacSignature(byte[] data, byte[] mac) {
-        return Arrays.equals(getHmacSignature(data), mac);
+    public static boolean verifyHmacSignature(String id, byte[] data, byte[] mac) {
+        return Arrays.equals(getHmacSignature(id, data), mac);
     }
 
 }

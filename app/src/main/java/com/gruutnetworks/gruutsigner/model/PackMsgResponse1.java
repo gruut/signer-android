@@ -20,8 +20,8 @@ public class PackMsgResponse1 extends MsgPacker {
     private String headerLocalChainId;
 
     @Expose
-    @SerializedName("sender")
-    private String sender;  // BASE64 encoded 8 byte data
+    @SerializedName("sID")
+    private String sID;  // BASE64 encoded 8 byte data
     @Expose
     @SerializedName("time")
     private String time;    // UNIX timestamp
@@ -41,8 +41,8 @@ public class PackMsgResponse1 extends MsgPacker {
     @SerializedName("sig")
     private String sig; // signature with signer's nonce, merger's nonce, dhx, dhy, time
 
-    public PackMsgResponse1(String sender, String time, String cert, String signerNonce, String dhPubKeyX, String dhPubKeyY, String sig) {
-        this.sender = sender;
+    public PackMsgResponse1(String sID, String time, String cert, String signerNonce, String dhPubKeyX, String dhPubKeyY, String sig) {
+        this.sID = sID;
         this.time = time;
         this.cert = cert;
         this.signerNonce = signerNonce;
@@ -53,9 +53,9 @@ public class PackMsgResponse1 extends MsgPacker {
         setHeader();
     }
 
-    public PackMsgResponse1(String headerLocalChainId, String sender, String time, String cert, String signerNonce, String dhPubKeyX, String dhPubKeyY, String sig) {
+    public PackMsgResponse1(String headerLocalChainId, String sID, String time, String cert, String signerNonce, String dhPubKeyX, String dhPubKeyY, String sig) {
         this.headerLocalChainId = headerLocalChainId;
-        this.sender = sender;
+        this.sID = sID;
         this.time = time;
         this.cert = cert;
         this.signerNonce = signerNonce;
@@ -73,7 +73,7 @@ public class PackMsgResponse1 extends MsgPacker {
                     .setMsgType(TypeMsg.MSG_RESPONSE_1.getType())
                     .setCompressionType(TypeComp.LZ4.getType())
                     .setTotalLen(MSG_HEADER_LEN + getCompressedJsonLen())
-                    .setSender(Base64.decode(sender, Base64.NO_WRAP)) // Base64 decoding
+                    .setSender(Base64.decode(sID, Base64.NO_WRAP)) // Base64 decoding
                     .setLocalChainId(Base64.decode(headerLocalChainId, Base64.NO_WRAP))
                     .build();
         } else {
@@ -81,9 +81,14 @@ public class PackMsgResponse1 extends MsgPacker {
                     .setMsgType(TypeMsg.MSG_RESPONSE_1.getType())
                     .setCompressionType(TypeComp.LZ4.getType())
                     .setTotalLen(MSG_HEADER_LEN + getCompressedJsonLen())
-                    .setSender(Base64.decode(sender, Base64.NO_WRAP)) // Base64 decoding
+                    .setSender(Base64.decode(sID, Base64.NO_WRAP)) // Base64 decoding
                     .build();
         }
+    }
+
+    @Override
+    public void setDestinationId(String id) {
+        this.destinationId = id;
     }
 
     @Override

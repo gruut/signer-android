@@ -2,7 +2,6 @@ package com.gruutnetworks.gruutsigner.model;
 
 import com.gruutnetworks.gruutsigner.util.AuthHmacUtil;
 import com.gruutnetworks.gruutsigner.util.CompressionUtil;
-import com.gruutnetworks.gruutsigner.util.AuthCertUtil;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -10,9 +9,12 @@ import java.io.IOException;
 public abstract class MsgPacker {
     abstract void setHeader();
 
+    abstract public void setDestinationId(String id);
+
     abstract byte[] bodyToJson();
 
     MsgHeader header;
+    String destinationId;
 
     int getCompressedJsonLen() {
         return CompressionUtil.compress(bodyToJson()).length;
@@ -21,7 +23,7 @@ public abstract class MsgPacker {
     private byte[] generateMac(TypeMac typeMac, byte[] data) {
         switch (typeMac) {
             case HMAC_SHA256:
-                return AuthHmacUtil.getHmacSignature(data);
+                return AuthHmacUtil.getHmacSignature(destinationId, data);
             default:
                 return null;
         }

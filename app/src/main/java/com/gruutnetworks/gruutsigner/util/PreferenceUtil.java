@@ -14,7 +14,7 @@ public class PreferenceUtil {
      * Enum representing your setting names or key for your setting.
      */
     public enum Key {
-        SID_STR, HMAC_STR, IP_STR, PORT_STR
+        SID_STR, IP1_STR, PORT1_STR, IP2_STR, PORT2_STR, INIT_EXEC_BOOL
     }
 
     private PreferenceUtil(Context context) {
@@ -34,6 +34,18 @@ public class PreferenceUtil {
         }
 
         throw new IllegalArgumentException("Should use getInstance(Context) at least once before using this method.");
+    }
+
+    /**
+     * SharedPreference 에 map처럼 저장하기 위한 method
+     *
+     * @param key The key of the preference to store.
+     * @param val The new value for the preference.
+     */
+    public void put(String key, String val) {
+        doEdit();
+        mEditor.putString(key, val);
+        doCommit();
     }
 
     public void put(Key key, String val) {
@@ -80,6 +92,10 @@ public class PreferenceUtil {
         doEdit();
         mEditor.putLong(key.name(), val);
         doCommit();
+    }
+
+    public String getValue(String key) {
+        return mPref.getString(key, null);
     }
 
     public String getString(Key key, String defaultValue) {

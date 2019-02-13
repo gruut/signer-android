@@ -20,8 +20,8 @@ public class PackMsgSuccess extends MsgPacker {
     private String headerLocalChainId;
 
     @Expose
-    @SerializedName("sender")
-    private String sender;
+    @SerializedName("sID")
+    private String sID;
     @Expose
     @SerializedName("time")
     private String time;
@@ -29,17 +29,17 @@ public class PackMsgSuccess extends MsgPacker {
     @SerializedName("val")
     private boolean val;
 
-    public PackMsgSuccess(String sender, String time, boolean val) {
-        this.sender = sender;
+    public PackMsgSuccess(String sID, String time, boolean val) {
+        this.sID = sID;
         this.time = time;
         this.val = val;
 
         setHeader();
     }
 
-    public PackMsgSuccess(String headerLocalChainId, String sender, String time, boolean val) {
+    public PackMsgSuccess(String headerLocalChainId, String sID, String time, boolean val) {
         this.headerLocalChainId = headerLocalChainId;
-        this.sender = sender;
+        this.sID = sID;
         this.time = time;
         this.val = val;
 
@@ -54,7 +54,7 @@ public class PackMsgSuccess extends MsgPacker {
                     .setMacType(TypeMac.HMAC_SHA256.getType())
                     .setCompressionType(TypeComp.LZ4.getType())
                     .setTotalLen(MSG_HEADER_LEN + getCompressedJsonLen())
-                    .setSender(Base64.decode(sender, Base64.NO_WRAP)) // Base64 decoding
+                    .setSender(Base64.decode(sID, Base64.NO_WRAP)) // Base64 decoding
                     .setLocalChainId(Base64.decode(headerLocalChainId, Base64.NO_WRAP))
                     .build();
         } else {
@@ -63,9 +63,14 @@ public class PackMsgSuccess extends MsgPacker {
                     .setMacType(TypeMac.HMAC_SHA256.getType())
                     .setCompressionType(TypeComp.LZ4.getType())
                     .setTotalLen(MSG_HEADER_LEN + getCompressedJsonLen())
-                    .setSender(Base64.decode(sender, Base64.NO_WRAP)) // Base64 decoding
+                    .setSender(Base64.decode(sID, Base64.NO_WRAP)) // Base64 decoding
                     .build();
         }
+    }
+
+    @Override
+    public void setDestinationId(String id) {
+        this.destinationId = id;
     }
 
     @Override

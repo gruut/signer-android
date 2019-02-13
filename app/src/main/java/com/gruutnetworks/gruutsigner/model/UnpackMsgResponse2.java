@@ -14,8 +14,8 @@ import com.google.gson.annotations.SerializedName;
  */
 public class UnpackMsgResponse2 extends MsgUnpacker {
     @Expose
-    @SerializedName("sender")
-    private String sender;
+    @SerializedName("mID")
+    private String mID;
     @Expose
     @SerializedName("time")
     private String time;
@@ -35,10 +35,11 @@ public class UnpackMsgResponse2 extends MsgUnpacker {
     public UnpackMsgResponse2(byte[] bytes) {
         parse(bytes); // parse the whole message
         bodyFromJson(body);
+        setSenderValidity();
     }
 
-    public String getSender() {
-        return sender;
+    public String getmID() {
+        return mID;
     }
 
     public String getTime() {
@@ -78,11 +79,16 @@ public class UnpackMsgResponse2 extends MsgUnpacker {
 
         UnpackMsgResponse2 msgResponse2 = gson.fromJson(new String(bodyBytes) , UnpackMsgResponse2.class);
 
-        this.sender = msgResponse2.sender;
+        this.mID = msgResponse2.mID;
         this.time = msgResponse2.time;
         this.cert = msgResponse2.cert;
         this.dhPubKeyX = msgResponse2.dhPubKeyX;
         this.dhPubKeyY = msgResponse2.dhPubKeyY;
         this.sig = msgResponse2.sig;
+    }
+
+    @Override
+    void setSenderValidity() {
+        this.senderValidity = header.getSender().equals(mID);
     }
 }

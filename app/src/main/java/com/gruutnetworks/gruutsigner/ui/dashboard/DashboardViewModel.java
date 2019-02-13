@@ -3,17 +3,17 @@ package com.gruutnetworks.gruutsigner.ui.dashboard;
 import android.app.Application;
 import android.arch.lifecycle.*;
 import android.os.AsyncTask;
-import android.os.SystemClock;
+import android.os.Build;
 import android.support.annotation.NonNull;
 import android.util.Log;
 import com.google.protobuf.ByteString;
 import com.gruutnetworks.gruutsigner.*;
 import com.gruutnetworks.gruutsigner.Identity;
 import com.gruutnetworks.gruutsigner.R;
-import com.gruutnetworks.gruutsigner.exceptions.AsyncException;
 import com.gruutnetworks.gruutsigner.exceptions.AuthUtilException;
 import com.gruutnetworks.gruutsigner.exceptions.ErrorMsgException;
 import com.gruutnetworks.gruutsigner.gruut.GruutConfigs;
+import com.gruutnetworks.gruutsigner.gruut.Merger;
 import com.gruutnetworks.gruutsigner.model.*;
 import com.gruutnetworks.gruutsigner.util.*;
 import io.grpc.ManagedChannel;
@@ -22,46 +22,67 @@ import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 
 import java.io.IOException;
+import java.lang.ref.WeakReference;
 import java.security.*;
 import java.security.cert.CertificateException;
 import java.security.spec.InvalidKeySpecException;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+
+import static com.gruutnetworks.gruutsigner.gruut.MergerList.MERGER_LIST;
+import static com.gruutnetworks.gruutsigner.gruut.MergerList.findPresetMergerList;
 
 public class DashboardViewModel extends AndroidViewModel implements LifecycleObserver {
 
     private static final String TAG = "DashboardViewModel";
 
-    public MutableLiveData<String> logMerger1 = new MutableLiveData<>();
-    public MutableLiveData<String> ipMerger1 = new MutableLiveData<>();
-    public MutableLiveData<String> portMerger1 = new MutableLiveData<>();
-    public MutableLiveData<Boolean> errorMerger1 = new MutableLiveData<>();
-    private final SingleLiveEvent refreshMerger1 = new SingleLiveEvent();
-    private final SingleLiveEvent openSettingDialog = new SingleLiveEvent();
+    public enum MergerNum {
+        MERGER_1, MERGER_2
+    }
 
-    private AuthCertUtil authCertUtil;
-    private AuthHmacUtil authHmacUtil;
-    private PreferenceUtil preferenceUtil;
+    private MutableLiveData<Merger> merger1 = new MutableLiveData<>();
+    private MutableLiveData<Merger> merger2 = new MutableLiveData<>();
+    private MutableLiveData<String> logMerger1 = new MutableLiveData<>();
+    private MutableLiveData<String> logMerger2 = new MutableLiveData<>();
+    private MutableLiveData<Boolean> errorMerger1 = new MutableLiveData<>();
+    private MutableLiveData<Boolean> errorMerger2 = new MutableLiveData<>();
+    private final SingleLiveEvent refreshTriggerMerger1 = new SingleLiveEvent();
+    private final SingleLiveEvent refreshTriggerMerger2 = new SingleLiveEvent();
+    private final SingleLiveEvent openSetting1Dialog = new SingleLiveEvent();
+    private final SingleLiveEvent openSetting2Dialog = new SingleLiveEvent();
+    private final SingleLiveEvent openHistoryDialog = new SingleLiveEvent();
+
+    private static AuthCertUtil authCertUtil;
+    private static AuthHmacUtil authHmacUtil;
+    private static PreferenceUtil preferenceUtil;
+    private static SignedBlockRepo blockRepo;
 
     private ManagedChannel channel1;
     private ManagedChannel channel2;
 
-    private String sender;
-    private String signerNonce;
-    private String mergerNonce;
-
-    private KeyPair keyPair;
+    private static String sId;
+    private static KeyPair keyPair;
 
     public DashboardViewModel(@NonNull Application application) {
         super(application);
-        this.authCertUtil = AuthCertUtil.getInstance();
-        this.authHmacUtil = AuthHmacUtil.getInstance();
-        this.preferenceUtil = PreferenceUtil.getInstance(application.getApplicationContext());
-        this.sender = preferenceUtil.getString(PreferenceUtil.Key.SID_STR);
+        authCertUtil = AuthCertUtil.getInstance();
+        authHmacUtil = AuthHmacUtil.getInstance();
+        preferenceUtil = PreferenceUtil.getInstance(application.getApplicationContext());
+        sId = preferenceUtil.getString(PreferenceUtil.Key.SID_STR);
+        blockRepo = new SignedBlockRepo(application);
+
+        SnackbarMessage snackbarMessage = new SnackbarMessage();
 
         if (!NetworkUtil.isConnected(application.getApplicationContext())) {
-            SnackbarMessage snackbarMessage = new SnackbarMessage();
             snackbarMessage.postValue(R.string.sign_up_error_network);
+        }
+
+        try {
+            keyPair = authHmacUtil.generateEcdhKeys();
+        } catch (NoSuchProviderException | NoSuchAlgorithmException | InvalidAlgorithmParameterException e) {
+            snackbarMessage.postValue(R.string.join_error_key_gen);
+            throw new AuthUtilException(AuthUtilException.AuthErr.KEY_GEN_ERROR);
         }
     }
 
@@ -70,394 +91,588 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
      */
     @OnLifecycleEvent(Lifecycle.Event.ON_RESUME)
     public void onResume() {
-        refreshMerger1.call();
-        errorMerger1.setValue(false);
 
-        ipMerger1.setValue(preferenceUtil.getString(PreferenceUtil.Key.IP_STR));
-        portMerger1.setValue(preferenceUtil.getString(PreferenceUtil.Key.PORT_STR));
+        if (preferenceUtil.getString(PreferenceUtil.Key.IP1_STR) == null
+                && preferenceUtil.getString(PreferenceUtil.Key.PORT1_STR) == null
+                && preferenceUtil.getString(PreferenceUtil.Key.IP2_STR) == null
+                && preferenceUtil.getString(PreferenceUtil.Key.PORT2_STR) == null) {
 
-        if (ipMerger1.getValue() != null && portMerger1.getValue() != null &&
-                !ipMerger1.getValue().isEmpty() && !portMerger1.getValue().isEmpty()) {
+            List<Merger> targetMergers = getRandomMergers();
+
+            merger1.setValue(targetMergers.get(0));
+            merger2.setValue(targetMergers.get(1));
+
+            preferenceUtil.put(PreferenceUtil.Key.IP1_STR, targetMergers.get(0).getUri());
+            preferenceUtil.put(PreferenceUtil.Key.PORT1_STR, Integer.toString(targetMergers.get(0).getPort()));
+            preferenceUtil.put(PreferenceUtil.Key.IP2_STR, targetMergers.get(1).getUri());
+            preferenceUtil.put(PreferenceUtil.Key.PORT2_STR, Integer.toString(targetMergers.get(1).getPort()));
+        }
+
+        refreshMerger1();
+        refreshMerger2();
+    }
+
+    private JoiningThread thread1;
+    private JoiningThread thread2;
+
+    private List<Merger> getRandomMergers() {
+        Random rand = new Random(System.currentTimeMillis());
+        List<Merger> targetMergers = new ArrayList<>();
+        final int[] ints;
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            ints = rand.ints(0, 3).distinct().limit(2).toArray();
+        } else {
+            final Set<Integer> intSet = new HashSet<>();
+            while (intSet.size() < 2) {
+                intSet.add(rand.nextInt(3));
+            }
+            ints = new int[intSet.size()];
+            final Iterator<Integer> iterator = intSet.iterator();
+            for (int i = 0; iterator.hasNext(); ++i) {
+                ints[i] = iterator.next();
+            }
+        }
+        for (int i : ints) {
+            targetMergers.add(MERGER_LIST.get(i));
+        }
+        return targetMergers;
+    }
+
+    public void refreshMerger1() {
+        if (thread1 != null) {
+            thread1.interrupt();
+            thread1 = null;
+        }
+
+        terminateChannel(channel1);
+
+        refreshTriggerMerger1.call();
+        errorMerger1.postValue(false);
+
+        if (preferenceUtil.getString(PreferenceUtil.Key.IP1_STR) != null && preferenceUtil.getString(PreferenceUtil.Key.PORT1_STR) != null) {
+            merger1.setValue(findPresetMergerList(preferenceUtil.getString(PreferenceUtil.Key.IP1_STR),
+                    Integer.parseInt(preferenceUtil.getString(PreferenceUtil.Key.PORT1_STR))));
+        }
+
+        if (merger1.getValue() != null) {
             channel1 = ManagedChannelBuilder
-                    .forAddress(ipMerger1.getValue(), Integer.parseInt(portMerger1.getValue()))
+                    .forAddress(merger1.getValue().getUri(), merger1.getValue().getPort())
                     .usePlaintext()
                     .build();
-            logMerger1.postValue("[Channel Setting]" + ipMerger1.getValue() + ":" + portMerger1.getValue());
+            logMerger1.postValue("[Channel Setting]" + merger1.getValue().getUri() + ":" + merger1.getValue().getPort());
 
-            startJoining();
-        } else {
-            logMerger1.postValue("Please set merger's ip address first.");
+            thread1 = new JoiningThread(this,
+                    channel1,
+                    logMerger1,
+                    errorMerger1);
+            thread1.start();
         }
     }
 
-    void startJoining() {
-        new Thread() {
-            @Override
-            public void run() {
-                SystemClock.sleep(1000);
-                try {
-                    UnpackMsgChallenge challenge = requestJoin(channel1);
-                    UnpackMsgResponse2 response2 = sendPublicKey(channel1, challenge);
-                    UnpackMsgAccept accept = sendSuccess(channel1, response2);
-                    if (accept.isVal()) {
-                        standBy(channel1);
-                    }
-                } catch (ErrorMsgException e) {
-                    logMerger1.postValue("[ERROR]" + e.getMessage());
-                    errorMerger1.postValue(true);
-                } catch (AuthUtilException e) {
-                    logMerger1.postValue("[CRYPTO_ERROR]" + e.getMessage());
-                    errorMerger1.postValue(true);
-                }
-            }
-        }.start();
+    public void refreshMerger2() {
+        if (thread2 != null) {
+            thread2.interrupt();
+            thread2 = null;
+        }
+
+        terminateChannel(channel2);
+
+        refreshTriggerMerger2.call();
+        errorMerger2.postValue(false);
+
+        if (preferenceUtil.getString(PreferenceUtil.Key.IP2_STR) != null && preferenceUtil.getString(PreferenceUtil.Key.PORT2_STR) != null) {
+            merger2.setValue(findPresetMergerList(preferenceUtil.getString(PreferenceUtil.Key.IP2_STR),
+                    Integer.parseInt(preferenceUtil.getString(PreferenceUtil.Key.PORT2_STR))));
+        }
+
+        if (merger2.getValue() != null) {
+            channel2 = ManagedChannelBuilder
+                    .forAddress(merger2.getValue().getUri(), merger2.getValue().getPort())
+                    .usePlaintext()
+                    .build();
+            logMerger2.postValue("[Channel Setting]" + merger2.getValue().getUri() + ":" + merger2.getValue().getPort());
+
+            thread2 = new JoiningThread(this,
+                    channel2,
+                    logMerger2,
+                    errorMerger2);
+            thread2.start();
+        }
     }
 
-    public void openAddressSetting() {
-        openSettingDialog.call();
+    public void openAddressSetting(int mergerNum) {
+        if (mergerNum == 1) {
+            openSetting1Dialog.call();
+        } else if (mergerNum == 2) {
+            openSetting2Dialog.call();
+        }
     }
 
-    /**
-     * Start joining request
-     * SEND MSG_JOIN to merger
-     *
-     * @param channel target merger
-     * @return received MSG_CHALLENGE
-     * @throws StatusRuntimeException on GRPC errorMerger1
-     */
-    private UnpackMsgChallenge requestJoin(ManagedChannel channel) throws StatusRuntimeException {
-        logMerger1.postValue("START requestJoin...");
-
-        PackMsgJoin packMsgJoin = new PackMsgJoin(
-                sender,
-                AuthGeneralUtil.getTimestamp(),
-                GruutConfigs.ver,
-                GruutConfigs.localChainId
-        );
-
-        MsgUnpacker receivedMsg = null;
-        try {
-            logMerger1.postValue("[SEND]" + "MSG_JOIN");
-            receivedMsg = new GrpcTask(channel).execute(packMsgJoin).get();
-        } catch (InterruptedException | ExecutionException | StatusRuntimeException e) {
-            throw new AsyncException();
-        }
-
-        // Check received message's type
-        if (receivedMsg == null) {
-            // This errorMerger1 message may be caused by a timeout.
-            throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_NOT_FOUND);
-        } else if (receivedMsg.getMessageType() == TypeMsg.MSG_ERROR) {
-            throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_ERR_RECEIVED);
-        }
-
-        logMerger1.postValue("[RECEIVE]" + "MSG_CHALLENGE");
-        return (UnpackMsgChallenge) receivedMsg;
+    public void onClickHistoryBtn() {
+        openHistoryDialog.call();
     }
 
-    /**
-     * Start to exchange dh key
-     * SEND MSG_RESPONSE_1 to merger
-     *
-     * @param channel          target merger
-     * @param messageChallenge received MSG_CHALLENGE
-     * @return received MSG_RESPONSE_2
-     * @throws StatusRuntimeException on GRPC errorMerger1
-     */
-    private UnpackMsgResponse2 sendPublicKey(ManagedChannel channel, UnpackMsgChallenge messageChallenge) throws StatusRuntimeException {
-        logMerger1.postValue("START sendPublicKey...");
-
-        // generate signer nonce
-        signerNonce = AuthGeneralUtil.getNonce();
-
-        // get merger nonce
-        mergerNonce = messageChallenge.getMergerNonce();
-
-        if (!AuthGeneralUtil.isMsgInTime(messageChallenge.getTime())) {
-            throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_EXPIRED);
-        }
-
-        if (keyPair == null) {
-            // generate ecdh key
-            logMerger1.postValue("Generate ECDH key pair");
-            try {
-                keyPair = authHmacUtil.generateEcdhKeys();
-            } catch (NoSuchProviderException | NoSuchAlgorithmException | InvalidAlgorithmParameterException e) {
-                throw new AuthUtilException(AuthUtilException.AuthErr.KEY_GEN_ERROR);
-            }
-        }
-
-        String x = new String(authHmacUtil.pubToXpoint(keyPair.getPublic()));
-        String y = new String(authHmacUtil.pubToYpoint(keyPair.getPublic()));
-        String time = AuthGeneralUtil.getTimestamp();
-        String signature = null;
-        try {
-            signature = authCertUtil.signMsgResponse1(mergerNonce, signerNonce, x, y, time);
-        } catch (Exception e) {
-            throw new AuthUtilException(AuthUtilException.AuthErr.SIGNING_ERROR);
-        }
-
-        // Get Certificate issued by GA
-        String cert = null;
-        try {
-            cert = authCertUtil.getCert(SecurityConstants.Alias.GRUUT_AUTH);
-        } catch (KeyStoreException | CertificateException | IOException | NoSuchAlgorithmException e) {
-            throw new AuthUtilException(AuthUtilException.AuthErr.GET_CERT_ERROR);
-        }
-
-        if (cert.isEmpty()) {
-            throw new AuthUtilException(AuthUtilException.AuthErr.NO_CERT_ERROR);
-        }
-
-        PackMsgResponse1 msgResponse1 = new PackMsgResponse1(
-                sender,
-                time,
-                cert,
-                signerNonce,
-                x,  /* HEX */
-                y,  /* HEX */
-                signature /* BASE64 */
-        );
-
-        MsgUnpacker receivedMsg = null;
-        try {
-            logMerger1.postValue("[SEND]" + "MSG_RESPONSE_1");
-            receivedMsg = new GrpcTask(channel).execute(msgResponse1).get();
-        } catch (InterruptedException | ExecutionException | StatusRuntimeException e) {
-            throw new AsyncException();
-        }
-
-        // Check received message's type
-        if (receivedMsg == null) {
-            // This errorMerger1 message may be caused by a timeout.
-            throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_NOT_FOUND);
-        } else if (receivedMsg.getMessageType() == TypeMsg.MSG_ERROR) {
-            throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_ERR_RECEIVED);
-        }
-
-        logMerger1.postValue("[RECEIVED]" + "MSG_RESPONSE_2");
-        return (UnpackMsgResponse2) receivedMsg;
-    }
-
-    /**
-     * Finishing joining request
-     * SEND MSG_SUCCESS to merger
-     *
-     * @param channel          target merger
-     * @param messageResponse2 received MSG_RESPONSE_2
-     * @return received MSG_ACCEPT
-     * @throws StatusRuntimeException on GRPC errorMerger1
-     */
-    private UnpackMsgAccept sendSuccess(ManagedChannel channel, UnpackMsgResponse2 messageResponse2) throws StatusRuntimeException {
-
-        try {
-            // 서명 검증
-            if (!authCertUtil.verifyMsgResponse2(messageResponse2.getSig(), messageResponse2.getCert(),
-                    mergerNonce, signerNonce, messageResponse2.getDhPubKeyX(), messageResponse2.getDhPubKeyY(), messageResponse2.getTime())) {
-                throw new AuthUtilException(AuthUtilException.AuthErr.INVALID_SIGNATURE);
-            }
-        } catch (Exception e) {
-            throw new AuthUtilException(AuthUtilException.AuthErr.VERIFYING_ERROR);
-        }
-
-        // X,Y 좌표로부터 Pulbic key get
-        PublicKey mergerPubKey = null;
-        try {
-            mergerPubKey = authHmacUtil.pointToPub(messageResponse2.getDhPubKeyX(), messageResponse2.getDhPubKeyY());
-        } catch (NoSuchProviderException | NoSuchAlgorithmException | InvalidKeySpecException e) {
-            throw new AuthUtilException(AuthUtilException.AuthErr.KEY_GEN_ERROR);
-        }
-
-        // HMAC KEY 계산
-        byte[] hmacKey;
-        try {
-            hmacKey = authHmacUtil.getSharedSecreyKey(keyPair.getPrivate(), mergerPubKey);
-        } catch (NoSuchProviderException | NoSuchAlgorithmException | InvalidKeyException e) {
-            throw new AuthUtilException(AuthUtilException.AuthErr.HMAC_KEY_GEN_ERROR);
-        }
-
-        // HMAC KEY 저장
-        preferenceUtil.put(PreferenceUtil.Key.HMAC_STR, new String(hmacKey));
-
-        PackMsgSuccess msgSuccess = new PackMsgSuccess(
-                sender,
-                AuthGeneralUtil.getTimestamp(),
-                true
-        );
-
-        MsgUnpacker receivedMsg = null;
-        try {
-            logMerger1.postValue("[SEND]" + "MSG_SUCCESS");
-            receivedMsg = new GrpcTask(channel).execute(msgSuccess).get();
-        } catch (InterruptedException | ExecutionException e) {
-            throw new AsyncException();
-        } catch (StatusRuntimeException e) {
-            throw e;
-        }
-
-        // Check received message's type
-        if (receivedMsg == null) {
-            // This errorMerger1 message may be caused by a timeout.
-            throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_NOT_FOUND);
-        } else if (receivedMsg.getMessageType() == TypeMsg.MSG_ERROR) {
-            throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_ERR_RECEIVED);
-        } else if (!receivedMsg.isMacValid()) {
-            throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_INVALID_HMAC);
-        }
-
-        logMerger1.postValue("[RECEIVED]" + "MSG_ACCEPT");
-        return (UnpackMsgAccept) receivedMsg;
-    }
-
-    private void standBy(ManagedChannel channel) {
-        GruutNetworkServiceGrpc.GruutNetworkServiceStub stub = GruutNetworkServiceGrpc.newStub(channel);
-        StreamObserver<Identity> standBy = stub.openChannel(new StreamObserver<GrpcMsgReqSsig>() {
-            @Override
-            public void onNext(GrpcMsgReqSsig value) {
-                // Signature request from Merger
-                logMerger1.postValue("I've got MSG_REQ_SSIG!");
-                try {
-                    sendSignature(channel, value);
-                } catch (ErrorMsgException e) {
-                    logMerger1.postValue("[ERROR]" + e.getMessage());
-                    errorMerger1.postValue(true);
-                } catch (AuthUtilException e) {
-                    logMerger1.postValue("[CRYPTO_ERROR]" + e.getMessage());
-                    errorMerger1.postValue(true);
-                }
-            }
-
-            @Override
-            public void onError(Throwable t) {
-                logMerger1.postValue("This Merger is DEAD... Now Dobby is free!");
-                errorMerger1.postValue(true);
-            }
-
-            @Override
-            public void onCompleted() {
-                logMerger1.postValue("GRPC stream onComplete()");
-                errorMerger1.postValue(true);
-            }
-        });
-
-        standBy.onNext(Identity.newBuilder().setSender(ByteString.copyFrom(sender.getBytes())).build());
-        logMerger1.postValue("Streaming channel opened...standby for signature request");
-        Log.d(TAG, "Streaming channel opened...standby for signature request");
-    }
-
-    private void sendSignature(ManagedChannel channel, GrpcMsgReqSsig grpcMsgReqSsig) throws StatusRuntimeException {
-        UnpackMsgRequestSignature msgRequestSignature
-                = new UnpackMsgRequestSignature(grpcMsgReqSsig.getMessage().toByteArray());
-
-        if (!msgRequestSignature.isMacValid()) {
-            throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_INVALID_HMAC);
-        }
-
-        String time = AuthGeneralUtil.getTimestamp();
-        String signature;
-        try {
-            signature = authCertUtil.generateSupportSignature(sender, time, msgRequestSignature.getmID(), GruutConfigs.localChainId,
-                    msgRequestSignature.getBlockHeight(), msgRequestSignature.getTransaction());
-            logMerger1.postValue("Signature generated!");
-        } catch (Exception e) {
-            throw new AuthUtilException(AuthUtilException.AuthErr.SIGNING_ERROR);
-        }
-
-        PackMsgSignature msgSignature = new PackMsgSignature(
-                sender,
-                time,
-                signature
-        );
-
-        logMerger1.postValue("[SEND]" + "MSG_SSIG");
-        try {
-            new GrpcTask(channel).execute(msgSignature);
-        } catch (StatusRuntimeException e) {
-            throw e;
-        }
-
-    }
-
-    public MutableLiveData<String> getLogMerger1() {
+    MutableLiveData<String> getLogMerger1() {
         return logMerger1;
     }
 
-    public MutableLiveData<String> getIpMerger1() {
-        return ipMerger1;
+    MutableLiveData<String> getLogMerger2() {
+        return logMerger2;
     }
 
-    public MutableLiveData<String> getPortMerger1() {
-        return portMerger1;
+    public MutableLiveData<Merger> getMerger1() {
+        return merger1;
     }
 
-    public SingleLiveEvent getRefreshMerger1() {
-        return refreshMerger1;
+    public MutableLiveData<Merger> getMerger2() {
+        return merger2;
     }
 
-    public SingleLiveEvent getOpenSettingDialog() {
-        return openSettingDialog;
+    public MutableLiveData<Boolean> getErrorMerger1() {
+        return errorMerger1;
+    }
+
+    public MutableLiveData<Boolean> getErrorMerger2() {
+        return errorMerger2;
+    }
+
+    SingleLiveEvent getRefreshTriggerMerger1() {
+        return refreshTriggerMerger1;
+    }
+
+    SingleLiveEvent getRefreshTriggerMerger2() {
+        return refreshTriggerMerger2;
+    }
+
+    SingleLiveEvent getOpenSetting1Dialog() {
+        return openSetting1Dialog;
+    }
+
+    SingleLiveEvent getOpenSetting2Dialog() {
+        return openSetting2Dialog;
+    }
+
+    public SingleLiveEvent getOpenHistoryDialog() {
+        return openHistoryDialog;
     }
 
     @Override
     protected void onCleared() {
-        try {
-            if (channel1 != null && !channel1.isShutdown()) {
-                channel1.shutdown().awaitTermination(1, TimeUnit.SECONDS);
-            }
+        terminateChannel(channel1);
+        terminateChannel(channel2);
 
-            if (channel2 != null && !channel2.isShutdown()) {
-                channel2.shutdown().awaitTermination(1, TimeUnit.SECONDS);
-            }
-        } catch (InterruptedException e) {
-            return;
+        channel1 = null;
+        channel2 = null;
+
+        if (thread1 != null) {
+            thread1.interrupt();
+            thread1 = null;
+        }
+
+        if (thread2 != null) {
+            thread2.interrupt();
+            thread2 = null;
         }
     }
 
-    private static class GrpcTask extends AsyncTask<MsgPacker, Void, MsgUnpacker> {
+    private void terminateChannel(ManagedChannel channel) {
+        if (channel != null && !channel.isShutdown()) {
+            Log.e(TAG, channel + "::terminateChannel::ShutdownNow()");
+            channel.shutdownNow();
+        }
+    }
 
-        private long start;
-        private ManagedChannel channel;
+    private static class JoiningThread extends Thread {
 
-        private GrpcTask(ManagedChannel channel) {
+        private final WeakReference<DashboardViewModel> viewModel;
+        private final ManagedChannel channel;
+        private final MutableLiveData<String> log;
+        private final MutableLiveData<Boolean> error;
+
+        private String signerNonce;
+        private String mergerNonce;
+
+        JoiningThread(DashboardViewModel viewModel,
+                      ManagedChannel channel,
+                      MutableLiveData<String> log,
+                      MutableLiveData<Boolean> error) {
+            this.viewModel = new WeakReference<>(viewModel);
             this.channel = channel;
+            this.log = log;
+            this.error = error;
         }
 
         @Override
-        protected MsgUnpacker doInBackground(MsgPacker... msgPackers) {
-            MsgPacker msg = msgPackers[0];
+        public void run() {
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                log.postValue(e.getMessage());
+                error.postValue(true);
+            }
 
-            GruutNetworkServiceGrpc.GruutNetworkServiceBlockingStub stub = GruutNetworkServiceGrpc.newBlockingStub(channel);
-            start = System.currentTimeMillis();
+            if (viewModel.get() == null) {
+                log.postValue("Thread is dead");
+                error.postValue(true);
+                return;
+            }
 
             try {
-                switch (msg.getMessageType()) {
-                    case MSG_JOIN:
-                        GrpcMsgJoin grpcMsgJoin = GrpcMsgJoin.newBuilder()
-                                .setMessage(ByteString.copyFrom(msg.convertToByteArr()))
-                                .build();
-                        GrpcMsgChallenge grpcMsgChallenge = stub.withDeadlineAfter(GruutConfigs.GRPC_TIMEOUT, TimeUnit.SECONDS).join(grpcMsgJoin);
-                        return new UnpackMsgChallenge(grpcMsgChallenge.getMessage().toByteArray());
-                    case MSG_RESPONSE_1:
-                        GrpcMsgResponse1 grpcMsgResponse1 = GrpcMsgResponse1.newBuilder()
-                                .setMessage(ByteString.copyFrom(msg.convertToByteArr()))
-                                .build();
-                        GrpcMsgResponse2 grpcMsgResponse2 = stub.withDeadlineAfter(GruutConfigs.GRPC_TIMEOUT, TimeUnit.SECONDS).dhKeyEx(grpcMsgResponse1);
-                        return new UnpackMsgResponse2(grpcMsgResponse2.getMessage().toByteArray());
-                    case MSG_SUCCESS:
-                        GrpcMsgSuccess grpcMsgSuccess = GrpcMsgSuccess.newBuilder()
-                                .setMessage(ByteString.copyFrom(msg.convertToByteArr()))
-                                .build();
-                        GrpcMsgAccept grpcMsgAccept = stub.withDeadlineAfter(GruutConfigs.GRPC_TIMEOUT, TimeUnit.SECONDS).keyExFinished(grpcMsgSuccess);
-                        return new UnpackMsgAccept(grpcMsgAccept.getMessage().toByteArray());
-                    case MSG_SSIG:
-                        GrpcMsgSsig grpcMsgSsig = GrpcMsgSsig.newBuilder()
-                                .setMessage(ByteString.copyFrom(msg.convertToByteArr()))
-                                .build();
-                        stub.withDeadlineAfter(GruutConfigs.GRPC_TIMEOUT, TimeUnit.SECONDS).sigSend(grpcMsgSsig);
-                        return null;
-                    default:
-                        return null;
+                openChannel(channel, log, error);
+            } catch (ErrorMsgException e) {
+                if (!channel.isShutdown()) {
+                    log.postValue("[ERROR] " + e.getMessage());
+                    Log.e(TAG, channel.toString() + "::[ERROR] " + e.getMessage());
+                    error.postValue(true);
                 }
+            } catch (AuthUtilException e) {
+                if (!channel.isShutdown()) {
+                    log.postValue("[CRYPTO_ERROR] " + e.getMessage());
+                    Log.e(TAG, channel.toString() + "::[CRYPTO_ERROR] " + e.getMessage());
+                    error.postValue(true);
+                }
+            }
+
+        }
+
+        private void openChannel(ManagedChannel channel, MutableLiveData<String> log, MutableLiveData<Boolean> error) {
+            GruutSignerServiceGrpc.GruutSignerServiceStub stub = GruutSignerServiceGrpc.newStub(channel);
+            StreamObserver<Identity> grpcStream = stub.openChannel(new StreamObserver<ReplyMsg>() {
+                @Override
+                public void onNext(ReplyMsg value) {
+                    byte[] receivedMsg = value.getMessage().toByteArray();
+                    TypeMsg msgType = MsgUnpacker.classifyMsg(receivedMsg);
+
+                    try {
+                        switch (msgType) {
+                            case MSG_CHALLENGE:
+                                log.postValue("[RECV]" + "DH Key Ex: A puzzle challenge");
+                                UnpackMsgChallenge msgChallenge = new UnpackMsgChallenge(receivedMsg);
+                                if (!msgChallenge.isSenderValid()) {
+                                    throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_HEADER_NOT_MATCHED);
+                                }
+
+                                sendPublicKey(channel, msgChallenge, log);
+                                return;
+                            case MSG_RESPONSE_2:
+                                log.postValue("[RECV]" + "DH Key Ex: Puzzle `B`");
+                                UnpackMsgResponse2 msgResponse2 = new UnpackMsgResponse2(receivedMsg);
+                                if (!msgResponse2.isSenderValid()) {
+                                    throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_HEADER_NOT_MATCHED);
+                                }
+                                sendSuccess(channel, msgResponse2, log);
+                                return;
+                            case MSG_ACCEPT:
+                                log.postValue("[RECV]" + "DH Key Ex: MAC verified");
+                                log.postValue("* Ready to sign");
+
+                                UnpackMsgAccept msgAccept = new UnpackMsgAccept(receivedMsg);
+                                if (!msgAccept.isSenderValid()) {
+                                    throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_HEADER_NOT_MATCHED);
+                                }
+                                if (!msgAccept.isMacValid()) {
+                                    throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_INVALID_HMAC);
+                                }
+                                if (!msgAccept.isVal()) {
+                                    throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_INVALID_RECEIVED);
+                                }
+                                return;
+                            case MSG_REQ_SSIG:
+                                UnpackMsgRequestSignature msgRequestSignature = new UnpackMsgRequestSignature(receivedMsg);
+                                log.postValue("[RECV]" + "Block #" + msgRequestSignature.getBlockHeight());
+                                sendSignature(channel, msgRequestSignature, log);
+
+                                return;
+                            case MSG_ERROR:
+                                UnpackMsgError msgError = new UnpackMsgError(receivedMsg);
+                                throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_ERR_RECEIVED,
+                                        TypeError.convert(msgError.getErrType()).name());
+                            default:
+                                throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_NOT_FOUND);
+                        }
+                    } catch (InterruptedException | ExecutionException ignored) {
+                        // AsyncTask was dead
+                    }
+
+                }
+
+                @Override
+                public void onError(Throwable t) {
+                    if (channel.isShutdown()) {
+                        Log.e(TAG, channel.toString() + "::shutDowned");
+                    } else {
+                        log.postValue("This Merger has DEAD...");
+                        Log.e(TAG, channel.toString() + "::ChannelClosed: " + t.getMessage());
+                        error.postValue(true);
+                    }
+                }
+
+                @Override
+                public void onCompleted() {
+                    log.postValue("GRPC stream onComplete()");
+                    Log.e(TAG, channel.toString() + "::GRPC stream onComplete()");
+                    error.postValue(true);
+                }
+            });
+
+            Identity signerIdentity = Identity.newBuilder().setSender(ByteString.copyFrom(sId.getBytes())).build();
+            grpcStream.onNext(signerIdentity);
+            Log.d(TAG, channel.toString() + "::Streaming channel opened...");
+
+            try {
+                // request Join
+                sendJoinMsg(channel, log);
+            } catch (InterruptedException | ExecutionException ignored) {
+                // AsyncTask was dead
+            }
+        }
+
+
+        /**
+         * Start joining request
+         * SEND MSG_JOIN to merger
+         *
+         * @param channel target merger
+         * @throws StatusRuntimeException on GRPC error
+         */
+        private void sendJoinMsg(ManagedChannel channel, MutableLiveData<String> log) throws ExecutionException, InterruptedException {
+            PackMsgJoin packMsgJoin = new PackMsgJoin(
+                    sId,
+                    AuthGeneralUtil.getTimestamp(),
+                    GruutConfigs.ver,
+                    GruutConfigs.localChainId
+            );
+          
+            MsgStatus receivedStatus = new GrpcTask(viewModel.get(), channel, log).execute(packMsgJoin).get();
+
+            // Check received status
+            if (receivedStatus == null) {
+                // This error message may be caused by a timeout.
+                throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_NOT_FOUND);
+            } else if (receivedStatus.getStatus() != MsgStatus.Status.SUCCESS) {
+                throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_MERGER_ERR);
+            }
+        }
+
+        /**
+         * Start to exchange dh key
+         * SEND MSG_RESPONSE_1 to merger
+         *
+         * @param channel          target merger
+         * @param messageChallenge received MSG_CHALLENGE
+         */
+        private void sendPublicKey(ManagedChannel channel, UnpackMsgChallenge messageChallenge, MutableLiveData<String> log) throws ExecutionException, InterruptedException {
+            // generate signer nonce
+            signerNonce = AuthGeneralUtil.getNonce();
+
+            // get merger nonce
+            mergerNonce = messageChallenge.getMergerNonce();
+
+            if (!AuthGeneralUtil.isMsgInTime(messageChallenge.getTime())) {
+                throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_EXPIRED);
+            }
+
+            if (keyPair == null) {
+                throw new AuthUtilException(AuthUtilException.AuthErr.NO_KEY_ERROR);
+            }
+
+            String x = new String(authHmacUtil.pubToXpoint(keyPair.getPublic()));
+            String y = new String(authHmacUtil.pubToYpoint(keyPair.getPublic()));
+            String time = AuthGeneralUtil.getTimestamp();
+            String signature;
+            try {
+                signature = authCertUtil.signMsgResponse1(messageChallenge.getMergerNonce(), signerNonce, x, y, time);
+            } catch (Exception e) {
+                throw new AuthUtilException(AuthUtilException.AuthErr.SIGNING_ERROR);
+            }
+
+            // Get Certificate issued by GA
+            String cert;
+            try {
+                cert = authCertUtil.getCert(SecurityConstants.Alias.GRUUT_AUTH);
+            } catch (KeyStoreException | CertificateException | IOException | NoSuchAlgorithmException e) {
+                throw new AuthUtilException(AuthUtilException.AuthErr.GET_CERT_ERROR);
+            }
+
+            if (cert.isEmpty()) {
+                throw new AuthUtilException(AuthUtilException.AuthErr.NO_CERT_ERROR);
+            }
+
+            PackMsgResponse1 msgResponse1 = new PackMsgResponse1(
+                    sId,
+                    time,
+                    cert,
+                    signerNonce,
+                    x,  /* HEX */
+                    y,  /* HEX */
+                    signature /* BASE64 */
+            );
+
+            MsgStatus receivedStatus = new GrpcTask(viewModel.get(), channel, log).execute(msgResponse1).get();
+          
+            // Check received status
+            if (receivedStatus == null) {
+                // This error message may be caused by a timeout.
+                throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_NOT_FOUND);
+            } else if (receivedStatus.getStatus() != MsgStatus.Status.SUCCESS) {
+                throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_MERGER_ERR);
+            }
+        }
+
+
+        /**
+         * Finishing joining request
+         * SEND MSG_SUCCESS to merger
+         *
+         * @param channel          target merger
+         * @param messageResponse2 received MSG_RESPONSE_2
+         */
+        private void sendSuccess(ManagedChannel channel, UnpackMsgResponse2 messageResponse2, MutableLiveData<String> log) throws ExecutionException, InterruptedException {
+
+            try {
+                // 서명 검증
+                if (!authCertUtil.verifyMsgResponse2(messageResponse2.getSig(), messageResponse2.getCert(),
+                        mergerNonce, signerNonce, messageResponse2.getDhPubKeyX(), messageResponse2.getDhPubKeyY(), messageResponse2.getTime())) {
+                    throw new AuthUtilException(AuthUtilException.AuthErr.INVALID_SIGNATURE);
+                }
+            } catch (Exception e) {
+                throw new AuthUtilException(AuthUtilException.AuthErr.VERIFYING_ERROR);
+            }
+
+            // X,Y 좌표로부터 Pulbic key get
+            PublicKey mergerPubKey;
+            try {
+                mergerPubKey = authHmacUtil.pointToPub(messageResponse2.getDhPubKeyX(), messageResponse2.getDhPubKeyY());
+            } catch (NoSuchProviderException | NoSuchAlgorithmException | InvalidKeySpecException e) {
+                throw new AuthUtilException(AuthUtilException.AuthErr.KEY_GEN_ERROR);
+            }
+
+            // HMAC KEY 계산
+            byte[] hmacKey;
+            try {
+                hmacKey = authHmacUtil.getSharedSecreyKey(keyPair.getPrivate(), mergerPubKey);
+            } catch (NoSuchProviderException | NoSuchAlgorithmException | InvalidKeyException e) {
+                throw new AuthUtilException(AuthUtilException.AuthErr.HMAC_KEY_GEN_ERROR);
+            }
+
+            // HMAC KEY 저장
+            preferenceUtil.put(messageResponse2.getmID(), new String(hmacKey));
+
+            PackMsgSuccess msgSuccess = new PackMsgSuccess(
+                    sId,
+                    AuthGeneralUtil.getTimestamp(),
+                    true
+            );
+            msgSuccess.setDestinationId(messageResponse2.getmID());
+
+            MsgStatus receivedStatus = new GrpcTask(viewModel.get(), channel, log).execute(msgSuccess).get();
+
+            // Check received status
+            if (receivedStatus == null) {
+                // This error message may be caused by a timeout.
+                throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_NOT_FOUND);
+            } else if (receivedStatus.getStatus() != MsgStatus.Status.SUCCESS) {
+                throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_MERGER_ERR);
+            }
+        }
+
+        /**
+         * 서명 요청이 오면 검증한 후, 서명하여 Merger에게 전송한다.
+         *
+         * @param channel             target merger
+         * @param msgRequestSignature received MSG_REQ_SSIG
+         * @param log                 log live data
+         */
+        private void sendSignature(ManagedChannel channel, UnpackMsgRequestSignature msgRequestSignature, MutableLiveData<String> log) throws ExecutionException, InterruptedException {
+            if (!msgRequestSignature.isSenderValid()) {
+                throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_HEADER_NOT_MATCHED);
+            }
+
+            if (!msgRequestSignature.isMacValid()) {
+                throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_INVALID_HMAC);
+            }
+
+            if (!AuthGeneralUtil.isBlockInTime(msgRequestSignature.getTime())) {
+                throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_EXPIRED);
+            }
+
+            String time = msgRequestSignature.getTime();
+            String signature;
+            try {
+                SignedBlock block = new SignedBlock();
+                block.setChainId(msgRequestSignature.getChainId());
+                block.setBlockHeight(msgRequestSignature.getBlockHeight());
+                block.setTimestamp(Calendar.getInstance().getTimeInMillis());
+                blockRepo.insert(block);
+
+                signature = authCertUtil.generateSupportSignature(sId, time, msgRequestSignature.getmID(), GruutConfigs.localChainId,
+                        msgRequestSignature.getBlockHeight(), msgRequestSignature.getTransaction());
+            } catch (Exception e) {
+                throw new AuthUtilException(AuthUtilException.AuthErr.SIGNING_ERROR);
+            }
+
+            PackMsgSignature msgSignature = new PackMsgSignature(
+                    sId,
+                    time,
+                    signature
+            );
+            msgSignature.setDestinationId(msgRequestSignature.getmID());
+
+            MsgStatus receivedStatus = new GrpcTask(viewModel.get(), channel, log).execute(msgSignature).get();
+
+            // Check received status
+            if (receivedStatus == null) {
+                // This error message may be caused by a timeout.
+                throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_NOT_FOUND);
+            } else if (receivedStatus.getStatus() != MsgStatus.Status.SUCCESS) {
+                throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_MERGER_ERR);
+            }
+        }
+    }
+
+    private static class GrpcTask extends AsyncTask<MsgPacker, Void, MsgStatus> {
+
+        private long start;
+
+        private final WeakReference<DashboardViewModel> viewModel;
+        private final ManagedChannel channel;
+        private final MutableLiveData<String> log;
+
+        private GrpcTask(DashboardViewModel viewModel, ManagedChannel channel, MutableLiveData<String> log) {
+            this.viewModel = new WeakReference<>(viewModel);
+            this.channel = channel;
+            this.log = log;
+        }
+
+        @Override
+        protected MsgStatus doInBackground(MsgPacker... msgPackers) {
+            MsgPacker msg = msgPackers[0];
+
+            GruutSignerServiceGrpc.GruutSignerServiceBlockingStub stub = GruutSignerServiceGrpc.newBlockingStub(channel);
+            start = System.currentTimeMillis();
+
+            switch (msg.getMessageType()) {
+                case MSG_JOIN:
+                    log.postValue("[SEND]" + "Join to a network as a signer");
+                    break;
+                case MSG_RESPONSE_1:
+                    log.postValue("[SEND]" + "DH Key Ex: Puzzle `A`");
+                    break;
+                case MSG_SUCCESS:
+                    log.postValue("[SEND]" + "DH Key Ex: MAC with common secret");
+                    break;
+                case MSG_SSIG:
+                    log.postValue("[SEND]" + "Signed on block");
+                    break;
+            }
+
+            try {
+                RequestMsg requestMsg = RequestMsg.newBuilder()
+                        .setMessage(ByteString.copyFrom(msg.convertToByteArr()))
+                        .build();
+
+                return stub.withDeadlineAfter(GruutConfigs.GRPC_TIMEOUT, TimeUnit.SECONDS).signerService(requestMsg);
             } catch (Exception e) {
                 e.printStackTrace();
                 return null;
@@ -465,9 +680,13 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         }
 
         @Override
-        protected void onPostExecute(MsgUnpacker result) {
-            Log.d(TAG, "Result: " + result);
-            Log.d(TAG, "Response Time: " + (System.currentTimeMillis() - start));
+        protected void onPostExecute(MsgStatus result) {
+            if (viewModel.get() == null) {
+                return;
+            }
+
+            Log.d(TAG, channel.toString() + "::Result: " + result);
+            Log.d(TAG, channel.toString() + "::Response Time: " + (System.currentTimeMillis() - start));
         }
     }
 }

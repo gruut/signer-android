@@ -15,10 +15,12 @@ import static org.hamcrest.Matchers.is;
 @PrepareForTest(Base64.class)
 public class UnpackMsgChallengeTest extends RobolectricTest {
 
+    private String mergerId = "TUVSR0VSLTE=";
+
     @Before
     public void setUp() throws Exception {
         PreferenceUtil preferenceUtil = PreferenceUtil.getInstance(ApplicationProvider.getApplicationContext());
-        preferenceUtil.put(PreferenceUtil.Key.HMAC_STR, "a9b56e68ccbfe9bdcb5dbc82e00859421abd6bfe3c28ee0e7d751e32baf1e65b");
+        preferenceUtil.put(mergerId, "a9b56e68ccbfe9bdcb5dbc82e00859421abd6bfe3c28ee0e7d751e32baf1e65b");
     }
 
     @After

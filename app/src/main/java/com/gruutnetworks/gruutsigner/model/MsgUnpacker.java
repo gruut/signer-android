@@ -12,9 +12,19 @@ import static com.gruutnetworks.gruutsigner.model.MsgHeader.*;
 public abstract class MsgUnpacker {
     abstract void bodyFromJson(byte[] bodyBytes);
 
+    abstract void setSenderValidity();
+
     MsgHeader header;
     byte[] body;
+    boolean senderValidity;
     private boolean macValidity;
+
+    public static TypeMsg classifyMsg(byte[] bytes) {
+        if (bytes != null && bytes.length > 3) {
+            return TypeMsg.convert(bytes[2]);
+        }
+        return TypeMsg.MSG_ERROR;
+    }
 
     void parse(byte[] bytes) {
         int offset = 0;
@@ -64,7 +74,7 @@ public abstract class MsgUnpacker {
                     byte[] headerAndBody = outputStream.toByteArray();
                     outputStream.close();
 
-                    return AuthHmacUtil.verifyHmacSignature(headerAndBody, mac);
+                    return AuthHmacUtil.verifyHmacSignature(header.getSender(), headerAndBody, mac);
                 case NONE:
                 default:
                     return true;
@@ -80,5 +90,9 @@ public abstract class MsgUnpacker {
 
     public boolean isMacValid() {
         return macValidity;
+    }
+
+    public boolean isSenderValid() {
+        return senderValidity;
     }
 }

@@ -18,13 +18,28 @@ public class SettingFragment extends DialogFragment {
 
     private SettingViewModel viewModel;
     private SettingFragmentBinding binding;
+    private DashboardViewModel.MergerNum merger;
 
+    public static SettingFragment newInstance(DashboardViewModel.MergerNum merger) {
+        SettingFragment fragment = new SettingFragment();
 
-    public static SettingFragment newInstance() {
-        return new SettingFragment();
+        Bundle args = new Bundle();
+        args.putString("MERGER", merger.name());
+        fragment.setArguments(args);
+
+        return fragment;
     }
 
     public SettingFragment() {
+    }
+
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        if (getArguments() != null) {
+            String arg = getArguments().getString("MERGER");
+            this.merger = Enum.valueOf(DashboardViewModel.MergerNum.class, arg);
+        }
     }
 
     @NonNull
@@ -36,18 +51,19 @@ public class SettingFragment extends DialogFragment {
                 R.layout.setting_fragment, null, false);
 
         viewModel = ViewModelProviders.of(this).get(SettingViewModel.class);
-        getLifecycle().addObserver(viewModel);
+        viewModel.setMerger(merger);
+        viewModel.getMerger().observe(this, o -> {
+            viewModel.fetchPreference();
+        });
 
         binding.setModel(viewModel);
 
         builder.setView(binding.getRoot())
                 .setTitle("Merger Address Setting")
                 .setPositiveButton(getString(R.string.ok), (dialog, which) -> {
-                    ((SettingDialogInterface) getTargetFragment()).onOkBtnClicked(
-                            binding.inputIp.getText().toString(),
-                            binding.inputPort.getText().toString());
-
                     viewModel.pullPreference();
+
+                    ((SettingDialogInterface) getTargetFragment()).onOkBtnClicked(merger);
                     dialog.dismiss();
                 });
 
@@ -80,6 +96,6 @@ public class SettingFragment extends DialogFragment {
     }
 
     public interface SettingDialogInterface {
-        void onOkBtnClicked(String ip, String port);
+        void onOkBtnClicked(DashboardViewModel.MergerNum merger);
     }
 }

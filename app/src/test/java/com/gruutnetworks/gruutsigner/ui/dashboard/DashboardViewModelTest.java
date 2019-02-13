@@ -1,20 +1,46 @@
 package com.gruutnetworks.gruutsigner.ui.dashboard;
 
+import android.arch.persistence.room.Room;
+import android.content.Context;
+import android.database.sqlite.SQLiteConstraintException;
 import android.util.Base64;
+import androidx.test.core.app.ApplicationProvider;
 import com.gruutnetworks.gruutsigner.RobolectricTest;
+import com.gruutnetworks.gruutsigner.model.SignedBlock;
+import com.gruutnetworks.gruutsigner.model.SignedBlockDao;
+import com.gruutnetworks.gruutsigner.util.AppDatabase;
 import com.gruutnetworks.gruutsigner.util.AuthGeneralUtil;
+import junit.framework.Assert;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.nio.ByteBuffer;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 @PrepareForTest({Base64.class})
 public class DashboardViewModelTest extends RobolectricTest {
 
+    private SignedBlockDao blockDao;
+    private AppDatabase mDb;
+
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
+        Context context = ApplicationProvider.getApplicationContext();
+        mDb = Room.inMemoryDatabaseBuilder(context, AppDatabase.class)
+                .allowMainThreadQueries()
+                .build();
+        blockDao = mDb.blockDao();
+    }
+
+    @After
+    public void tearDown() {
+        mDb.close();
     }
 
     @Test
@@ -36,6 +62,25 @@ public class DashboardViewModelTest extends RobolectricTest {
             outputStream.close();
         } catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+
+    @Test
+    public void writeBlockAndReadInList() {
+        SignedBlock block = new SignedBlock();
+        block.setBlockHeight("1");
+        block.setChainId("R0VOVEVTVDE=");
+
+        blockDao.insertAll(block);
+
+        SignedBlock searchedBlock = blockDao.findByPrimaryKey("R0VOVEVTVDE=", "1");
+        assertThat(searchedBlock.getChainId(), is(block.getChainId()));
+        assertThat(searchedBlock.getBlockHeight(), is(block.getBlockHeight()));
+
+        try {
+            blockDao.insertAll(block);
+        } catch (SQLiteConstraintException e) {
+            // expected
         }
     }
 }
