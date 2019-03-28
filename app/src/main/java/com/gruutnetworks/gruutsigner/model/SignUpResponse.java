@@ -10,7 +10,7 @@ public class SignUpResponse {
     private String message;
     @SerializedName("nid")
     private String nid;
-    @SerializedName("pem")
+    @SerializedName("certPem")
     private String pem;
 
     public int getCode() {
