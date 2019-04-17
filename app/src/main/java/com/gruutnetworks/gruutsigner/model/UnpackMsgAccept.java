@@ -14,8 +14,8 @@ import com.google.gson.annotations.SerializedName;
  */
 public class UnpackMsgAccept extends MsgUnpacker {
     @Expose
-    @SerializedName("mID")
-    private String mID;
+    @SerializedName("merger")
+    private String mergerID;
     @Expose
     @SerializedName("time")
     private String time;
@@ -50,13 +50,13 @@ public class UnpackMsgAccept extends MsgUnpacker {
 
         UnpackMsgAccept msgAccept = gson.fromJson(new String(bodyBytes), UnpackMsgAccept.class);
 
-        this.mID = msgAccept.mID;
+        this.mergerID = msgAccept.mergerID;
         this.time = msgAccept.time;
         this.val = msgAccept.val;
     }
 
     @Override
     void setSenderValidity() {
-        this.senderValidity = header.getSender().equals(mID);
+        this.senderValidity = header.getSender().equals(mergerID);
     }
 }

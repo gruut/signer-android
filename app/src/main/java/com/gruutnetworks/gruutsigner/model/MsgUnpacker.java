@@ -31,16 +31,15 @@ public abstract class MsgUnpacker {
 
         MsgHeader header = new MsgHeader.Builder()
                 .setGruutConstant(bytes[offset++])
-                .setMainVersion((byte) (bytes[offset] >> 4))
-                .setSubVersion((byte) (bytes[offset++] & 0x0f))
+                .setVersion(bytes[offset++])
                 .setMsgType(bytes[offset++])
                 .setMacType(bytes[offset++])
-                .setCompressionType(bytes[offset++])
+                .setSerializationType(bytes[offset++])
                 .setNotUsed(bytes[offset++])
                 .setTotalLen(Arrays.copyOfRange(bytes, offset, offset += HEADER_TOTAL_LEN_SIZE))
+                .setWorldId(Arrays.copyOfRange(bytes, offset, offset += HEADER_WORLD_ID_SIZE))
                 .setLocalChainId(Arrays.copyOfRange(bytes, offset, offset += HEADER_LOCAL_CHAIN_ID_SIZE))
                 .setSender(Arrays.copyOfRange(bytes, offset, offset += HEADER_SENDER_SIZE))
-                .setReserved(Arrays.copyOfRange(bytes, offset, offset += HEADER_RESERVED_SIZE))
                 .build();
 
         byte[] compressedMsg = Arrays.copyOfRange(bytes, offset, offset += (header.getTotalLen() - MSG_HEADER_LEN));

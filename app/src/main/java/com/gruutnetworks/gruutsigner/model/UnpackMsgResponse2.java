@@ -12,54 +12,76 @@ import com.google.gson.annotations.SerializedName;
  * Description: Signer's response to Response1 from Merger
  * Message Type: 0x57
  */
+
 public class UnpackMsgResponse2 extends MsgUnpacker {
-    @Expose
-    @SerializedName("mID")
-    private String mID;
+    class DH {
+        @Expose
+        @SerializedName("x")
+        public String x;
+        @Expose
+        @SerializedName("y")
+        public String y;
+
+        DH(String x, String y){
+            this.x = x;
+            this.y = y;
+        }
+    }
+
+    class Merger {
+        @Expose
+        @SerializedName("id")
+        public String id;
+        @Expose
+        @SerializedName("cert")
+        public String cert;
+        @Expose
+        @SerializedName("sig")
+        public String sig; // signature with Signer's nonce, Merger's nonce, dh2, time
+
+        Merger(String id, String cert, String sig){
+            this.id = id;
+            this.cert = cert;
+            this.sig = sig;
+        }
+    }
     @Expose
     @SerializedName("time")
     private String time;
+
     @Expose
-    @SerializedName("cert")
-    private String cert;
+    @SerializedName("dh")
+    private DH dh;
+
     @Expose
-    @SerializedName("dhx")
-    private String dhPubKeyX;
-    @Expose
-    @SerializedName("dhy")
-    private String dhPubKeyY;
-    @Expose
-    @SerializedName("sig")
-    private String sig; // signature with Signer's nonce, Merger's nonce, dh2, time
+    @SerializedName("merger")
+    private Merger merger;
 
     public UnpackMsgResponse2(byte[] bytes) {
         parse(bytes); // parse the whole message
         bodyFromJson(body);
         setSenderValidity();
     }
+    public String getTime() { return time; }
 
     public String getmID() {
-        return mID;
-    }
-
-    public String getTime() {
-        return time;
+        return merger.id;
     }
 
     public String getCert() {
-        return cert;
+        return merger.cert;
     }
 
     public String getDhPubKeyX() {
-        return dhPubKeyX;
+        return dh.x;
     }
 
     public String getDhPubKeyY() {
-        return dhPubKeyY;
+        return dh.y;
     }
 
     public String getSig() {
-        return sig;
+        return merger.sig;
     }
 
     @Override
@@ -79,16 +101,12 @@ public class UnpackMsgResponse2 extends MsgUnpacker {
 
         UnpackMsgResponse2 msgResponse2 = gson.fromJson(new String(bodyBytes) , UnpackMsgResponse2.class);
 
-        this.mID = msgResponse2.mID;
-        this.time = msgResponse2.time;
-        this.cert = msgResponse2.cert;
-        this.dhPubKeyX = msgResponse2.dhPubKeyX;
-        this.dhPubKeyY = msgResponse2.dhPubKeyY;
-        this.sig = msgResponse2.sig;
+        this.merger = msgResponse2.merger;
+        this.dh = msgResponse2.dh;
     }
 
     @Override
     void setSenderValidity() {
-        this.senderValidity = header.getSender().equals(mID);
+        this.senderValidity = header.getSender().equals(merger.id);
     }
 }

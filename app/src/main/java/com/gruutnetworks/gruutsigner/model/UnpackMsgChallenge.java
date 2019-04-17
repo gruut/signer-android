@@ -14,13 +14,16 @@ import com.google.gson.annotations.SerializedName;
  */
 public class UnpackMsgChallenge extends MsgUnpacker {
     @Expose
-    @SerializedName("mID")
-    private String mID;
-    @Expose
     @SerializedName("time")
     private String time;
     @Expose
-    @SerializedName("mN")
+    @SerializedName("user")
+    private String userID;
+    @Expose
+    @SerializedName("merger")
+    private String mergerID;
+    @Expose
+    @SerializedName("mn")
     private String mergerNonce;
 
     public UnpackMsgChallenge(byte[] bytes) {
@@ -30,7 +33,7 @@ public class UnpackMsgChallenge extends MsgUnpacker {
     }
 
     public String getmID() {
-        return mID;
+        return mergerID;
     }
 
     public String getMergerNonce() {
@@ -58,13 +61,13 @@ public class UnpackMsgChallenge extends MsgUnpacker {
 
         UnpackMsgChallenge msgChallenge = gson.fromJson(new String(bodyBytes), UnpackMsgChallenge.class);
 
-        this.mID = msgChallenge.mID;
+        this.mergerID = msgChallenge.mergerID;
         this.time = msgChallenge.time;
         this.mergerNonce = msgChallenge.mergerNonce;
     }
 
     @Override
     void setSenderValidity() {
-        this.senderValidity = header.getSender().equals(mID);
+        this.senderValidity = header.getSender().equals(mergerID);
     }
 }

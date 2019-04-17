@@ -13,21 +13,48 @@ import com.google.gson.annotations.SerializedName;
  * Message Type: 0xB2
  */
 public class UnpackMsgRequestSignature extends MsgUnpacker {
+    class Block {
+        @Expose
+        @SerializedName("id")
+        public String id;
+        @Expose
+        @SerializedName("time")
+        public String time;
+        @Expose
+        @SerializedName("world")
+        public String world;
+        @Expose
+        @SerializedName("chain")
+        public String chain;
+        @Expose
+        @SerializedName("height")
+        public String height;
+        @Expose
+        @SerializedName("pid")
+        public String pid;
+        @Expose
+        @SerializedName("txroot")
+        public String txroot;
+        @Expose
+        @SerializedName("usroot")
+        public String usroot;
+    }
+
+    class Producer {
+        @Expose
+        @SerializedName("id")
+        public String id;
+        @Expose
+        @SerializedName("sig")
+        public String sig;
+    }
+
     @Expose
-    @SerializedName("time")
-    private String time;
+    @SerializedName("block")
+    private Block block;
     @Expose
-    @SerializedName("mID")
-    private String mID;
-    @Expose
-    @SerializedName("cID")
-    private String chainId;
-    @Expose
-    @SerializedName("hgt")
-    private String blockHeight;
-    @Expose
-    @SerializedName("txrt")
-    private String transaction;
+    @SerializedName("producer")
+    private Producer producer;
 
     public UnpackMsgRequestSignature(byte[] bytes) {
         parse(bytes); // parse the whole message
@@ -36,23 +63,19 @@ public class UnpackMsgRequestSignature extends MsgUnpacker {
     }
 
     public String getTime() {
-        return time;
+        return block.time;
     }
 
     public String getmID() {
-        return mID;
+        return producer.id;
     }
 
     public String getChainId() {
-        return chainId;
+        return block.chain;
     }
 
     public String getBlockHeight() {
-        return blockHeight;
-    }
-
-    public String getTransaction() {
-        return transaction;
+        return block.height;
     }
 
     @Override
@@ -72,15 +95,12 @@ public class UnpackMsgRequestSignature extends MsgUnpacker {
 
         UnpackMsgRequestSignature msgRequestSignature = gson.fromJson(new String(bodyBytes), UnpackMsgRequestSignature.class);
 
-        this.time = msgRequestSignature.time;
-        this.mID = msgRequestSignature.mID;
-        this.chainId = msgRequestSignature.chainId;
-        this.blockHeight = msgRequestSignature.blockHeight;
-        this.transaction = msgRequestSignature.transaction;
+        this.block = msgRequestSignature.block;
+        this.producer = msgRequestSignature.producer;
     }
 
     @Override
     void setSenderValidity() {
-        this.senderValidity = header.getSender().equals(mID);
+        this.senderValidity = header.getSender().equals(producer.id);
     }
 }
