@@ -9,7 +9,7 @@ import java.math.BigInteger;
 import java.nio.ByteBuffer;
 
 public class MsgHeader {
-    static final int MSG_HEADER_LEN = 32;
+    static final int MSG_HEADER_LEN = 58;
     static final int HEADER_TOTAL_LEN_SIZE = 4;
     static final int HEADER_LOCAL_CHAIN_ID_SIZE = 8;
     static final int HEADER_WORLD_ID_SIZE = 8;

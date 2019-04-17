@@ -24,10 +24,10 @@ public class PackMsgResponse1 extends MsgPacker {
 
     class DH {
         @Expose
-        @SerializedName("dhx")
+        @SerializedName("x")
         public String x;   // HEX
         @Expose
-        @SerializedName("dhy")
+        @SerializedName("y")
         public String y;   // HEX
 
         DH(String x , String y){

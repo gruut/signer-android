@@ -7,25 +7,29 @@ option java_outer_classname = "GruutNetwork";
 package grpc_signer;
 
 service GruutSignerService {
-    rpc openChannel(stream Identity) returns (stream ReplyMsg) {}
-    rpc signerService (RequestMsg) returns (MsgStatus) {}
-}
-
-message RequestMsg {
-    bytes message = 1;
-}
-message ReplyMsg {
-    bytes message = 1;
-}
-message MsgStatus {
-    enum Status{
-        SUCCESS = 0;
-        INVALID = 1;
-        INTERNAL = 2;
-    }
-    Status status = 1;
-    string message = 2;
+    rpc OpenChannel(stream Identity) returns (stream Request) {}
+    rpc SignerService (Request) returns (Reply) {}
 }
 message Identity {
     bytes sender = 1;
+}
+
+message Request {
+    bytes message = 1;
+}
+
+message Reply {
+    enum Status{
+        UNKOWN = 0;
+        SUCCESS = 1;
+        HEADER_INVALID = 2;
+        INTERNAL = 3;
+        ECDH_ILLEGAL_ACCESS = 21;
+        ECDH_MAX_SIGNER_POOL = 22;
+        ECDH_TIMEOUT = 23;
+        ECDH_INVALID_SIG = 24;
+        ECDH_INVALID_PK = 25;
+    }
+    Status status = 1;
+    bytes message = 2;
 }

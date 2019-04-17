@@ -29,7 +29,7 @@ public class PackMsgJoin extends MsgPacker {
     @SerializedName("merger")
     private String merger;  // BASE58 encoded 32 byte data
     @Expose
-    @SerializedName("signer")
+    @SerializedName("user")
     private String signer;  // BASE58 encoded 32 byte data
 
     public PackMsgJoin(String time, String world_id, String chain_id, String signer_id, String merger_id) {

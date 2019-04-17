@@ -1,5 +1,6 @@
 package com.gruutnetworks.gruutsigner.ui.dashboard;
 
+import android.util.Base64;
 import android.app.Application;
 import android.arch.lifecycle.*;
 import android.os.AsyncTask;
@@ -10,6 +11,7 @@ import com.google.protobuf.ByteString;
 import com.gruutnetworks.gruutsigner.*;
 import com.gruutnetworks.gruutsigner.Identity;
 import com.gruutnetworks.gruutsigner.R;
+import com.gruutnetworks.gruutsigner.exceptions.AsyncException;
 import com.gruutnetworks.gruutsigner.exceptions.AuthUtilException;
 import com.gruutnetworks.gruutsigner.exceptions.ErrorMsgException;
 import com.gruutnetworks.gruutsigner.gruut.GruutConfigs;
@@ -69,7 +71,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         authCertUtil = AuthCertUtil.getInstance();
         authHmacUtil = AuthHmacUtil.getInstance();
         preferenceUtil = PreferenceUtil.getInstance(application.getApplicationContext());
-        sId = preferenceUtil.getString(PreferenceUtil.Key.SID_STR);
+        sId = "6c7eWvGSPvMic6uurmUSoLanytcjqVVWvE9b51xzGwQo";
         blockRepo = new SignedBlockRepo(application);
 
         SnackbarMessage snackbarMessage = new SnackbarMessage();
@@ -92,20 +94,18 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
     @OnLifecycleEvent(Lifecycle.Event.ON_RESUME)
     public void onResume() {
 
+        preferenceUtil.put(PreferenceUtil.Key.IP1_STR, MERGER_LIST.get(0).getUri());
+        preferenceUtil.put(PreferenceUtil.Key.PORT1_STR, Integer.toString(MERGER_LIST.get(0).getPort()));
+        preferenceUtil.put(PreferenceUtil.Key.IP2_STR, MERGER_LIST.get(1).getUri());
+        preferenceUtil.put(PreferenceUtil.Key.PORT2_STR, Integer.toString(MERGER_LIST.get(1).getPort()));
+
         if (preferenceUtil.getString(PreferenceUtil.Key.IP1_STR) == null
                 && preferenceUtil.getString(PreferenceUtil.Key.PORT1_STR) == null
                 && preferenceUtil.getString(PreferenceUtil.Key.IP2_STR) == null
                 && preferenceUtil.getString(PreferenceUtil.Key.PORT2_STR) == null) {
 
-            List<Merger> targetMergers = getRandomMergers();
-
-            merger1.setValue(targetMergers.get(0));
-            merger2.setValue(targetMergers.get(1));
-
-            preferenceUtil.put(PreferenceUtil.Key.IP1_STR, targetMergers.get(0).getUri());
-            preferenceUtil.put(PreferenceUtil.Key.PORT1_STR, Integer.toString(targetMergers.get(0).getPort()));
-            preferenceUtil.put(PreferenceUtil.Key.IP2_STR, targetMergers.get(1).getUri());
-            preferenceUtil.put(PreferenceUtil.Key.PORT2_STR, Integer.toString(targetMergers.get(1).getPort()));
+            merger1.setValue(MERGER_LIST.get(0));
+            merger2.setValue(MERGER_LIST.get(1));
         }
 
         refreshMerger1();
@@ -121,11 +121,11 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         final int[] ints;
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            ints = rand.ints(0, 3).distinct().limit(2).toArray();
+            ints = rand.ints(0, 1).distinct().limit(1).toArray();
         } else {
             final Set<Integer> intSet = new HashSet<>();
-            while (intSet.size() < 2) {
-                intSet.add(rand.nextInt(3));
+            while (intSet.size() < 1) {
+                intSet.add(rand.nextInt(1));
             }
             ints = new int[intSet.size()];
             final Iterator<Integer> iterator = intSet.iterator();
@@ -165,7 +165,8 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
             thread1 = new JoiningThread(this,
                     channel1,
                     logMerger1,
-                    errorMerger1);
+                    errorMerger1,
+                    merger1.getValue().getB58Id());
             thread1.start();
         }
     }
@@ -196,7 +197,8 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
             thread2 = new JoiningThread(this,
                     channel2,
                     logMerger2,
-                    errorMerger2);
+                    errorMerger2,
+                    merger2.getValue().getB58Id());
             thread2.start();
         }
     }
@@ -290,17 +292,20 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         private final MutableLiveData<String> log;
         private final MutableLiveData<Boolean> error;
 
+        private String mergerId;
         private String signerNonce;
         private String mergerNonce;
 
         JoiningThread(DashboardViewModel viewModel,
                       ManagedChannel channel,
                       MutableLiveData<String> log,
-                      MutableLiveData<Boolean> error) {
+                      MutableLiveData<Boolean> error,
+                      String mergerId) {
             this.viewModel = new WeakReference<>(viewModel);
             this.channel = channel;
             this.log = log;
             this.error = error;
+            this.mergerId = mergerId;
         }
 
         @Override
@@ -320,6 +325,10 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
 
             try {
                 openChannel(channel, log, error);
+                UnpackMsgChallenge challenge = sendJoinMsg(channel, log);
+                UnpackMsgResponse2 response2 = sendPublicKey(channel, challenge, log);
+                sendSuccess(channel, response2, log);
+
             } catch (ErrorMsgException e) {
                 if (!channel.isShutdown()) {
                     log.postValue("[ERROR] " + e.getMessage());
@@ -338,46 +347,14 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
 
         private void openChannel(ManagedChannel channel, MutableLiveData<String> log, MutableLiveData<Boolean> error) {
             GruutSignerServiceGrpc.GruutSignerServiceStub stub = GruutSignerServiceGrpc.newStub(channel);
-            StreamObserver<Identity> grpcStream = stub.openChannel(new StreamObserver<ReplyMsg>() {
+            StreamObserver<Identity> grpcStream = stub.openChannel(new StreamObserver<Request>() {
                 @Override
-                public void onNext(ReplyMsg value) {
+                public void onNext(Request value) {
                     byte[] receivedMsg = value.getMessage().toByteArray();
                     TypeMsg msgType = MsgUnpacker.classifyMsg(receivedMsg);
 
                     try {
                         switch (msgType) {
-                            case MSG_CHALLENGE:
-                                log.postValue("[RECV]" + "DH Key Ex: A puzzle challenge");
-                                UnpackMsgChallenge msgChallenge = new UnpackMsgChallenge(receivedMsg);
-                                if (!msgChallenge.isSenderValid()) {
-                                    throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_HEADER_NOT_MATCHED);
-                                }
-
-                                sendPublicKey(channel, msgChallenge, log);
-                                return;
-                            case MSG_RESPONSE_2:
-                                log.postValue("[RECV]" + "DH Key Ex: Puzzle `B`");
-                                UnpackMsgResponse2 msgResponse2 = new UnpackMsgResponse2(receivedMsg);
-                                if (!msgResponse2.isSenderValid()) {
-                                    throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_HEADER_NOT_MATCHED);
-                                }
-                                sendSuccess(channel, msgResponse2, log);
-                                return;
-                            case MSG_ACCEPT:
-                                log.postValue("[RECV]" + "DH Key Ex: MAC verified");
-                                log.postValue("* Ready to sign");
-
-                                UnpackMsgAccept msgAccept = new UnpackMsgAccept(receivedMsg);
-                                if (!msgAccept.isSenderValid()) {
-                                    throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_HEADER_NOT_MATCHED);
-                                }
-                                if (!msgAccept.isMacValid()) {
-                                    throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_INVALID_HMAC);
-                                }
-                                if (!msgAccept.isVal()) {
-                                    throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_INVALID_RECEIVED);
-                                }
-                                return;
                             case MSG_REQ_SSIG:
                                 UnpackMsgRequestSignature msgRequestSignature = new UnpackMsgRequestSignature(receivedMsg);
                                 log.postValue("[RECV]" + "Block #" + msgRequestSignature.getBlockHeight());
@@ -419,13 +396,6 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
             Identity signerIdentity = Identity.newBuilder().setSender(ByteString.copyFrom(sId.getBytes())).build();
             grpcStream.onNext(signerIdentity);
             Log.d(TAG, channel.toString() + "::Streaming channel opened...");
-
-            try {
-                // request Join
-                sendJoinMsg(channel, log);
-            } catch (InterruptedException | ExecutionException ignored) {
-                // AsyncTask was dead
-            }
         }
 
 
@@ -436,23 +406,30 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
          * @param channel target merger
          * @throws StatusRuntimeException on GRPC error
          */
-        private void sendJoinMsg(ManagedChannel channel, MutableLiveData<String> log) throws ExecutionException, InterruptedException {
+        private UnpackMsgChallenge sendJoinMsg(ManagedChannel channel, MutableLiveData<String> log) throws StatusRuntimeException {
             PackMsgJoin packMsgJoin = new PackMsgJoin(
-                    sId,
                     AuthGeneralUtil.getTimestamp(),
-                    GruutConfigs.ver,
-                    GruutConfigs.localChainId
+                    GruutConfigs.worldId,
+                    GruutConfigs.localChainId,
+                    sId,
+                    mergerId
             );
-          
-            MsgStatus receivedStatus = new GrpcTask(viewModel.get(), channel, log).execute(packMsgJoin).get();
-
+            log.postValue("[SEND]" + "Join to a network as a signer");
+            Reply receivedMsg;
+            try {
+                receivedMsg = new GrpcTask(viewModel.get(), channel, log).execute(packMsgJoin).get();
+            }catch (InterruptedException | ExecutionException | StatusRuntimeException e) {
+                throw new AsyncException();
+            }
             // Check received status
-            if (receivedStatus == null) {
+            if (receivedMsg == null) {
                 // This error message may be caused by a timeout.
                 throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_NOT_FOUND);
-            } else if (receivedStatus.getStatus() != MsgStatus.Status.SUCCESS) {
+            } else if (receivedMsg.getStatus() != Reply.Status.SUCCESS) {
                 throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_MERGER_ERR);
             }
+
+            return new UnpackMsgChallenge(receivedMsg.getMessage().toByteArray());
         }
 
         /**
@@ -462,7 +439,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
          * @param channel          target merger
          * @param messageChallenge received MSG_CHALLENGE
          */
-        private void sendPublicKey(ManagedChannel channel, UnpackMsgChallenge messageChallenge, MutableLiveData<String> log) throws ExecutionException, InterruptedException {
+        private UnpackMsgResponse2 sendPublicKey(ManagedChannel channel, UnpackMsgChallenge messageChallenge, MutableLiveData<String> log) throws StatusRuntimeException {
             // generate signer nonce
             signerNonce = AuthGeneralUtil.getNonce();
 
@@ -508,16 +485,22 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
                     y,  /* HEX */
                     signature /* BASE64 */
             );
+            log.postValue("[SEND]" + "DH Key Ex: Puzzle `A`");
+            Reply receivedMsg;
+            try{
+                receivedMsg = new GrpcTask(viewModel.get(), channel, log).execute(msgResponse1).get();
+            } catch (InterruptedException | ExecutionException | StatusRuntimeException e) {
+                throw new AsyncException();
+            }
 
-            MsgStatus receivedStatus = new GrpcTask(viewModel.get(), channel, log).execute(msgResponse1).get();
-          
             // Check received status
-            if (receivedStatus == null) {
+            if (receivedMsg == null) {
                 // This error message may be caused by a timeout.
                 throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_NOT_FOUND);
-            } else if (receivedStatus.getStatus() != MsgStatus.Status.SUCCESS) {
+            } else if (receivedMsg.getStatus() != Reply.Status.SUCCESS) {
                 throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_MERGER_ERR);
             }
+            return new UnpackMsgResponse2(receivedMsg.getMessage().toByteArray());
         }
 
 
@@ -528,7 +511,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
          * @param channel          target merger
          * @param messageResponse2 received MSG_RESPONSE_2
          */
-        private void sendSuccess(ManagedChannel channel, UnpackMsgResponse2 messageResponse2, MutableLiveData<String> log) throws ExecutionException, InterruptedException {
+        private UnpackMsgAccept sendSuccess(ManagedChannel channel, UnpackMsgResponse2 messageResponse2, MutableLiveData<String> log) throws RuntimeException {
 
             try {
                 // 서명 검증
@@ -566,15 +549,22 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
             );
             msgSuccess.setDestinationId(messageResponse2.getmID());
 
-            MsgStatus receivedStatus = new GrpcTask(viewModel.get(), channel, log).execute(msgSuccess).get();
+            Reply receivedMsg;
+            try {
+                receivedMsg = new GrpcTask(viewModel.get(), channel, log).execute(msgSuccess).get();
+            } catch(InterruptedException | ExecutionException | StatusRuntimeException e){
+                throw new AsyncException();
+            }
 
             // Check received status
-            if (receivedStatus == null) {
+            if (receivedMsg == null) {
                 // This error message may be caused by a timeout.
                 throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_NOT_FOUND);
-            } else if (receivedStatus.getStatus() != MsgStatus.Status.SUCCESS) {
+            } else if (receivedMsg.getStatus() != Reply.Status.SUCCESS) {
                 throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_MERGER_ERR);
             }
+            log.postValue("[SEND]" + "DH Key Ex: MAC with common secret");
+            return new UnpackMsgAccept(receivedMsg.getMessage().toByteArray());
         }
 
         /**
@@ -598,7 +588,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
             }
 
             String time = msgRequestSignature.getTime();
-            String signature;
+            String signature = "";
             try {
                 SignedBlock block = new SignedBlock();
                 block.setChainId(msgRequestSignature.getChainId());
@@ -606,8 +596,8 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
                 block.setTimestamp(Calendar.getInstance().getTimeInMillis());
                 blockRepo.insert(block);
 
-                signature = authCertUtil.generateSupportSignature(sId, time, msgRequestSignature.getmID(), GruutConfigs.localChainId,
-                        msgRequestSignature.getBlockHeight(), msgRequestSignature.getTransaction());
+                /*signature = authCertUtil.generateSupportSignature(sId, time, msgRequestSignature.getmID(), GruutConfigs.localChainId,
+                        msgRequestSignature.getBlockHeight(), msgRequestSignature.getTransaction());*/
             } catch (Exception e) {
                 throw new AuthUtilException(AuthUtilException.AuthErr.SIGNING_ERROR);
             }
@@ -619,19 +609,20 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
             );
             msgSignature.setDestinationId(msgRequestSignature.getmID());
 
-            MsgStatus receivedStatus = new GrpcTask(viewModel.get(), channel, log).execute(msgSignature).get();
+            Reply receivedMsg = new GrpcTask(viewModel.get(), channel, log).execute(msgSignature).get();
 
             // Check received status
-            if (receivedStatus == null) {
+            if (receivedMsg == null) {
                 // This error message may be caused by a timeout.
                 throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_NOT_FOUND);
-            } else if (receivedStatus.getStatus() != MsgStatus.Status.SUCCESS) {
+            } else if (receivedMsg.getStatus() != Reply.Status.SUCCESS) {
                 throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_MERGER_ERR);
             }
+            log.postValue("[SEND]" + "Signed on block");
         }
     }
 
-    private static class GrpcTask extends AsyncTask<MsgPacker, Void, MsgStatus> {
+    private static class GrpcTask extends AsyncTask<MsgPacker, Void, Reply> {
 
         private long start;
 
@@ -646,41 +637,27 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
         }
 
         @Override
-        protected MsgStatus doInBackground(MsgPacker... msgPackers) {
+        protected Reply doInBackground(MsgPacker... msgPackers) {
             MsgPacker msg = msgPackers[0];
 
             GruutSignerServiceGrpc.GruutSignerServiceBlockingStub stub = GruutSignerServiceGrpc.newBlockingStub(channel);
+
             start = System.currentTimeMillis();
 
-            switch (msg.getMessageType()) {
-                case MSG_JOIN:
-                    log.postValue("[SEND]" + "Join to a network as a signer");
-                    break;
-                case MSG_RESPONSE_1:
-                    log.postValue("[SEND]" + "DH Key Ex: Puzzle `A`");
-                    break;
-                case MSG_SUCCESS:
-                    log.postValue("[SEND]" + "DH Key Ex: MAC with common secret");
-                    break;
-                case MSG_SSIG:
-                    log.postValue("[SEND]" + "Signed on block");
-                    break;
-            }
-
             try {
-                RequestMsg requestMsg = RequestMsg.newBuilder()
+                Request requestMsg = Request.newBuilder()
                         .setMessage(ByteString.copyFrom(msg.convertToByteArr()))
                         .build();
-
                 return stub.withDeadlineAfter(GruutConfigs.GRPC_TIMEOUT, TimeUnit.SECONDS).signerService(requestMsg);
-            } catch (Exception e) {
+
+            }catch (Exception e) {
                 e.printStackTrace();
                 return null;
             }
         }
 
         @Override
-        protected void onPostExecute(MsgStatus result) {
+        protected void onPostExecute(Reply result) {
             if (viewModel.get() == null) {
                 return;
             }

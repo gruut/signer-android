@@ -103,6 +103,7 @@ public class UnpackMsgResponse2 extends MsgUnpacker {
 
         this.merger = msgResponse2.merger;
         this.dh = msgResponse2.dh;
+        this.time = msgResponse2.time;
     }
 
     @Override
