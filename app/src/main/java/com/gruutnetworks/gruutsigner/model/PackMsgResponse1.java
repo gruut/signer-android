@@ -1,12 +1,14 @@
 package com.gruutnetworks.gruutsigner.model;
 
 import android.util.Base64;
+import com.gruutnetworks.gruutsigner.util.Base58;
 import com.google.gson.ExclusionStrategy;
 import com.google.gson.FieldAttributes;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
+import com.gruutnetworks.gruutsigner.gruut.GruutConfigs;
 
 import static com.gruutnetworks.gruutsigner.model.MsgHeader.MSG_HEADER_LEN;
 
@@ -15,53 +17,75 @@ import static com.gruutnetworks.gruutsigner.model.MsgHeader.MSG_HEADER_LEN;
  * Description: Merger's response to identity verification request from Signer
  * Message Type: 0x56
  */
+
 public class PackMsgResponse1 extends MsgPacker {
     @Expose(serialize = false)
     private String headerLocalChainId;
 
-    @Expose
-    @SerializedName("sID")
-    private String sID;  // BASE64 encoded 8 byte data
+    class DH {
+        @Expose
+        @SerializedName("dhx")
+        public String x;   // HEX
+        @Expose
+        @SerializedName("dhy")
+        public String y;   // HEX
+
+        DH(String x , String y){
+            this.x = x;
+            this.y = y;
+        }
+    }
+
+    class User {
+        @Expose
+        @SerializedName("id")
+        public String id;
+
+        @Expose
+        @SerializedName("pk")
+        public String pk;
+
+        @Expose
+        @SerializedName("sig")
+        public String sig; // signature with signer's nonce, merger's nonce, dhx, dhy, time
+
+        User(String id, String pk, String sig){
+            this.id = id;
+            this.pk = pk;
+            this.sig = sig;
+        }
+    }
     @Expose
     @SerializedName("time")
     private String time;    // UNIX timestamp
+
     @Expose
-    @SerializedName("cert")
-    private String cert;    // pem Certificate
-    @Expose
-    @SerializedName("sN")
+    @SerializedName("sn")
     private String signerNonce; // 256bit random nonce
+
     @Expose
-    @SerializedName("dhx")
-    private String dhPubKeyX;   // HEX
+    @SerializedName("dh")
+    private DH dh;
+
     @Expose
-    @SerializedName("dhy")
-    private String dhPubKeyY;   // HEX
-    @Expose
-    @SerializedName("sig")
-    private String sig; // signature with signer's nonce, merger's nonce, dhx, dhy, time
+    @SerializedName("user")
+    private User user;
 
     public PackMsgResponse1(String sID, String time, String cert, String signerNonce, String dhPubKeyX, String dhPubKeyY, String sig) {
-        this.sID = sID;
         this.time = time;
-        this.cert = cert;
         this.signerNonce = signerNonce;
-        this.dhPubKeyX = dhPubKeyX;
-        this.dhPubKeyY = dhPubKeyY;
-        this.sig = sig;
+        this.dh = new DH(dhPubKeyX, dhPubKeyY);
+        this.user = new User(sID, cert, sig);
 
         setHeader();
     }
 
     public PackMsgResponse1(String headerLocalChainId, String sID, String time, String cert, String signerNonce, String dhPubKeyX, String dhPubKeyY, String sig) {
         this.headerLocalChainId = headerLocalChainId;
-        this.sID = sID;
         this.time = time;
-        this.cert = cert;
         this.signerNonce = signerNonce;
-        this.dhPubKeyX = dhPubKeyX;
-        this.dhPubKeyY = dhPubKeyY;
-        this.sig = sig;
+        this.dh = new DH(dhPubKeyX, dhPubKeyY);
+        this.user = new User(sID, cert, sig);
 
         setHeader();
     }
@@ -71,17 +95,17 @@ public class PackMsgResponse1 extends MsgPacker {
         if (headerLocalChainId != null) {
             this.header = new MsgHeader.Builder()
                     .setMsgType(TypeMsg.MSG_RESPONSE_1.getType())
-                    .setCompressionType(TypeComp.LZ4.getType())
+                    .setSerializationType(TypeComp.LZ4.getType())
                     .setTotalLen(MSG_HEADER_LEN + getCompressedJsonLen())
-                    .setSender(Base64.decode(sID, Base64.NO_WRAP)) // Base64 decoding
-                    .setLocalChainId(Base64.decode(headerLocalChainId, Base64.NO_WRAP))
+                    .setSender(Base58.decode(user.id)) // TODO: need to decode Base58
+                    .setLocalChainId(headerLocalChainId.getBytes())
                     .build();
         } else {
             this.header = new MsgHeader.Builder()
                     .setMsgType(TypeMsg.MSG_RESPONSE_1.getType())
-                    .setCompressionType(TypeComp.LZ4.getType())
+                    .setSerializationType(TypeComp.LZ4.getType())
                     .setTotalLen(MSG_HEADER_LEN + getCompressedJsonLen())
-                    .setSender(Base64.decode(sID, Base64.NO_WRAP)) // Base64 decoding
+                    .setSender(Base58.decode(user.id)) // TODO: need to decode Base58
                     .build();
         }
     }

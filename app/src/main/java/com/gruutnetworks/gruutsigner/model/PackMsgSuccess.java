@@ -1,5 +1,6 @@
 package com.gruutnetworks.gruutsigner.model;
 
+import com.gruutnetworks.gruutsigner.util.Base58;
 import android.util.Base64;
 import com.google.gson.ExclusionStrategy;
 import com.google.gson.FieldAttributes;
@@ -20,8 +21,8 @@ public class PackMsgSuccess extends MsgPacker {
     private String headerLocalChainId;
 
     @Expose
-    @SerializedName("sID")
-    private String sID;
+    @SerializedName("user")
+    private String userID;
     @Expose
     @SerializedName("time")
     private String time;
@@ -30,7 +31,7 @@ public class PackMsgSuccess extends MsgPacker {
     private boolean val;
 
     public PackMsgSuccess(String sID, String time, boolean val) {
-        this.sID = sID;
+        this.userID = sID;
         this.time = time;
         this.val = val;
 
@@ -39,7 +40,7 @@ public class PackMsgSuccess extends MsgPacker {
 
     public PackMsgSuccess(String headerLocalChainId, String sID, String time, boolean val) {
         this.headerLocalChainId = headerLocalChainId;
-        this.sID = sID;
+        this.userID = sID;
         this.time = time;
         this.val = val;
 
@@ -52,18 +53,18 @@ public class PackMsgSuccess extends MsgPacker {
             this.header = new MsgHeader.Builder()
                     .setMsgType(TypeMsg.MSG_SUCCESS.getType())
                     .setMacType(TypeMac.HMAC_SHA256.getType())
-                    .setCompressionType(TypeComp.LZ4.getType())
+                    .setSerializationType(TypeComp.LZ4.getType())
                     .setTotalLen(MSG_HEADER_LEN + getCompressedJsonLen())
-                    .setSender(Base64.decode(sID, Base64.NO_WRAP)) // Base64 decoding
+                    .setSender(Base58.decode(userID))
                     .setLocalChainId(Base64.decode(headerLocalChainId, Base64.NO_WRAP))
                     .build();
         } else {
             this.header = new MsgHeader.Builder()
                     .setMsgType(TypeMsg.MSG_SUCCESS.getType())
                     .setMacType(TypeMac.HMAC_SHA256.getType())
-                    .setCompressionType(TypeComp.LZ4.getType())
+                    .setSerializationType(TypeComp.LZ4.getType())
                     .setTotalLen(MSG_HEADER_LEN + getCompressedJsonLen())
-                    .setSender(Base64.decode(sID, Base64.NO_WRAP)) // Base64 decoding
+                    .setSender(Base58.decode(userID))
                     .build();
         }
     }

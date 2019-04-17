@@ -1,5 +1,6 @@
 package com.gruutnetworks.gruutsigner.model;
 
+import com.gruutnetworks.gruutsigner.util.Base58;
 import android.util.Base64;
 import com.google.gson.ExclusionStrategy;
 import com.google.gson.FieldAttributes;
@@ -15,33 +16,54 @@ import static com.gruutnetworks.gruutsigner.model.MsgHeader.MSG_HEADER_LEN;
  * Description: Signer's signature to Merger
  * Message Type: 0xB3
  */
+
+class Block {
+    @Expose
+    @SerializedName("id")
+    public String id;
+
+    Block(String block_id){
+        this.id = block_id;
+    }
+}
+
+class Signer {
+    @Expose
+    @SerializedName("id")
+    public String id;
+
+    @Expose
+    @SerializedName("sig")
+    public String sig;
+
+    Signer(String id, String sig){
+        this.id = id;
+        this.sig = sig;
+    }
+}
+
 public class PackMsgSignature extends MsgPacker {
     @Expose(serialize = false)
     private String headerLocalChainId;
 
     @Expose
-    @SerializedName("sID")
-    private String sid;
+    @SerializedName("block")
+    private Block block;
     @Expose
-    @SerializedName("time")
-    private String time;
-    @Expose
-    @SerializedName("sig")
-    private String sig;
+    @SerializedName("signer")
+    private Signer signer;
 
-    public PackMsgSignature(String sid, String time, String sig) {
-        this.sid = sid;
-        this.time = time;
-        this.sig = sig;
+    public PackMsgSignature(String sid, String bid, String sig) {
+        this.block = new Block(bid);
+        this.signer = new Signer(sid, sig);
 
         setHeader();
     }
 
-    public PackMsgSignature(String headerLocalChainId, String sid, String time, String sig) {
+    public PackMsgSignature(String headerLocalChainId, String sid, String bid, String sig) {
         this.headerLocalChainId = headerLocalChainId;
-        this.sid = sid;
-        this.time = time;
-        this.sig = sig;
+        this.block = new Block(bid);
+        this.signer = new Signer(sid, sig);
 
         setHeader();
     }
@@ -52,18 +74,18 @@ public class PackMsgSignature extends MsgPacker {
             this.header = new MsgHeader.Builder()
                     .setMsgType(TypeMsg.MSG_SSIG.getType())
                     .setMacType(TypeMac.HMAC_SHA256.getType())
-                    .setCompressionType(TypeComp.LZ4.getType())
+                    .setSerializationType(TypeComp.LZ4.getType())
                     .setTotalLen(MSG_HEADER_LEN + getCompressedJsonLen())
-                    .setSender(Base64.decode(sid, Base64.NO_WRAP)) // Base64 decoding
-                    .setLocalChainId(Base64.decode(headerLocalChainId, Base64.NO_WRAP))
+                    .setSender(Base58.decode(signer.id))
+                    .setLocalChainId(headerLocalChainId.getBytes())
                     .build();
         } else {
             this.header = new MsgHeader.Builder()
                     .setMsgType(TypeMsg.MSG_SSIG.getType())
                     .setMacType(TypeMac.HMAC_SHA256.getType())
-                    .setCompressionType(TypeComp.LZ4.getType())
+                    .setSerializationType(TypeComp.LZ4.getType())
                     .setTotalLen(MSG_HEADER_LEN + getCompressedJsonLen())
-                    .setSender(Base64.decode(sid, Base64.NO_WRAP)) // Base64 decoding
+                    .setSender(Base58.decode(signer.id))
                     .build();
         }
     }

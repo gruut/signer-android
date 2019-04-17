@@ -1,6 +1,6 @@
 package com.gruutnetworks.gruutsigner.model;
 
-import android.util.Base64;
+import com.gruutnetworks.gruutsigner.util.Base58;
 import com.google.gson.ExclusionStrategy;
 import com.google.gson.FieldAttributes;
 import com.google.gson.Gson;
@@ -17,24 +17,27 @@ import static com.gruutnetworks.gruutsigner.model.MsgHeader.MSG_HEADER_LEN;
  */
 public class PackMsgJoin extends MsgPacker {
     @Expose
-    @SerializedName("sID")
-    private String sID;  // BASE64 encoded 8 byte data
-    @Expose
     @SerializedName("time")
     private String time;    // UNIX timestamp
     @Expose
-    @SerializedName("ver")
-    private String ver;
+    @SerializedName("world")
+    private String world;   // 8 bytes
     @Expose
-    @SerializedName("cID")
-    private String localChainId;  // BASE64 encoded 8 byte data
+    @SerializedName("chain")
+    private String chain;  // 8 bytes
+    @Expose
+    @SerializedName("merger")
+    private String merger;  // BASE58 encoded 32 byte data
+    @Expose
+    @SerializedName("signer")
+    private String signer;  // BASE58 encoded 32 byte data
 
-    public PackMsgJoin(String sID, String time, String ver, String localChainId) {
-        this.sID = sID;
+    public PackMsgJoin(String time, String world_id, String chain_id, String signer_id, String merger_id) {
         this.time = time;
-        this.ver = ver;
-        this.localChainId = localChainId;
-
+        this.world = world_id;
+        this.chain = chain_id;
+        this.signer = signer_id;
+        this.merger = merger_id;
         setHeader();
     }
 
@@ -42,10 +45,9 @@ public class PackMsgJoin extends MsgPacker {
     void setHeader() {
         this.header = new MsgHeader.Builder()
                 .setMsgType(TypeMsg.MSG_JOIN.getType())
-                .setCompressionType(TypeComp.LZ4.getType())
+                .setSerializationType(TypeComp.LZ4.getType())
                 .setTotalLen(MSG_HEADER_LEN + getCompressedJsonLen())
-                .setLocalChainId(Base64.decode(localChainId, Base64.NO_WRAP)) // Base64 decoding
-                .setSender(Base64.decode(sID, Base64.NO_WRAP)) // Base64 decoding
+                .setSender(Base58.decode(signer))
                 .build();
     }
 
