@@ -1,11 +1,11 @@
 package com.gruutnetworks.gruutsigner.gruut;
 
 public interface GruutConfigs {
-    byte gruutConstant = 'G';
-    byte mainVersion = 0x01;
-    byte subVersion = 0x00;
-    String ver = "1.0.20181127";
-    String localChainId = "R0VOVEVTVDE="; // GENTEST1
+    byte gruutConstant = 'P';
+    byte version = 0x01;
+    //temp id;
+    String localChainId = "LCHAINID";
+    String worldId = "WORLD-ID";
 
     int GRPC_TIMEOUT = 10;
     int AUTO_REFRESH_TIMEOUT = 10 * 1000;

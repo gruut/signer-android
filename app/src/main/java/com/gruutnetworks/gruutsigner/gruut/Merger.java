@@ -4,13 +4,14 @@ public class Merger {
     private String name;
     private String uri;
     private int port;
+    private String b58Id;
 
-    public Merger(String name, String uri, int port) {
+    public Merger(String b58Id, String name, String uri, int port) {
         this.name = name;
         this.uri = uri;
         this.port = port;
+        this.b58Id = b58Id;
     }
-
     public String getName() {
         return name;
     }
@@ -35,5 +36,12 @@ public class Merger {
         this.port = port;
     }
 
+    public String getB58Id(){
+        return this.b58Id;
+    }
+
+    public void setB58Id(String b58Id) {
+        this.b58Id = b58Id;
+    }
 
 }
