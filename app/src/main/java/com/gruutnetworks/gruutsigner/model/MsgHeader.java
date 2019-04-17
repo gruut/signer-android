@@ -3,6 +3,7 @@ package com.gruutnetworks.gruutsigner.model;
 import android.util.Base64;
 import com.gruutnetworks.gruutsigner.gruut.GruutConfigs;
 import org.spongycastle.util.encoders.Hex;
+import com.gruutnetworks.gruutsigner.util.Base58;
 
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
@@ -11,33 +12,31 @@ public class MsgHeader {
     static final int MSG_HEADER_LEN = 32;
     static final int HEADER_TOTAL_LEN_SIZE = 4;
     static final int HEADER_LOCAL_CHAIN_ID_SIZE = 8;
-    static final int HEADER_SENDER_SIZE = 8;
-    static final int HEADER_RESERVED_SIZE = 6;
+    static final int HEADER_WORLD_ID_SIZE = 8;
+    static final int HEADER_SENDER_SIZE = 32;
 
     private final byte gruutConstant;   // 8 bits
-    private final byte mainVersion;     // 4 bits
-    private final byte subVersion;      // 4 bits
+    private final byte version;         // 8 bits
     private final byte msgType;         // 8 bits
     private final byte macType;         // 8 bits
-    private final byte compressionType; // 8 bits
-    private final byte notUsed;         // 8 bits
+    private final byte serializationType; // 8 bits
+    private final byte notUsed;          // 8 bits;
     private final byte[] totalLen;      // 32 bits
+    private final byte[] worldId;        // 64 bits
     private final byte[] localChainId;  // 64 bits
-    private final byte[] sender;        // 64 bits
-    private final byte[] reserved;      // 48 bits
+    private final byte[] sender;        // 256 bits
 
     private MsgHeader(Builder builder) {
         this.gruutConstant = builder.gruutConstant;
-        this.mainVersion = builder.mainVersion;
-        this.subVersion = builder.subVersion;
+        this.version = builder.version;
         this.msgType = builder.msgType;
         this.macType = builder.macType;
-        this.compressionType = builder.compressionType;
+        this.serializationType = builder.serializationType;
         this.notUsed = builder.notUsed;
         this.totalLen = builder.totalLen;
+        this.worldId = builder.worldId;
         this.localChainId = builder.localChainId;
         this.sender = builder.sender;
-        this.reserved = builder.reserved;
     }
 
     byte[] convertToByteArr() {
@@ -45,17 +44,15 @@ public class MsgHeader {
         buffer.clear();
 
         buffer.put(gruutConstant);
-        byte version = (byte) (mainVersion << 4);
-        version += subVersion;
         buffer.put(version);
         buffer.put(msgType);
         buffer.put(macType);
-        buffer.put(compressionType);
+        buffer.put(serializationType);
         buffer.put(notUsed);
         buffer.put(totalLen);
+        buffer.put(worldId);
         buffer.put(localChainId);
         buffer.put(sender);
-        buffer.put(reserved);
 
         byte[] bytes = buffer.array();
         buffer.clear();
@@ -64,30 +61,25 @@ public class MsgHeader {
 
     @Override
     public String toString() {
-        byte version = (byte) (mainVersion << 4);
-        version += subVersion;
-
         String str = "{";
         str += "gruutConstant: " + String.format("0x%02X", gruutConstant) + ", ";
         str += "Version: " + String.format("0x%02X", version) + ", ";
-        str += "mainVersion: " + String.format("0x%01X", mainVersion) + ", ";
-        str += "subVersion: " + String.format("0x%01X", subVersion) + ", ";
         str += "msgType: " + String.format("0x%02X", msgType) + ", ";
         str += "macType: " + String.format("0x%02X", macType) + ", ";
-        str += "compressionType: " + String.format("0x%02X", compressionType) + ", ";
+        str += "serializationType: " + String.format("0x%02X", serializationType) + ", ";
         str += "notUsed: " + String.format("0x%02X", notUsed) + ", ";
         str += "totalLen: " + new BigInteger(1, totalLen) + ", ";
+        str += "worldId: " + new String(Hex.encode(worldId)) + ", ";
         str += "localChainId: " + new String(Hex.encode(localChainId)) + ", ";
-        str += "sender: " + new String(Hex.encode(sender)) + ", ";
-        str += "reserved: " + new String(Hex.encode(reserved)) + "}";
+        str += "sender: " + new String(Hex.encode(sender)) + "}";
         return str;
     }
 
     /**
-     * @return 헤더의 sender byte array를 base 64로 인코딩하여 반환
+     * @return 헤더의 sender byte array를 base 58로 인코딩하여 반환
      */
     String getSender() {
-        return Base64.encodeToString(sender, Base64.NO_WRAP);
+        return Base58.encode(sender);
     }
 
     int getTotalLen() {
@@ -103,21 +95,20 @@ public class MsgHeader {
     }
 
     TypeComp getCompressType() {
-        return TypeComp.convert(compressionType);
+        return TypeComp.convert(serializationType);
     }
 
     public static class Builder {
         private byte gruutConstant = GruutConfigs.gruutConstant;
-        private byte mainVersion = GruutConfigs.mainVersion;
-        private byte subVersion = GruutConfigs.subVersion;
+        private byte version = GruutConfigs.version;
         private byte msgType;
         private byte macType = TypeMac.NONE.getType();
-        private byte compressionType = TypeComp.NONE.getType();
+        private byte serializationType = TypeComp.NONE.getType();
         private byte notUsed = 0;
         private byte[] totalLen = new byte[HEADER_TOTAL_LEN_SIZE];
-        private byte[] localChainId = Base64.decode(GruutConfigs.localChainId, Base64.NO_WRAP);
+        private byte[] worldId = GruutConfigs.worldId.getBytes();
+        private byte[] localChainId = GruutConfigs.localChainId.getBytes();
         private byte[] sender = new byte[HEADER_SENDER_SIZE];
-        private byte[] reserved = new byte[HEADER_RESERVED_SIZE];
 
         public MsgHeader build() {
             return new MsgHeader(this);
@@ -128,13 +119,8 @@ public class MsgHeader {
             return this;
         }
 
-        Builder setMainVersion(byte mainVersion) {
-            this.mainVersion = mainVersion;
-            return this;
-        }
-
-        Builder setSubVersion(byte subVersion) {
-            this.subVersion = subVersion;
+        Builder setVersion(byte version) {
+            this.version = version;
             return this;
         }
 
@@ -148,8 +134,8 @@ public class MsgHeader {
             return this;
         }
 
-        Builder setCompressionType(byte compressionType) {
-            this.compressionType = compressionType;
+        Builder setSerializationType(byte serializationType) {
+            this.serializationType = serializationType;
             return this;
         }
 
@@ -175,15 +161,15 @@ public class MsgHeader {
             return this;
         }
 
-        Builder setSender(byte[] sender) {
-            System.arraycopy(sender, 0, this.sender,
-                    this.sender.length - sender.length, sender.length);
+        Builder setWorldId(byte[] worldId) {
+            System.arraycopy(worldId, 0, this.worldId,
+                    this.worldId.length - worldId.length, worldId.length);
             return this;
         }
 
-        Builder setReserved(byte[] reserved) {
-            System.arraycopy(reserved, 0, this.reserved,
-                    this.reserved.length - reserved.length, reserved.length);
+        Builder setSender(byte[] sender) {
+            System.arraycopy(sender, 0, this.sender,
+                    this.sender.length - sender.length, sender.length);
             return this;
         }
     }
