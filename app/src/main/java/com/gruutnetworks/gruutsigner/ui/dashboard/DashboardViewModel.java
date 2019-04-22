@@ -596,15 +596,14 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
                 block.setTimestamp(Calendar.getInstance().getTimeInMillis());
                 blockRepo.insert(block);
 
-                /*signature = authCertUtil.generateSupportSignature(sId, time, msgRequestSignature.getmID(), GruutConfigs.localChainId,
-                        msgRequestSignature.getBlockHeight(), msgRequestSignature.getTransaction());*/
+                signature = authCertUtil.generateSupportSignature(msgRequestSignature.getBlockId(), msgRequestSignature.getTxRoot(), msgRequestSignature.getUsRoot(), msgRequestSignature.getCsRoot());
             } catch (Exception e) {
                 throw new AuthUtilException(AuthUtilException.AuthErr.SIGNING_ERROR);
             }
 
             PackMsgSignature msgSignature = new PackMsgSignature(
                     sId,
-                    time,
+                    msgRequestSignature.getBlockId(),
                     signature
             );
             msgSignature.setDestinationId(msgRequestSignature.getmID());

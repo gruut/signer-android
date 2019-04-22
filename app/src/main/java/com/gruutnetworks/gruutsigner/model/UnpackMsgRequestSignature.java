@@ -38,6 +38,9 @@ public class UnpackMsgRequestSignature extends MsgUnpacker {
         @Expose
         @SerializedName("usroot")
         public String usroot;
+        @Expose
+        @SerializedName("csroot")
+        public String csroot;
     }
 
     class Producer {
@@ -77,6 +80,11 @@ public class UnpackMsgRequestSignature extends MsgUnpacker {
     public String getBlockHeight() {
         return block.height;
     }
+
+    public String getBlockId() { return block.id; }
+    public String getTxRoot() { return block.txroot;}
+    public String getUsRoot() { return block.usroot;}
+    public String getCsRoot() { return block.csroot;}
 
     @Override
     void bodyFromJson(byte[] bodyBytes) {

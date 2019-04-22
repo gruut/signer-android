@@ -281,28 +281,21 @@ public class AuthCertUtil {
     /**
      * MSG_REQ_SSIG에 대한 지지서명 생성
      *
-     * @param sender signer id          (Base64)
-     * @param time   timestamp
-     * @param mId    요청한 merger의 id (Base64)
-     * @param cId    local chain id     (Base64)
-     * @param hgt    block height
-     * @param tx     transaction root   (Base64)
+     * @param bId       요청한 Block의 id (Base58)
+     * @param txRoot    Merkle root of transactions   (Base64)
+     * @param usRoot    user scope root       (Base64)
+     * @param csRoot    contract scope root   (Base64)
      * @return support signature string
      */
-    public String generateSupportSignature(String sender, String time, String mId, String cId, String hgt, String tx)
+    public String generateSupportSignature(String bId, String txRoot, String usRoot, String csRoot)
             throws IOException, CertificateException, InvalidKeyException, NoSuchAlgorithmException,
             KeyStoreException, SignatureException, UnrecoverableEntryException {
 
-        byte[] sigTime = ByteBuffer.allocate(8).putLong(Integer.parseInt(time)).array();
-        byte[] sigHgt = ByteBuffer.allocate(8).putLong(Integer.parseInt(hgt)).array();
-
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        outputStream.write(Base64.decode(sender, Base64.NO_WRAP));  // 64 bit
-        outputStream.write(sigTime);                                // 64 bit
-        outputStream.write(Base64.decode(mId, Base64.NO_WRAP));     // 64 bit
-        outputStream.write(Base64.decode(cId, Base64.NO_WRAP));     // 64 bit
-        outputStream.write(sigHgt);                                 // 64 bit
-        outputStream.write(Base64.decode(tx, Base64.NO_WRAP));      // 256 bit
+        outputStream.write(Base58.decode(bId));                     // 256 bits
+        outputStream.write(Base64.decode(txRoot, Base64.NO_WRAP));     // 256 bits
+        outputStream.write(Base64.decode(usRoot, Base64.NO_WRAP));     // 256 bits
+        outputStream.write(Base64.decode(csRoot, Base64.NO_WRAP));      // 256 bits
 
         String signature = authCertUtil.sign(outputStream.toByteArray());
         outputStream.close();
