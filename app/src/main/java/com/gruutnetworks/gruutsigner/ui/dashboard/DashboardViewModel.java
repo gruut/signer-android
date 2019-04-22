@@ -327,8 +327,10 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
                 openChannel(channel, log, error);
                 UnpackMsgChallenge challenge = sendJoinMsg(channel, log);
                 UnpackMsgResponse2 response2 = sendPublicKey(channel, challenge, log);
-                sendSuccess(channel, response2, log);
-
+                UnpackMsgAccept accept = sendSuccess(channel, response2, log);
+                if (accept.isVal()) {
+                    log.postValue("[INFO]" + "Ready to sign block ");
+                }
             } catch (ErrorMsgException e) {
                 if (!channel.isShutdown()) {
                     log.postValue("[ERROR] " + e.getMessage());
@@ -341,6 +343,8 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
                     Log.e(TAG, channel.toString() + "::[CRYPTO_ERROR] " + e.getMessage());
                     error.postValue(true);
                 }
+            } catch (InterruptedException | ExecutionException ignored){
+                // AsyncTask was dead
             }
 
         }
@@ -361,10 +365,6 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
                                 sendSignature(channel, msgRequestSignature, log);
 
                                 return;
-                            case MSG_ERROR:
-                                UnpackMsgError msgError = new UnpackMsgError(receivedMsg);
-                                throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_ERR_RECEIVED,
-                                        TypeError.convert(msgError.getErrType()).name());
                             default:
                                 throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_NOT_FOUND);
                         }
@@ -406,7 +406,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
          * @param channel target merger
          * @throws StatusRuntimeException on GRPC error
          */
-        private UnpackMsgChallenge sendJoinMsg(ManagedChannel channel, MutableLiveData<String> log) throws StatusRuntimeException {
+        private UnpackMsgChallenge sendJoinMsg(ManagedChannel channel, MutableLiveData<String> log) throws ExecutionException, InterruptedException  {
             PackMsgJoin packMsgJoin = new PackMsgJoin(
                     AuthGeneralUtil.getTimestamp(),
                     GruutConfigs.worldId,
@@ -416,19 +416,18 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
             );
             log.postValue("[SEND]" + "Join to a network as a signer");
             Reply receivedMsg;
-            try {
-                receivedMsg = new GrpcTask(viewModel.get(), channel, log).execute(packMsgJoin).get();
-            }catch (InterruptedException | ExecutionException | StatusRuntimeException e) {
-                throw new AsyncException();
-            }
+
+            receivedMsg = new GrpcTask(viewModel.get(), channel, log).execute(packMsgJoin).get();
             // Check received status
             if (receivedMsg == null) {
                 // This error message may be caused by a timeout.
                 throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_NOT_FOUND);
             } else if (receivedMsg.getStatus() != Reply.Status.SUCCESS) {
-                throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_MERGER_ERR);
+                if(receivedMsg.getStatusValue() > 20)
+                    throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_MERGER_ECDH_ERROR);
+                else
+                    throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_MERGER_ERR);
             }
-
             return new UnpackMsgChallenge(receivedMsg.getMessage().toByteArray());
         }
 
@@ -439,7 +438,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
          * @param channel          target merger
          * @param messageChallenge received MSG_CHALLENGE
          */
-        private UnpackMsgResponse2 sendPublicKey(ManagedChannel channel, UnpackMsgChallenge messageChallenge, MutableLiveData<String> log) throws StatusRuntimeException {
+        private UnpackMsgResponse2 sendPublicKey(ManagedChannel channel, UnpackMsgChallenge messageChallenge, MutableLiveData<String> log) throws ExecutionException, InterruptedException{
             // generate signer nonce
             signerNonce = AuthGeneralUtil.getNonce();
 
@@ -487,18 +486,18 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
             );
             log.postValue("[SEND]" + "DH Key Ex: Puzzle `A`");
             Reply receivedMsg;
-            try{
-                receivedMsg = new GrpcTask(viewModel.get(), channel, log).execute(msgResponse1).get();
-            } catch (InterruptedException | ExecutionException | StatusRuntimeException e) {
-                throw new AsyncException();
-            }
+
+            receivedMsg = new GrpcTask(viewModel.get(), channel, log).execute(msgResponse1).get();
 
             // Check received status
             if (receivedMsg == null) {
                 // This error message may be caused by a timeout.
                 throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_NOT_FOUND);
             } else if (receivedMsg.getStatus() != Reply.Status.SUCCESS) {
-                throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_MERGER_ERR);
+                if(receivedMsg.getStatusValue() > 20)
+                    throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_MERGER_ECDH_ERROR);
+                else
+                    throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_MERGER_ERR);
             }
             return new UnpackMsgResponse2(receivedMsg.getMessage().toByteArray());
         }
@@ -511,7 +510,7 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
          * @param channel          target merger
          * @param messageResponse2 received MSG_RESPONSE_2
          */
-        private UnpackMsgAccept sendSuccess(ManagedChannel channel, UnpackMsgResponse2 messageResponse2, MutableLiveData<String> log) throws RuntimeException {
+        private UnpackMsgAccept sendSuccess(ManagedChannel channel, UnpackMsgResponse2 messageResponse2, MutableLiveData<String> log) throws ExecutionException, InterruptedException{
 
             try {
                 // 서명 검증
@@ -550,18 +549,18 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
             msgSuccess.setDestinationId(messageResponse2.getmID());
 
             Reply receivedMsg;
-            try {
-                receivedMsg = new GrpcTask(viewModel.get(), channel, log).execute(msgSuccess).get();
-            } catch(InterruptedException | ExecutionException | StatusRuntimeException e){
-                throw new AsyncException();
-            }
+
+            receivedMsg = new GrpcTask(viewModel.get(), channel, log).execute(msgSuccess).get();
 
             // Check received status
             if (receivedMsg == null) {
                 // This error message may be caused by a timeout.
                 throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_NOT_FOUND);
             } else if (receivedMsg.getStatus() != Reply.Status.SUCCESS) {
-                throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_MERGER_ERR);
+                if(receivedMsg.getStatusValue() > 20)
+                    throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_MERGER_ECDH_ERROR);
+                else
+                    throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_MERGER_ERR);
             }
             log.postValue("[SEND]" + "DH Key Ex: MAC with common secret");
             return new UnpackMsgAccept(receivedMsg.getMessage().toByteArray());
@@ -615,7 +614,10 @@ public class DashboardViewModel extends AndroidViewModel implements LifecycleObs
                 // This error message may be caused by a timeout.
                 throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_NOT_FOUND);
             } else if (receivedMsg.getStatus() != Reply.Status.SUCCESS) {
-                throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_MERGER_ERR);
+                if(receivedMsg.getStatusValue() > 20)
+                    throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_MERGER_ECDH_ERROR);
+                else
+                    throw new ErrorMsgException(ErrorMsgException.MsgErr.MSG_MERGER_ERR);
             }
             log.postValue("[SEND]" + "Signed on block");
         }
