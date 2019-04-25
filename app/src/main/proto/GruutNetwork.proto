@@ -1,17 +1,22 @@
 syntax = "proto3";
 
 option java_multiple_files = true;
-option java_package = "com.gruutnetworks.gruutsigner";
+option java_package = "com.gruutnetworks.gruutuser";
 option java_outer_classname = "GruutNetwork";
 
-package grpc_signer;
+package grpc_user;
 
-service GruutSignerService {
-    rpc OpenChannel(stream Identity) returns (stream Request) {}
-    rpc SignerService (Request) returns (Reply) {}
+service GruutUserService {
+    rpc OpenChannel(stream Identity) returns (stream Message) {}
+    rpc KeyExService (Request) returns (Reply) {}
+    rpc UserService (Request) returns (Reply) {}
 }
 message Identity {
     bytes sender = 1;
+}
+
+message Message{
+    bytes message = 1;
 }
 
 message Request {
@@ -22,7 +27,7 @@ message Reply {
     enum Status{
         UNKOWN = 0;
         SUCCESS = 1;
-        HEADER_INVALID = 2;
+        INVALID = 2;
         INTERNAL = 3;
         ECDH_ILLEGAL_ACCESS = 21;
         ECDH_MAX_SIGNER_POOL = 22;
