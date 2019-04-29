@@ -7,7 +7,7 @@
 
         <variable
             name="block"
-            type="com.gruutnetworks.gruutsigner.model.SignedBlock" />
+            type="com.gruutnetworks.gruutuser.model.SignedBlock" />
     </data>
 
     <android.support.constraint.ConstraintLayout

@@ -10,7 +10,7 @@
 
         <variable
             name="model"
-            type="com.gruutnetworks.gruutsigner.ui.dashboard.HistoryViewModel" />
+            type="com.gruutnetworks.gruutuser.ui.dashboard.HistoryViewModel" />
     </data>
 
     <android.support.constraint.ConstraintLayout

@@ -10,7 +10,7 @@
 
         <variable
             name="model"
-            type="com.gruutnetworks.gruutsigner.ui.dashboard.SettingViewModel" />
+            type="com.gruutnetworks.gruutuser.ui.dashboard.SettingViewModel" />
     </data>
 
     <android.support.constraint.ConstraintLayout

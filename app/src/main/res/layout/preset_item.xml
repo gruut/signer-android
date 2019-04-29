@@ -6,7 +6,7 @@
 
         <variable
             name="merger"
-            type="com.gruutnetworks.gruutsigner.gruut.Merger" />
+            type="com.gruutnetworks.gruutuser.gruut.Merger" />
     </data>
 
     <android.support.constraint.ConstraintLayout

@@ -10,7 +10,7 @@
 
         <variable
             name="model"
-            type="com.gruutnetworks.gruutsigner.ui.signup.SignUpViewModel" />
+            type="com.gruutnetworks.gruutuser.ui.signup.SignUpViewModel" />
     </data>
 
     <FrameLayout
