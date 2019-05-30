@@ -8,9 +8,9 @@ public class MergerList {
 
     public static final List<Merger> MERGER_LIST = Collections.unmodifiableList(
             new ArrayList<Merger>() {{
-                add(new Merger("Merger #1", "13.125.161.227", 50000));
-                add(new Merger("Merger #2", "13.125.84.32", 50000));
-                add(new Merger("Merger #3", "13.209.158.245", 50000));
+                add(new Merger("Merger #1", "165.246.42.47", 43801));
+                add(new Merger("Merger #2", "165.246.42.47", 43802));
+                add(new Merger("Merger #3", "165.246.42.47", 43803));
             }}
     );
 
